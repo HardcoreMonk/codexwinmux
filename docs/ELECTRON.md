@@ -195,7 +195,7 @@ The Windows wrapper installs Electron ABI native prebuilds for packaged runtime 
 NSIS `artifactName` stays `${productName}-Setup-${version}.${ext}` so `latest.yml`, the installer exe, and the matching `.blockmap` use the same updater-visible artifact name.
 Packaged `resources/app-update.yml` must stay aligned with `electron-builder.yml` `publish.provider`, `publish.owner`, and `publish.repo`; `smoke:windows:update-metadata` checks this against `release/win-unpacked`.
 `smoke:windows:updater-local-feed` uses the generated `latest.yml` as a template, bumps only the patch version in a temp local feed, serves the existing NSIS installer from localhost, and verifies Electron updater events through download, `update-downloaded`, `quitAndInstall`, app exit, post-install launch, and uninstall. The smoke-only updater env hook writes path-light JSONL status and disables differential download so the synthetic feed can reuse the current installer artifact.
-`smoke:windows:updater-published-channel` does not install or update the app. It queries the configured GitHub Releases channel and fails closed until a published release exposes the updater-visible `latest.yml`, NSIS installer, and installer blockmap assets. It is the preflight for real published update evidence; successful download/install evidence still requires a published version newer than the installed app.
+`smoke:windows:updater-published-channel` does not install or update the app. It queries the configured GitHub Releases channel and fails closed until a published release exposes the updater-visible `latest.yml`, NSIS installer, and installer blockmap assets. It is the preflight for real published update evidence; successful download/install evidence still requires a published version newer than the installed app. After a release commit already bumps `package.json`, set `CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=<installed-version>` to compare the channel against the version users have installed.
 
 macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사용한다. `dmg-license`는 pnpm node linker에서 electron-builder의 runtime `require()`가 항상 해석되도록 direct devDependency로 고정한다. Linux에서는 `corepack pnpm build:electron`까지를 release smoke로 보고, macOS packaging은 Mac M1 같은 macOS host에서 `corepack pnpm pack:electron:mac:dev`/`pack:electron:mac`로 실행한다.
 
@@ -203,7 +203,7 @@ macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사
 
 ## Packaging Notes
 
-현재 패키징 metadata는 `com.hardcoremonk.codexmux`와 `HardcoreMonk/codexwinmux`를 기준으로 맞춰져 있습니다.
+현재 패키징 metadata는 `com.hardcoremonk.codexmux`와 `HardcoreMonk/codexwinmux`를 기준으로 맞춰져 있습니다. 2026-05-07 `v0.4.8` release는 `latest.yml`, `codexmux-Setup-0.4.8.exe`, `codexmux-Setup-0.4.8.exe.blockmap`을 GitHub Release asset으로 발행했고, `CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=0.4.2 corepack pnpm smoke:windows:updater-published-channel`가 `0.4.2 -> 0.4.8` channel evidence로 통과했습니다.
 
 릴리스 패키징 전에 확인할 항목:
 

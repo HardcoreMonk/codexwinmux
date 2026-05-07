@@ -393,7 +393,10 @@ GitHub Releases channel from `electron-builder.yml`. It requires a published
 release with `latest.yml`, the referenced NSIS installer, matching `.blockmap`,
 download URLs, and a `latest.yml` version newer than the current package version.
 If the repo only has tags and no release assets, it fails with
-`windows-published-release-missing`.
+`windows-published-release-missing`. To verify a real upgrade channel after
+bumping the repository to the release version, set
+`CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=<installed-version>` so the smoke
+compares the published release against the version already installed by users.
 `smoke:windows:packaged-launch` starts the generated app with an isolated
 Windows user profile and verifies the packaged local server, Electron preload
 bridge, health endpoint, runtime diagnostics, and blocking console count.
