@@ -50,6 +50,14 @@ export const compareSemver = (left, right) => {
   return 0;
 };
 
+export const resolveWindowsPublishedUpdateCurrentVersion = ({
+  env = process.env,
+  packageVersion,
+} = {}) =>
+  isNonEmptyString(env.CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION)
+    ? env.CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION.trim()
+    : packageVersion;
+
 const publishedAtTime = (release) => {
   const value = Date.parse(release?.published_at || release?.publishedAt || '');
   return Number.isFinite(value) ? value : 0;

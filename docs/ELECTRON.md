@@ -203,7 +203,7 @@ macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사
 
 ## Packaging Notes
 
-현재 패키징 metadata는 `com.hardcoremonk.codexmux`와 `HardcoreMonk/codexmux`를 기준으로 맞춰져 있습니다.
+현재 패키징 metadata는 `com.hardcoremonk.codexmux`와 `HardcoreMonk/codexwinmux`를 기준으로 맞춰져 있습니다.
 
 릴리스 패키징 전에 확인할 항목:
 

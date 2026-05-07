@@ -7,6 +7,7 @@ import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 import {
   buildWindowsPublishedUpdateArtifactPayload,
   evaluateWindowsPublishedUpdateChannel,
+  resolveWindowsPublishedUpdateCurrentVersion,
   selectLatestPublishedRelease,
 } from './windows-updater-published-channel-smoke-lib.mjs';
 
@@ -117,7 +118,10 @@ const main = async () => {
       : null;
     const result = evaluateWindowsPublishedUpdateChannel({
       releases,
-      currentVersion: packageJson.version,
+      currentVersion: resolveWindowsPublishedUpdateCurrentVersion({
+        env: process.env,
+        packageVersion: packageJson.version,
+      }),
       latestMetadata,
       includePrerelease,
     });

@@ -16,11 +16,11 @@ Codex 작업을 tmux 기반 웹 세션으로 관리하는 self-hosted session ma
 
 ## 현재 저장소
 
-- Repository: <https://github.com/HardcoreMonk/codexmux>
+- Repository: <https://github.com/HardcoreMonk/codexwinmux>
 - Upstream reference: <https://github.com/subicura/purplemux>
 - Runtime: Next.js Pages Router + custom Node server + tmux
 - Package manager: pnpm
-- Current version: 0.4.2
+- Current version: 0.4.8
 - Supported languages: 한국어, English
 - Default language: 한국어
 - Target: Codex-focused web session manager
@@ -116,8 +116,8 @@ corepack pnpm dev
 ## 소스에서 실행
 
 ```bash
-git clone https://github.com/HardcoreMonk/codexmux.git
-cd codexmux
+git clone https://github.com/HardcoreMonk/codexwinmux.git
+cd codexwinmux
 corepack enable
 corepack pnpm install
 corepack pnpm dev
@@ -393,7 +393,7 @@ corepack pnpm android:bundle:release
 - 모바일 기기에 Tailscale 설치 및 같은 tailnet 로그인
 - codexmux 서버는 `HOST=localhost,tailscale` 또는 Tailscale Serve HTTPS로 노출
 
-앱은 저장된 서버 또는 기본 Tailscale 서버로 자동 연결합니다. 연결 전 `/api/health`를 확인하고, HTTPS/HTTP/network/timeout 실패를 구분해 재시도 또는 서버 변경 흐름으로 되돌립니다. 최근 서버 목록, 서버 변경, 연결 실패 시 재시도 흐름, 앱 정보와 앱 재시작 기능을 제공합니다. 서버 접속 후에도 모바일 내비게이션의 앱 정보 화면에서 앱 versionName/versionCode, package, device, Android version, 서버 버전을 확인하고 WebView/Activity를 재시작할 수 있습니다. 로그인처럼 인증 전 public route에서는 status/native notification/Web Push/service worker runtime service를 시작하지 않아 fresh install 또는 app data clear 후 auth WebSocket과 service worker redirect console noise를 만들지 않습니다. 런처와 모바일 내비게이션은 한국어 우선 타이포그래피, safe-area, 터치 눌림 상태, focus-visible 상태를 기준으로 조정되어 있습니다. Android 버전은 `package.json` semver와 자동 동기화되며, patch가 `0`이면 앱 표기에서 마지막 `.0`을 생략합니다. 마이너 기능 변경은 `0.0.1`, 메이저 기능 묶음은 `0.1` 단위로 올립니다. 현재 `package.json` version은 `0.4.2`이며 Android 설치 상태는 다음 APK 빌드/설치 후 `versionName=0.4.2`, `versionCode=402`가 됩니다. HTTPS Tailscale Serve 주소를 우선 사용하고, 로컬 개발용 HTTP는 Android manifest와 Capacitor 설정에서 허용합니다.
+앱은 저장된 서버 또는 기본 Tailscale 서버로 자동 연결합니다. 연결 전 `/api/health`를 확인하고, HTTPS/HTTP/network/timeout 실패를 구분해 재시도 또는 서버 변경 흐름으로 되돌립니다. 최근 서버 목록, 서버 변경, 연결 실패 시 재시도 흐름, 앱 정보와 앱 재시작 기능을 제공합니다. 서버 접속 후에도 모바일 내비게이션의 앱 정보 화면에서 앱 versionName/versionCode, package, device, Android version, 서버 버전을 확인하고 WebView/Activity를 재시작할 수 있습니다. 로그인처럼 인증 전 public route에서는 status/native notification/Web Push/service worker runtime service를 시작하지 않아 fresh install 또는 app data clear 후 auth WebSocket과 service worker redirect console noise를 만들지 않습니다. 런처와 모바일 내비게이션은 한국어 우선 타이포그래피, safe-area, 터치 눌림 상태, focus-visible 상태를 기준으로 조정되어 있습니다. Android 버전은 `package.json` semver와 자동 동기화되며, patch가 `0`이면 앱 표기에서 마지막 `.0`을 생략합니다. 마이너 기능 변경은 `0.0.1`, 메이저 기능 묶음은 `0.1` 단위로 올립니다. 현재 `package.json` version은 `0.4.8`이며 Android 설치 상태는 다음 APK 빌드/설치 후 `versionName=0.4.8`, `versionCode=408`가 됩니다. HTTPS Tailscale Serve 주소를 우선 사용하고, 로컬 개발용 HTTP는 Android manifest와 Capacitor 설정에서 허용합니다.
 
 세부 구조와 빌드 메모는 [docs/ANDROID.md](docs/ANDROID.md)를 참고합니다.
 
@@ -473,11 +473,11 @@ codexmux is a self-hosted web session manager for Codex. It keeps Codex work in 
 
 ### Repository
 
-- Repository: <https://github.com/HardcoreMonk/codexmux>
+- Repository: <https://github.com/HardcoreMonk/codexwinmux>
 - Upstream reference: <https://github.com/subicura/purplemux>
 - Runtime: Next.js Pages Router + custom Node server + tmux
 - Package manager: pnpm
-- Current version: 0.4.2
+- Current version: 0.4.8
 - Supported languages: English, Korean
 - Default language: Korean
 
@@ -682,7 +682,7 @@ Expected prerequisites:
 - Tailscale installed on the phone and logged into the same tailnet
 - codexmux exposed through `HOST=localhost,tailscale` or Tailscale Serve HTTPS
 
-The app automatically connects to the saved server or the default Tailscale server. Before navigation it probes `/api/health` and separates HTTPS, HTTP, network, and timeout failures so the launcher can return to retry or server-change flows. The launcher supports recent servers, server changes, retry flow after connection failures, app info, and app restart. After connecting to the server, the mobile navigation app info screen shows app versionName/versionCode, package, device, Android version, and server version, and can restart the WebView/Activity. Public pre-auth routes such as `/login` do not mount status/native notification/Web Push/service worker runtime services, which keeps fresh install and app data clear flows free of auth WebSocket or service worker redirect console noise. Launcher and mobile navigation surfaces are tuned for Korean-first typography, safe-area handling, touch pressed states, and focus-visible states. Android versioning is synchronized with `package.json` semver, and milestone versions with patch `0` drop the final `.0` in the app label. Minor feature changes increment by `0.0.1`; major feature batches increment by `0.1`. The current `package.json` version is `0.4.2`, so the next Android build/install should report `versionName=0.4.2` and `versionCode=402`. Prefer HTTPS through Tailscale Serve; HTTP is enabled only for local development paths.
+The app automatically connects to the saved server or the default Tailscale server. Before navigation it probes `/api/health` and separates HTTPS, HTTP, network, and timeout failures so the launcher can return to retry or server-change flows. The launcher supports recent servers, server changes, retry flow after connection failures, app info, and app restart. After connecting to the server, the mobile navigation app info screen shows app versionName/versionCode, package, device, Android version, and server version, and can restart the WebView/Activity. Public pre-auth routes such as `/login` do not mount status/native notification/Web Push/service worker runtime services, which keeps fresh install and app data clear flows free of auth WebSocket or service worker redirect console noise. Launcher and mobile navigation surfaces are tuned for Korean-first typography, safe-area handling, touch pressed states, and focus-visible states. Android versioning is synchronized with `package.json` semver, and milestone versions with patch `0` drop the final `.0` in the app label. Minor feature changes increment by `0.0.1`; major feature batches increment by `0.1`. The current `package.json` version is `0.4.8`, so the next Android build/install should report `versionName=0.4.8` and `versionCode=408`. Prefer HTTPS through Tailscale Serve; HTTP is enabled only for local development paths.
 
 ### Tailscale
 

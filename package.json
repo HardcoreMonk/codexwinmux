@@ -1,16 +1,16 @@
 {
   "name": "codexmux",
-  "version": "0.4.2",
+  "version": "0.4.8",
   "description": "Manage multiple Codex sessions from your browser",
   "license": "MIT",
   "author": "HardcoreMonk",
   "repository": {
     "type": "git",
-    "url": "https://github.com/HardcoreMonk/codexmux.git"
+    "url": "https://github.com/HardcoreMonk/codexwinmux.git"
   },
-  "homepage": "https://github.com/HardcoreMonk/codexmux",
+  "homepage": "https://github.com/HardcoreMonk/codexwinmux",
   "bugs": {
-    "url": "https://github.com/HardcoreMonk/codexmux/issues"
+    "url": "https://github.com/HardcoreMonk/codexwinmux/issues"
   },
   "keywords": [
     "codex",

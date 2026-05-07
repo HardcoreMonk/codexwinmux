@@ -162,4 +162,17 @@ describe('Windows updater published channel smoke helpers', () => {
       ],
     });
   });
+
+  it('allows the installed version to be overridden for published update evidence', async () => {
+    const { resolveWindowsPublishedUpdateCurrentVersion } = await loadLib();
+
+    expect(resolveWindowsPublishedUpdateCurrentVersion({
+      env: { CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION: '0.4.2' },
+      packageVersion: '0.4.8',
+    })).toBe('0.4.2');
+    expect(resolveWindowsPublishedUpdateCurrentVersion({
+      env: {},
+      packageVersion: '0.4.8',
+    })).toBe('0.4.8');
+  });
 });

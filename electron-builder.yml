@@ -44,7 +44,7 @@ nsis:
 publish:
   provider: github
   owner: HardcoreMonk
-  repo: codexmux
+  repo: codexwinmux
 
 dmg:
   contents:
