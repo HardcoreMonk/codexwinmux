@@ -75,6 +75,7 @@ describe('Windows updater local feed smoke helpers', () => {
       CODEXMUX_ELECTRON_UPDATER_SMOKE_INSTALL_DIR: 'C:\\tmp\\codexmux-app',
       CODEXMUX_ELECTRON_UPDATER_DISABLE_DIFFERENTIAL: '1',
       ELECTRON_DISABLE_SECURITY_WARNINGS: '1',
+      ELECTRON_DISABLE_SANDBOX: '1',
     });
   });
 

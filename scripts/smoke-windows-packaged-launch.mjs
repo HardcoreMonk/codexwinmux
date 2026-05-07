@@ -21,6 +21,7 @@ import {
 } from './electron-smoke-lib.mjs';
 import {
   buildWindowsAppProcessIdScript,
+  parseWindowsPackagedLaunchHoldMs,
   parseWindowsProcessIds,
 } from './windows-packaged-launch-smoke-lib.mjs';
 import {
@@ -300,6 +301,7 @@ const main = async () => {
 
   const appPath = resolveAppPath();
   const timeoutMs = Number(process.env.CODEXMUX_WINDOWS_PACKAGED_LAUNCH_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+  const longRunHoldMs = parseWindowsPackagedLaunchHoldMs(process.env.CODEXMUX_WINDOWS_PACKAGED_LAUNCH_HOLD_MS);
   const remoteDebuggingPort = process.env.CODEXMUX_WINDOWS_PACKAGED_LAUNCH_PORT
     ? Number(process.env.CODEXMUX_WINDOWS_PACKAGED_LAUNCH_PORT)
     : await getFreePort();
@@ -394,16 +396,29 @@ const main = async () => {
     }
     checks.push('console-clean');
 
+    let longRunHealth = null;
+    if (longRunHoldMs > 0) {
+      await sleep(longRunHoldMs);
+      checks.push('long-run-hold');
+      longRunHealth = await fetchJson(new URL('/api/health', state.origin).toString());
+      if (longRunHealth?.app !== 'codexmux') {
+        throw new Error(`long-running packaged local server health failed: ${JSON.stringify(longRunHealth)}`);
+      }
+      checks.push('long-run-health');
+    }
+
     const successPayload = {
       ok: true,
       mutatesSystem: false,
       appPath,
       homeDir,
       launchMode: launch.mode,
+      longRunHoldMs,
       remoteDebuggingPort,
       checks,
       state,
       health,
+      longRunHealth,
       runtimeV2Terminal,
       consoleEventCount: consoleEvents.length,
       blockingConsoleCount: blockingConsole.length,

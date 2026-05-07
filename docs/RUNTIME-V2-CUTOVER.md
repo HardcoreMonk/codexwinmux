@@ -248,6 +248,14 @@ Rollback:
 - If worker startup itself is unstable, set `CODEXMUX_RUNTIME_V2=0`.
 - Do not delete `~/.codexmux/runtime-v2/state.db` during first rollback; keep it for recovery and diagnostics.
 
+2026-05-07 Windows packaged closeout:
+
+- Packaged `0.4.8` isolated target passed `corepack pnpm smoke:runtime-v2:phase6-default-gate`.
+- Actual modes were terminal `new-tabs`, storage/timeline/status `default`.
+- Worker diagnostics were present and clean: health failures, ready failures, command failures, invalid replies, timeouts, send failures, exits, errors, and restarts were all 0.
+- `corepack pnpm lifecycle:rollback-dry-run` passed read-only and reported no active runtime drop-in in the Windows checkout environment.
+- The perf closeout snapshot did not identify a measurement-backed code tuning target; see `docs/PERFORMANCE.md`.
+
 ## Required Test Commands
 
 ```bash

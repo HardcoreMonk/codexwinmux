@@ -10,3 +10,8 @@ export const parseWindowsProcessIds = (output) =>
     .split(/\r?\n/)
     .map((line) => Number(line.trim()))
     .filter((pid) => Number.isInteger(pid) && pid > 0);
+
+export const parseWindowsPackagedLaunchHoldMs = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+};

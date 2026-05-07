@@ -70,6 +70,7 @@ export const buildWindowsUpdaterSmokeEnv = ({
   APPDATA: path.join(homeDir, 'AppData', 'Roaming'),
   LOCALAPPDATA: path.join(homeDir, 'AppData', 'Local'),
   ELECTRON_DISABLE_SECURITY_WARNINGS: '1',
+  ELECTRON_DISABLE_SANDBOX: '1',
   NEXT_TELEMETRY_DISABLED: '1',
   NO_AT_BRIDGE: '1',
   CODEXMUX_RUNTIME_V2: '1',

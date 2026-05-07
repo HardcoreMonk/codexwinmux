@@ -191,6 +191,28 @@ Release smoke artifact 배포 직후 live `/api/debug/perf`와 stats endpoint를
 - `getStatsCache()`의 missing day 계산, `parseAllSessions`, `parseAllProjects`,
   `parseTimestampsByDay`, `parseHistory`가 같은 날짜 필터 helper를 사용한다.
 
+### 2026-05-07 Windows packaged 0.4.8 runtime v2 closeout snapshot
+
+Windows packaged `0.4.8` 앱을 isolated HOME으로 띄우고 runtime v2 Phase 6 default mode에서
+`/api/debug/perf`를 20초 후 수집했다.
+
+| 항목 | 값 |
+| --- | --- |
+| app version / commit | `0.4.8` / `62bfad66` |
+| process uptime | 22.4s |
+| RSS / heap used | 281473024 / 75574320 bytes |
+| event loop utilization | 0 |
+| event loop delay p95 / p99 / max | 31.26ms / 34.87ms / 526.39ms |
+| session index sessions / lastBuildMs | 0 / 0ms |
+| terminal connections | 0 |
+| runtime worker health failures / restarts / errors | storage/terminal/timeline/status 모두 0 |
+
+판단:
+
+- packaged runtime worker path에는 tuning할 실패/restart/timeout 근거가 없었다.
+- isolated fresh profile이라 session index와 terminal connection 부하는 거의 없었다. 이번 측정은 release closeout safety evidence이며 긴 실제 사용자 세션의 tuning 근거로 과해석하지 않는다.
+- max event loop delay spike는 관찰 항목으로 남기되 p95/p99와 worker counters가 안정적이므로 code tuning은 진행하지 않는다.
+
 ## 작업 상세
 
 ### 1. Perf Snapshot

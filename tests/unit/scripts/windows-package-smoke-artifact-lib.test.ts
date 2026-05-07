@@ -15,6 +15,7 @@ describe('Windows package smoke artifact helpers', () => {
       appPath: 'D:\\data\\projects\\codexmux\\release\\win-unpacked\\codexmux.exe',
       homeDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp\\codexmux-windows-packaged-launch-secret',
       launchMode: 'windows-exe',
+      longRunHoldMs: 120000,
       remoteDebuggingPort: 61234,
       checks: ['packaged-exe-present', 'runtime-v2-terminal-ws'],
       state: {
@@ -28,6 +29,12 @@ describe('Windows package smoke artifact helpers', () => {
         userAgent: 'codexmux/0.4.2 Electron/41.1.1',
       },
       health: {
+        app: 'codexmux',
+        version: '0.4.2',
+        commit: 'fa3e4978',
+        buildTime: '2026-05-06T15:35:10.450Z',
+      },
+      longRunHealth: {
         app: 'codexmux',
         version: '0.4.2',
         commit: 'fa3e4978',
@@ -48,6 +55,7 @@ describe('Windows package smoke artifact helpers', () => {
       ok: true,
       mutatesSystem: false,
       launchMode: 'windows-exe',
+      longRunHoldMs: 120000,
       checks: ['packaged-exe-present', 'runtime-v2-terminal-ws'],
       state: {
         title: '로그인 - codexmux',
@@ -58,6 +66,12 @@ describe('Windows package smoke artifact helpers', () => {
         userAgent: 'codexmux/0.4.2 Electron/41.1.1',
       },
       health: {
+        app: 'codexmux',
+        version: '0.4.2',
+        commit: 'fa3e4978',
+        buildTime: '2026-05-06T15:35:10.450Z',
+      },
+      longRunHealth: {
         app: 'codexmux',
         version: '0.4.2',
         commit: 'fa3e4978',

@@ -46,9 +46,11 @@ export const buildWindowsPackagedLaunchArtifactPayload = (payload) => ({
     ? { runtimeV2TerminalRequested: payload.runtimeV2TerminalRequested === true }
     : {}),
   launchMode: payload?.launchMode ?? null,
+  longRunHoldMs: Number.isFinite(payload?.longRunHoldMs) ? payload.longRunHoldMs : 0,
   checks: Array.isArray(payload?.checks) ? payload.checks : [],
   state: summarizeState(payload?.state),
   health: summarizeHealth(payload?.health),
+  longRunHealth: summarizeHealth(payload?.longRunHealth),
   runtimeV2Terminal: summarizeRuntimeV2Terminal(payload?.runtimeV2Terminal),
   consoleEventCount: Number.isFinite(payload?.consoleEventCount) ? payload.consoleEventCount : null,
   blockingConsoleCount: Number.isFinite(payload?.blockingConsoleCount) ? payload.blockingConsoleCount : null,

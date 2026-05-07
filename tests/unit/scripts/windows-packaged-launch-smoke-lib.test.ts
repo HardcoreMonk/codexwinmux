@@ -21,4 +21,13 @@ describe('Windows packaged launch smoke helpers', () => {
 
     expect(parseWindowsProcessIds('123\r\nnot-a-pid\n456\n0\n')).toEqual([123, 456]);
   });
+
+  it('parses optional long-run hold duration with a bounded default', async () => {
+    const { parseWindowsPackagedLaunchHoldMs } = await loadLib();
+
+    expect(parseWindowsPackagedLaunchHoldMs(undefined)).toBe(0);
+    expect(parseWindowsPackagedLaunchHoldMs('120000')).toBe(120000);
+    expect(parseWindowsPackagedLaunchHoldMs('-1')).toBe(0);
+    expect(parseWindowsPackagedLaunchHoldMs('not-a-number')).toBe(0);
+  });
 });

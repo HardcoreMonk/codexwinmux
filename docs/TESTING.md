@@ -368,6 +368,7 @@ corepack pnpm smoke:windows:zip-artifact
 corepack pnpm smoke:windows:update-metadata
 corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
+corepack pnpm smoke:windows:updater-github-feed
 corepack pnpm smoke:windows:installer-install
 corepack pnpm smoke:windows:installer-runtime-v2
 corepack pnpm smoke:windows:package-gate
@@ -397,6 +398,16 @@ If the repo only has tags and no release assets, it fails with
 bumping the repository to the release version, set
 `CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=<installed-version>` so the smoke
 compares the published release against the version already installed by users.
+`smoke:windows:updater-github-feed` mutates the current Windows user install
+state temporarily: it silent-installs `CODEXMUX_WINDOWS_UPDATER_BASE_INSTALLER_PATH`
+or `release/codexmux-Setup-0.4.2.exe`, points the installed app at the GitHub
+Release download feed, waits for download and `quitAndInstall`, then launches the
+updated install path with packaged runtime v2 terminal smoke before uninstalling.
+Set `CODEXMUX_WINDOWS_UPDATER_GITHUB_OWNER`, `CODEXMUX_WINDOWS_UPDATER_GITHUB_REPO`,
+and `CODEXMUX_WINDOWS_UPDATER_GITHUB_TAG` when testing a repository/tag other than
+the packaged publish config. Set
+`CODEXMUX_WINDOWS_UPDATER_GITHUB_FEED_POST_INSTALL_HOLD_MS` to keep the updated
+installed app alive for long-running workspace stability evidence.
 `smoke:windows:packaged-launch` starts the generated app with an isolated
 Windows user profile and verifies the packaged local server, Electron preload
 bridge, health endpoint, runtime diagnostics, and blocking console count.

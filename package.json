@@ -83,6 +83,7 @@
     "smoke:windows:zip-artifact": "node scripts/smoke-windows-zip-artifact.mjs",
     "smoke:windows:update-metadata": "node scripts/smoke-windows-update-metadata.mjs",
     "smoke:windows:updater-local-feed": "node scripts/smoke-windows-updater-local-feed.mjs",
+    "smoke:windows:updater-github-feed": "node scripts/smoke-windows-updater-github-feed.mjs",
     "smoke:windows:updater-published-channel": "node scripts/smoke-windows-updater-published-channel.mjs",
     "smoke:windows:packaged-launch": "node scripts/smoke-windows-packaged-launch.mjs",
     "smoke:windows:packaged-runtime-v2": "node scripts/smoke-windows-packaged-launch.mjs --runtime-v2-terminal",
