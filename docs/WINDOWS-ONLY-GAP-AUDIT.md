@@ -1,13 +1,20 @@
 # Windows-only Gap Audit
 
-Date: 2026-05-06
-Status: Planning baseline
+작성일: 2026-05-06
+최종 갱신일: 2026-05-08
+상태: Windows 제품 전환 evidence 수집 중
 
 ## Verdict
 
-codexmux는 아직 Windows 전용 제품이 아니다. 현재 codebase는 macOS/Linux에서
-`tmux`를 실행하는 self-hosted server를 중심으로 하고, Electron과 Android는 실행 중인
-server에 붙는 client shell로 설계되어 있다.
+codexwinmux는 Windows 전용 설치형 제품으로 전환 중이다. 루트 README와 Electron
+패키징 기준은 Windows 제품을 1차 기준으로 설명하며, Shell Host와 Backend/Core
+Engine 수명 분리, Windows Runtime v2 terminal smoke, Windows process inspector,
+GitHub Release updater smoke까지 evidence가 쌓였다.
+
+남은 판단 기준은 내부 전체 배포에 필요한 운영 evidence다. 특히 code signing
+인증서 신뢰, SmartScreen reputation, 장시간 실제 workspace 사용, 그리고
+`codexwinmux` app id/data dir/artifact name 전환 결정은 아직 별도 gate로 남아
+있다.
 
 이번 전환은 기존 Windows companion integration을 되살리는 작업이 아니다. ADR-014에서
 제거한 원격 Windows JSONL sync, terminal sidecar, remote source model은 계속 제거된
@@ -80,7 +87,7 @@ Useful candidates:
 
 | Area | Current assumption | Windows target | Impact | Candidate boundary | Priority |
 | --- | --- | --- | --- | --- | --- |
-| Product contract | README and docs say macOS/Linux server with tmux; Android/Electron are shells. | Supported execution target is Windows-only. | User expectation, docs, release gates. | ADR + docs map + README later. | P0 |
+| Product contract | README와 문서 맵이 Windows 설치형 제품을 1차 기준으로 설명한다. 비-Windows 문서는 legacy/reference로 남아 있다. | Supported execution target is Windows-only. | User expectation, docs, release gates. | ADR + docs map + README 유지. | P0 |
 | Terminal runtime | `src/lib/tmux.ts` shells out to `tmux -L codexmux`, uses POSIX launch command, tmux pane metadata, and process-group signals. | Windows-native persistent terminal runtime. | Largest behavior risk: reconnect, input, kill, cwd, status. | Terminal runtime adapter. | P0 |
 | Runtime v2 terminal | `terminal-worker-runtime.ts` still creates and attaches tmux sessions. | Reuse worker service contract, swap infrastructure adapter. | Keeps Supervisor/typed IPC stable while replacing terminal backend. | `ITerminalWorkerRuntime`. | P0 |
 | Process inspection | `session-detection.ts` reads `/proc` on Linux and falls back to `pgrep`/`lsof` elsewhere. | Windows process tree, cwd, command, and start-time inspection. | Codex running detection and JSONL mapping can misclassify sessions. | `IProcessInspector`. | P1 |

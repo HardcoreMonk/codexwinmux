@@ -1,6 +1,9 @@
 # 문서 맵
 
-이 디렉터리는 codexmux의 내부 구현, 운영, 플랫폼 기준 문서를 모은다. 사용자용 랜딩 문서는 `landing-src/docs/`에 있고, 저장소 루트의 `README.md`는 설치와 주요 기능의 빠른 안내를 담당한다.
+이 디렉터리는 codexwinmux의 내부 구현, 운영, 플랫폼 기준 문서를 모은다. 현재
+제품 기준은 Windows 설치형 앱이며, 저장소 루트의 `README.md`는 설치와 주요
+기능의 빠른 안내를 담당한다. 비-Windows 문서는 남아 있더라도 현재 제품 목표가
+아니라 legacy/reference로 본다.
 
 ## 핵심 기준 문서
 
@@ -21,10 +24,10 @@
 
 | 문서 | 기준 |
 | --- | --- |
-| `SYSTEMD.md` | Linux `systemd --user` 서비스 등록, build/restart, 운영 점검 |
-| `ANDROID.md` | Android Capacitor shell, Tailscale 연결, foreground reconnect, 앱 정보/재시작, native build |
-| `ELECTRON.md` | Electron shell 개발, 패키징, native notification |
-| `TAURI-EVALUATION.md` | Rust + Tauri 도입 타당성 조사와 PoC 기준 |
+| `ELECTRON.md` | Windows Electron shell, engine lifecycle, packaging, updater, native notification |
+| `SYSTEMD.md` | legacy Linux `systemd --user` reference. 현재 Windows 제품 운영 기준 아님 |
+| `ANDROID.md` | legacy/deferred Android Capacitor shell reference. 현재 Windows 제품 운영 기준 아님 |
+| `TAURI-EVALUATION.md` | Rust + Tauri 도입 타당성 조사와 PoC 기준. 현재 제품 전환 범위 아님 |
 | `STYLE.md` | theme, color, terminal/mobile UI 규칙 |
 
 ## 작업 관리
@@ -59,7 +62,12 @@
 - Windows-only 제품 타깃, terminal runtime, process inspection, host operation
   전환을 바꾸면 `WINDOWS-ONLY-GAP-AUDIT.md`, `ADR.md`, 관련
   `superpowers/specs/`와 `superpowers/plans/`를 함께 갱신한다.
-- Android/Electron client, 모바일 reconnect, 앱 정보/재시작 bridge, native build 기준을 바꾸면 각 플랫폼 문서를 갱신한다.
+- Windows Electron client, engine lifecycle, updater, installer 기준을 바꾸면
+  `ELECTRON.md`, `TESTING.md`, `WINDOWS-ONLY-GAP-AUDIT.md`, 관련
+  `operations/` handoff를 함께 갱신한다.
+- legacy Android client, 모바일 reconnect, 앱 정보/재시작 bridge, native build
+  기준을 바꾸면 `ANDROID.md`를 갱신하되 현재 Windows 제품 기준과 혼동되지 않게
+  legacy/deferred 상태를 명시한다.
 - release, deploy, smoke 결과가 운영 판단에 영향을 주면 `operations/` handoff를 추가하고 `FOLLOW-UP.md`의 확인 상태를 갱신한다.
 - 구현 전 설계 결정을 바꾸면 관련 `superpowers/specs/`와
   `superpowers/plans/` 산출물을 함께 갱신한다.
