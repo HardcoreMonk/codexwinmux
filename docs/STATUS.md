@@ -114,6 +114,25 @@ process로 직접 잡히지 않는 세션을 CODEX 패널에 동기화하기 위
 `agentSessionId`와 `agentJsonlPath`를 layout에 다시 저장하고 client는 timeline WebSocket을
 새로 연다.
 
+## resume 실패 분류
+
+session list에서 JSONL path가 없는 Codex session을 다시 열면 timeline WebSocket은
+`codex resume <sessionId>`를 terminal pane에 전송한다. 이때 실패는
+`timeline:resume-error` payload의 `reason`으로 분류한다.
+
+| reason | 의미 |
+|---|---|
+| `invalid-session-id` | provider가 session id 형식을 거부함 |
+| `command-build-failed` | provider가 resume command를 만들 수 없음 |
+| `send-failed` | tmux/terminal pane에 resume command를 전송하지 못함 |
+| `unknown` | process safety 확인이나 후속 처리 중 분류되지 않은 오류 |
+
+terminal pane에서 shell이 아닌 process가 실행 중이면 실패가 아니라 기존
+`timeline:resume-blocked`/`process-running`으로 유지한다. Resume command 전송 뒤 JSONL
+파일이 아직 없으면 Codex CLI가 뒤늦게 파일을 만들 수 있으므로 error로 처리하지 않고
+`timeline:resume-started`와 빈 init 상태를 유지한다. UI toast는 reason별 번역 문구만 표시하고,
+원본 error message, cwd, command, session name, JSONL path, terminal output은 표시하지 않는다.
+
 ## work state
 
 | 상태 | 의미 |

@@ -4,6 +4,7 @@ import type {
   IInitMeta,
   ISessionStats,
   TTimelineConnectionStatus,
+  TTimelineResumeErrorReason,
   TTimelineServerMessage,
 } from '@/types/timeline';
 import { nextReconnectDelay } from '@/lib/reconnect-policy';
@@ -29,6 +30,7 @@ interface IResumeBlockedPayload {
 
 interface IResumeErrorPayload {
   message: string;
+  reason: TTimelineResumeErrorReason;
 }
 
 interface IUseTimelineWebSocketOptions {
@@ -161,7 +163,7 @@ const useTimelineWebSocket = ({
               });
               break;
             case 'timeline:resume-error':
-              callbacksRef.current.onResumeError?.({ message: msg.message });
+              callbacksRef.current.onResumeError?.({ message: msg.message, reason: msg.reason });
               break;
           }
         } catch (err) {

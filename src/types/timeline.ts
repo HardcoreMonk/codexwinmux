@@ -290,8 +290,15 @@ export interface ITimelineResumeBlockedMessage {
   processName?: string;
 }
 
+export type TTimelineResumeErrorReason =
+  | 'invalid-session-id'
+  | 'command-build-failed'
+  | 'send-failed'
+  | 'unknown';
+
 export interface ITimelineResumeErrorMessage {
   type: 'timeline:resume-error';
+  reason: TTimelineResumeErrorReason;
   message: string;
 }
 

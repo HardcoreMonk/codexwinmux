@@ -22,8 +22,9 @@ import { MetaCompact } from '@/components/features/workspace/session-meta-conten
 import MobileMetaSheet from './mobile-meta-sheet';
 import useQuickPrompts from '@/hooks/use-quick-prompts';
 import { isAgentPanelType } from '@/lib/panel-type';
+import { getTimelineResumeErrorLocaleKey } from '@/lib/resume-error';
 import { selectAgentSessionListRenderMode } from '@/lib/session-list-rendering';
-import type { ISessionMeta, TCliState } from '@/types/timeline';
+import type { ISessionMeta, TCliState, TTimelineResumeErrorReason } from '@/types/timeline';
 import type { TPanelType } from '@/types/terminal';
 
 interface IMobileAgentPanelProps {
@@ -91,9 +92,11 @@ const MobileAgentPanel = ({
     [t],
   );
 
-  const handleResumeError = useCallback(() => {
+  const handleResumeError = useCallback((payload: { message: string; reason: TTimelineResumeErrorReason }) => {
     setResumingSessionId(null);
-    toast.error(t('resumeFailed'));
+    toast.error(t('resumeFailed'), {
+      description: t(getTimelineResumeErrorLocaleKey(payload.reason)),
+    });
   }, [t]);
 
   const {

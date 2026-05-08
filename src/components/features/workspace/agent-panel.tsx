@@ -14,8 +14,9 @@ import BypassPromptCard from '@/components/features/workspace/bypass-prompt-card
 import TimelineView from '@/components/features/timeline/timeline-view';
 import SessionMetaBar, { SessionMetaBarSkeleton } from '@/components/features/workspace/session-meta-bar';
 import { isAgentPanelType } from '@/lib/panel-type';
+import { getTimelineResumeErrorLocaleKey } from '@/lib/resume-error';
 import { selectAgentSessionListRenderMode } from '@/lib/session-list-rendering';
-import type { ISessionMeta } from '@/types/timeline';
+import type { ISessionMeta, TTimelineResumeErrorReason } from '@/types/timeline';
 import type { TPanelType } from '@/types/terminal';
 
 interface IAgentPanelProps {
@@ -77,9 +78,11 @@ const AgentPanel = ({
     [t],
   );
 
-  const handleResumeError = useCallback(() => {
+  const handleResumeError = useCallback((payload: { message: string; reason: TTimelineResumeErrorReason }) => {
     setResumingSessionId(null);
-    toast.error(t('resumeFailed'));
+    toast.error(t('resumeFailed'), {
+      description: t(getTimelineResumeErrorLocaleKey(payload.reason)),
+    });
   }, [t]);
 
   const {

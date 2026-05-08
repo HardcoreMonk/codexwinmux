@@ -342,4 +342,26 @@ describe('runtime timeline websocket bridge', () => {
       panelType: 'codex',
     }));
   });
+
+  it('sends a classified resume error when runtime resume throws', async () => {
+    const fake = createSupervisor();
+    const ws = new FakeSocket();
+
+    await handleRuntimeTimelineConnection(ws as never, createConnectionInput({
+      supervisor: fake.supervisor,
+      handleResume: vi.fn(async () => {
+        throw new Error('C:\\Users\\yohan\\private');
+      }),
+    }));
+
+    ws.receive({ type: 'timeline:resume', sessionId: 'session-b', tmuxSession: 'pt-ws-a-pane-b-tab-c' });
+
+    await vi.waitFor(() => {
+      expect(ws.sent).toContainEqual({
+        type: 'timeline:resume-error',
+        reason: 'unknown',
+        message: 'Error during resume',
+      });
+    });
+  });
 });

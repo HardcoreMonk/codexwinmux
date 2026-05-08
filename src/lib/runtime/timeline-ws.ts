@@ -1,6 +1,7 @@
 import { WebSocket } from 'ws';
 import { recordPerfCounter } from '@/lib/perf-metrics';
 import type { IAgentProvider } from '@/lib/providers';
+import { buildTimelineResumeErrorMessage } from '@/lib/resume-error';
 import type { IRuntimeTimelineSessionChangedEvent } from '@/lib/runtime/contracts';
 import { getRuntimeSupervisor, type IRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import type { ISessionInfo, TTimelineClientMessage, TTimelineServerMessage } from '@/types/timeline';
@@ -200,9 +201,14 @@ export const handleRuntimeTimelineConnection = async (
           return;
         }
         if (msg.type === 'timeline:resume' && msg.sessionId && msg.tmuxSession) {
-          const resolved = await input.handleResume({ sessionId: msg.sessionId, tmuxSession: msg.tmuxSession });
-          if (resolved) {
-            await subscribeLive(resolved);
+          try {
+            const resolved = await input.handleResume({ sessionId: msg.sessionId, tmuxSession: msg.tmuxSession });
+            if (resolved) {
+              await subscribeLive(resolved);
+            }
+          } catch (err) {
+            recordPerfCounter('runtime_v2.timeline_ws.default.resume_error');
+            sendJson(ws, buildTimelineResumeErrorMessage('unknown', err));
           }
         }
       } catch {
