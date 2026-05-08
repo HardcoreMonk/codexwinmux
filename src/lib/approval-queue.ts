@@ -7,6 +7,7 @@ import type {
 export type TApprovalFallbackReason =
   | 'no-session'
   | 'capture-empty'
+  | 'capture-failed'
   | 'parse-empty'
   | 'send-failed'
   | 'request-failed';
@@ -30,6 +31,7 @@ const APPROVAL_RISK_KEYS: Record<TApprovalRiskLevel, string> = {
 const APPROVAL_FALLBACK_KEYS: Record<TApprovalFallbackReason, string> = {
   'no-session': 'approvalFallback_noSession',
   'capture-empty': 'approvalFallback_captureEmpty',
+  'capture-failed': 'approvalFallback_captureFailed',
   'parse-empty': 'approvalFallback_parseEmpty',
   'send-failed': 'approvalFallback_sendFailed',
   'request-failed': 'approvalFallback_requestFailed',

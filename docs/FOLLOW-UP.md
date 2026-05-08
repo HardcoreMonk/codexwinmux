@@ -201,7 +201,7 @@ P0/P1/P2/P3 후속 상태:
 ### Codex lifecycle
 
 - `~/.codex/state_*.sqlite` read-only indexer 검토.
-- stable timeline id가 provider별 record identity에 맞게 확장되는지 fixture로 검증.
+- stable timeline id가 provider별 record identity에 맞게 확장되는지 app-server fixture로 검증했다.
 
 ### Approval workflow
 
@@ -209,14 +209,14 @@ P0/P1/P2/P3 후속 상태:
 - approval queue metadata slice는 command/file/permission/resume/conversation type, approval kind, risk badge, sanitized command/file detail을 전역 notification panel에 표시한다. API option label은 기존 option index 선택 호환을 위해 CLI 선택지 텍스트를 유지한다.
 - approval queue push/audit slice는 Web Push 새 창 fallback을 root deep link query로 복구하고, 선택지 표시/fallback/선택 전송 성공/실패를 `~/.codexmux/approval-audit.jsonl`에 원문 없이 append한다.
 - mobile lock-screen copy는 pane recovery가 status entry에 저장한 sanitized `approvalPromptMetadata`를 사용해 command/file/permission type, risk, concise detail을 표시한다. metadata가 없으면 기존 last user message/tab name fallback을 유지한다.
-- pane capture 실패 시 terminal fallback 안내 개선.
+- pane capture 실패 시 option API는 500 대신 `capture-failed` fallback을 반환하고, notification panel은 terminal에서 직접 선택하라는 한국어/영어 안내를 표시한다. audit에는 fallback reason만 저장하고 terminal output은 저장하지 않는다.
 
 ### App-server adapter
 
-- Codex app-server protocol 안정화 여부 확인.
-- 안정화되면 provider adapter로 추가.
-- 신뢰 가능한 approval/status event만 단계적으로 사용.
-- tmux path는 fallback으로 유지.
+- Codex CLI `app-server` protocol은 `0.128.0` 기준 experimental이다.
+- `src/lib/providers/codex-app-server`에 guarded protocol adapter를 추가했다. app-server `ThreadItem.id`를 provider record identity로 사용해 user/assistant/reasoning/command/sub-agent item을 timeline entry로 변환한다.
+- 아직 runtime provider로 등록하지 않는다. `listProviders()` 기본값은 계속 `codex` 하나이며, tmux/JSONL path는 production fallback이 아니라 production owner로 유지한다.
+- 신뢰 가능한 approval/status event를 app-server에서 받을 수 있는지 확인되면 별도 spec과 gate로 runtime provider 등록을 판단한다.
 
 ### Mobile app
 
@@ -227,8 +227,8 @@ P0/P1/P2/P3 후속 상태:
 
 ### Architecture modularization
 
-- `timeline-server.ts`는 1차로 shared state를 분리했다. 다음 단계에서는 subscription service, file watcher service, resume service를 별도 파일로 더 나눈다.
-- `status-manager.ts`는 순수 정책 helper를 분리했다. 다음 단계에서는 Web Push/history side effect adapter를 분리한다.
+- `timeline-server.ts`는 shared state에 이어 subscription service, file watcher service, resume service를 별도 파일로 분리했다. WebSocket lifecycle과 provider/tmux 연결은 아직 `timeline-server.ts`가 소유한다.
+- `status-manager.ts`는 순수 정책 helper에 이어 Web Push/history side effect adapter를 분리했다. StatusManager는 상태 전이, dedupe, workspace/config 조회를 유지하고 runtime default/legacy fallback 세부 구현은 adapter가 담당한다.
 - provider를 추가할 때는 `IAgentProvider` contract test와 JSONL fixture를 먼저 추가한다.
 - runtime v2 production 전환은 `docs/RUNTIME-V2-CUTOVER.md`의 surface별 flag와 rollback gate를 따른다. terminal, storage, timeline, status를 한 release에서 동시에 기본값으로 전환하지 않는다.
 - runtime v2 parity는 `docs/RUNTIME-V2-PARITY.md`의 surface row별 owner, migration, test, rollback을 먼저 채운 뒤 surface mode를 바꾼다.

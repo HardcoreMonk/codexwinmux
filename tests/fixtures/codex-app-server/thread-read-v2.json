@@ -1,0 +1,62 @@
+{
+  "id": "thread-app-server-1",
+  "turns": [
+    {
+      "id": "turn-1",
+      "startedAt": 1800000000,
+      "completedAt": 1800000010,
+      "items": [
+        {
+          "type": "userMessage",
+          "id": "item-user-1",
+          "content": [
+            {
+              "type": "text",
+              "text": "앱 서버 어댑터 확인"
+            }
+          ]
+        },
+        {
+          "type": "agentMessage",
+          "id": "item-agent-1",
+          "text": "프로토콜 item을 timeline으로 변환합니다.",
+          "phase": "final"
+        },
+        {
+          "type": "reasoning",
+          "id": "item-reasoning-1",
+          "summary": [
+            "ThreadItem id를 stable key로 사용"
+          ],
+          "content": []
+        },
+        {
+          "type": "commandExecution",
+          "id": "item-command-1",
+          "command": "corepack pnpm test",
+          "status": "completed",
+          "aggregatedOutput": "Test Files 1 passed",
+          "exitCode": 0
+        },
+        {
+          "type": "collabAgentToolCall",
+          "id": "item-collab-1",
+          "tool": "spawnAgent",
+          "status": "completed",
+          "senderThreadId": "thread-app-server-1",
+          "receiverThreadIds": [
+            "thread-child-1"
+          ],
+          "prompt": "Map status manager side effects",
+          "model": "gpt-5.2",
+          "reasoningEffort": "medium",
+          "agentsStates": {
+            "thread-child-1": {
+              "status": "completed"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

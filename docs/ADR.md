@@ -146,9 +146,9 @@
 ## ADR-003: Codex Provider 중심 모델
 
 - Status: Accepted
-- Decision: 현재 등록 provider는 Codex 하나이며 client/store field는 호환성을 위해 `agent*` 이름을 유지한다.
+- Decision: 현재 등록 provider는 Codex 하나이며 client/store field는 호환성을 위해 `agent*` 이름을 유지한다. Codex CLI의 experimental `app-server` protocol은 guarded adapter로만 검토하고, production provider registry에는 등록하지 않는다.
 - Rationale: Codex 전환 이후에도 UI와 저장 데이터의 migration 범위를 줄이고 provider-neutral 경계를 유지한다.
-- Consequences: `TCliState`, `ITabState`, `StatusManager`, provider detection, `agentSessionId`, `agentSummary` 변경 시 `docs/STATUS.md`도 함께 갱신한다. Codex JSONL 연결은 session id, 같은 cwd의 process start time, live process 확인 후 cwd fallback 순서로 제한하고, 일반 검색에서는 cwd만으로 최신 JSONL을 선택하지 않는다.
+- Consequences: `TCliState`, `ITabState`, `StatusManager`, provider detection, `agentSessionId`, `agentSummary` 변경 시 `docs/STATUS.md`도 함께 갱신한다. Codex JSONL 연결은 session id, 같은 cwd의 process start time, live process 확인 후 cwd fallback 순서로 제한하고, 일반 검색에서는 cwd만으로 최신 JSONL을 선택하지 않는다. app-server adapter fixture는 provider record identity 기반 stable timeline id를 검증하지만, approval/status event 안정성이 확인되기 전까지 tmux/JSONL production path를 대체하지 않는다.
 
 ## ADR-004: Shared State는 `globalThis` Singleton에 둔다
 

@@ -131,14 +131,21 @@ describe('/api/tmux/permission-options', () => {
     expect(mocks.capturePaneAtWidth).not.toHaveBeenCalled();
   });
 
-  it('returns capture failure without leaking terminal content when capture rejects', async () => {
+  it('returns terminal fallback guidance without leaking terminal content when capture rejects', async () => {
     mocks.capturePaneAtWidth.mockRejectedValue(new Error(`capture failed: ${commandApprovalCapture}`));
     const response = createResponse();
 
     await handler(createRequest(), response.res);
 
-    expect(response.statusCode).toBe(500);
-    expect(response.body).toEqual({ error: 'Terminal capture failed' });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({
+      options: [],
+      focusedIndex: 0,
+      captureEmpty: false,
+      captureFailed: true,
+      fallbackReason: 'capture-failed',
+      metadata: createEmptyApprovalPromptMetadata(),
+    });
     expect(JSON.stringify(response.body)).not.toContain('/tmp/approval-secret');
     expect(JSON.stringify(mocks.logError.mock.calls)).not.toContain('/tmp/approval-secret');
   });

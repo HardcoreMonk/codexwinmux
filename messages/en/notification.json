@@ -23,6 +23,7 @@
   "approvalRisk_unknown": "Check",
   "approvalFallback_noSession": "Session is unavailable",
   "approvalFallback_captureEmpty": "Terminal capture is empty",
+  "approvalFallback_captureFailed": "Open the terminal and choose there",
   "approvalFallback_parseEmpty": "Could not read approval options",
   "approvalFallback_sendFailed": "Failed to send selection",
   "approvalFallback_requestFailed": "Failed to load approval state",

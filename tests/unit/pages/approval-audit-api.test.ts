@@ -103,4 +103,30 @@ describe('/api/approval/audit', () => {
     expect(mocks.readApprovalAuditEvents).toHaveBeenCalledWith({ limit: 200 });
     expect(response.body).toEqual({ events: [] });
   });
+
+  it('accepts capture-failed fallback reason without raw terminal details', async () => {
+    const response = createResponse();
+
+    await handler(createRequest('POST', {
+      eventType: 'fallback',
+      workspaceId: 'ws-1',
+      tabId: 'tab-1',
+      fallbackReason: 'capture-failed',
+      raw: 'terminal output with /secret',
+    }), response.res);
+
+    expect(response.statusCode).toBe(200);
+    expect(mocks.appendApprovalAuditEvent).toHaveBeenCalledWith({
+      eventType: 'fallback',
+      workspaceId: 'ws-1',
+      tabId: 'tab-1',
+      promptType: undefined,
+      approvalKind: undefined,
+      riskLevel: undefined,
+      selectedOptionIndex: undefined,
+      optionCount: undefined,
+      fallbackReason: 'capture-failed',
+    });
+    expect(JSON.stringify(mocks.appendApprovalAuditEvent.mock.calls)).not.toContain('/secret');
+  });
 });

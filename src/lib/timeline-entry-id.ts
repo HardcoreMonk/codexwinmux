@@ -7,6 +7,13 @@ export interface ITimelineEntryIdSource {
   source: unknown;
 }
 
+export interface IProviderTimelineEntryIdSource {
+  providerId: string;
+  recordId: string;
+  type: ITimelineEntry['type'];
+  source?: unknown;
+}
+
 const hashString = (value: string): string => {
   let hash = 5381;
   for (let i = 0; i < value.length; i++) {
@@ -32,6 +39,18 @@ export const createTimelineEntryId = ({
   entryIndex.toString(36),
   type,
   hashString(sourceToString(source)),
+].join('-');
+
+export const createProviderTimelineEntryId = ({
+  providerId,
+  recordId,
+  type,
+  source,
+}: IProviderTimelineEntryIdSource): string => [
+  'provider',
+  providerId,
+  type,
+  hashString(sourceToString({ recordId, source: source ?? recordId })),
 ].join('-');
 
 export const assignStableTimelineEntryIds = (

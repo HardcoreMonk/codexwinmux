@@ -57,9 +57,9 @@ Terminal worker exited`로 닫아 client가 `/api/v2/terminal`을 새로 열게 
 | --- | --- | --- |
 | Server entry | `server.ts` | process lifecycle, Next.js, WebSocket upgrade, auth gate, startup/shutdown |
 | Terminal | `src/lib/terminal-server.ts`, `src/lib/tmux.ts` | tmux attach, stdin/stdout/resize, terminal session lifecycle |
-| Timeline | `src/lib/timeline-server.ts`, `src/lib/timeline-server-state.ts` | Codex JSONL subscribe, file watch, resume, timeline init/append |
+| Timeline | `src/lib/timeline-server.ts`, `src/lib/timeline-server-state.ts`, `src/lib/timeline-file-watcher-service.ts`, `src/lib/timeline-subscription-service.ts`, `src/lib/timeline-resume-service.ts` | Codex JSONL subscribe, file watch, resume, timeline init/append |
 | Session Index | `src/lib/session-index.ts`, `src/lib/session-list.ts`, `src/pages/api/timeline/sessions.ts`, `src/lib/runtime/timeline/worker-service.ts` | 로컬 Codex session 목록 인덱스, session list snapshot, runtime v2 default read projection |
-| Status | `src/lib/status-manager.ts`, `src/lib/status-server.ts` | tab status polling, hook event merge, notification dispatch |
+| Status | `src/lib/status-manager.ts`, `src/lib/status-server.ts`, `src/lib/status-session-history-adapter.ts`, `src/lib/status-web-push-adapter.ts` | tab status polling, hook event merge, notification/history side effect dispatch |
 | Workspace | `src/lib/workspace-store.ts`, `src/lib/layout-store.ts`, `src/lib/runtime/storage-read-owner.ts` | workspace list, layout tree, pane/tab mutation, persisted metadata, runtime v2 default read projection |
 | Provider | `src/lib/providers/*`, `src/lib/codex-session-detection.ts` | Codex command/session/jsonl adapter |
 | Sync | `src/lib/sync-server.ts` | workspace/layout/config change broadcast |
@@ -178,7 +178,11 @@ client xterm
 
 ## Codex 세션 감지 로직
 
-Codex provider는 현재 유일한 agent provider다. UI와 저장 field는 호환성을 위해 `agent*` 이름을 유지한다.
+Codex provider는 현재 유일한 등록 agent provider다. UI와 저장 field는 호환성을 위해 `agent*` 이름을 유지한다.
+Codex CLI의 experimental `app-server` protocol은 `src/lib/providers/codex-app-server`에 guarded adapter로만
+둔다. 이 adapter는 protocol fixture를 timeline entry로 변환하고 provider별 record identity 기반 stable id를
+검증하지만, `listProviders()`에는 등록하지 않는다. runtime provider 전환은 app-server protocol의 approval/status
+event와 lifecycle 안정성이 확인된 뒤 별도 gate로 판단한다.
 
 감지 순서:
 
@@ -204,6 +208,11 @@ Timeline은 terminal scrollback을 그대로 보여주는 기능이 아니라 Co
 6. session id가 바뀌면 `timeline:session-changed`를 보낸다.
 7. 오래된 항목은 HTTP `/api/timeline/entries`로 페이지 단위 load-more 한다.
 
+`timeline-server`는 WebSocket lifecycle과 tmux/provider 연결을 유지하고, init meta/last user message 계산은
+`timeline-file-watcher-service`, session connection filtering은 `timeline-subscription-service`,
+resume session id validation은 `timeline-resume-service`로 분리한다. 이 분리는 runtime v2 WebSocket bridge와
+legacy file watcher가 같은 순수 helper를 쓰도록 만든 경계다.
+
 `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`일 때 7번의 HTTP read path와 session list,
 message counts는 legacy URL을 유지하면서 Timeline Worker command로 처리된다. WebSocket
 init/append/session-changed/resume은 아직 legacy `timeline-server`가 소유한다.
@@ -212,7 +221,8 @@ init/append/session-changed/resume은 아직 legacy `timeline-server`가 소유�
 
 중복 방지 정책:
 
-- entry id는 JSONL offset과 record identity를 기반으로 만든다.
+- entry id는 JSONL provider에서는 byte offset과 record identity를, protocol provider에서는 provider id와
+  record identity를 기반으로 만든다.
 - 같은 assistant text가 `event_msg.agent_message`와 `response_item.message` pair로 들어오면 near-duplicate로 합친다.
 - foreground reconnect 중 init/append 범위가 겹쳐도 client merge에서 중복을 제거한다.
 - client render는 append burst를 frame 단위로 합치고, 기존 timeline row는 entry object reference가 유지되면 memo로 재렌더를 건너뛴다.

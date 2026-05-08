@@ -43,7 +43,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
   } catch (err) {
     log.error(`permission-options query failed: ${err instanceof Error ? err.name : 'unknown error'}`);
-    return res.status(500).json({ error: 'Terminal capture failed' });
+    return res.status(200).json({
+      options: [],
+      focusedIndex: 0,
+      captureEmpty: false,
+      captureFailed: true,
+      fallbackReason: 'capture-failed',
+      metadata: createEmptyApprovalPromptMetadata(),
+    });
   }
 };
 

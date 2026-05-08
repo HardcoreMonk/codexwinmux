@@ -23,6 +23,7 @@ StatusManager
   ├─ status-notification-policy로 hook notification 처리 여부 판정
   ├─ live Codex pane capture로 permission/interrupted 입력 프롬프트 보정
   ├─ layout.json에 cliState/session metadata 저장
+  ├─ session history와 Web Push side effect adapter 호출
   ├─ /api/status WebSocket broadcast
   └─ review/input 상태에서 toast/native/Web Push 알림 전송
 ```
@@ -51,6 +52,10 @@ Web Push send command foundation도 있다. `status.send-web-push`는 `StatusMan
 기존 safe payload와 main process에서 계산한 foreground visibility boolean을 받아 worker에서
 background Web Push 전송과 expired subscription 제거를 수행한다. 이 path 역시
 `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`에서만 사용하며, 실패 시 legacy send path로 fallback한다.
+main-process production path에서도 session history write와 Web Push 전송은
+`status-session-history-adapter`, `status-web-push-adapter` 뒤에서 실행한다. `StatusManager`는
+상태 전이, dedupe, workspace/config 조회까지만 소유하고, runtime default/legacy fallback 선택과
+전송 세부 구현은 adapter가 맡는다.
 
 2026-05-05 live bridge 이후 `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
 별도 process 안에서 `StatusManager` state machine을 실행한다. custom server는 startup 때
@@ -151,7 +156,7 @@ terminal pane에서 shell이 아닌 process가 실행 중이면 실패가 아니
 
 - foreground window는 `use-toast-notification`이 작업 완료 toast를 표시한다.
 - Electron/native notification은 `use-native-notification`이 처리한다.
-- background Web Push는 `StatusManager`가 전송한다.
+- background Web Push는 `StatusManager`가 `status-web-push-adapter`를 통해 전송한다.
 - `soundOnCompleteEnabled=false`이면 작업 완료 toast sound를 재생하지 않고, native/background system notification도 silent로 요청한다.
 - 현재 Codex CLI permission/input prompt는 hook event로 직접 전달되지 않는 경우가 있으므로, codexmux는 live Codex pane capture에서 prompt 선택지를 감지해 내부 `notification(permission_prompt)` 이벤트처럼 `needs-input`으로 전환한다. 여기에는 permission approval, resume working directory 선택, 기타 option list prompt가 포함된다. 일반 작업 완료 notification은 review flow를 따른다.
 - 전역 approval queue는 pane capture에서 파싱한 option list와 sanitized metadata를 표시한다.
@@ -288,6 +293,8 @@ type, spawn prompt/description, sub-agent output summary를 보존하며 기존 
 | `src/lib/status-notification-policy.ts` | notification hook 처리/전송 정책 |
 | `src/lib/status-side-effect-policy.ts` | status transition side-effect intent 산출 |
 | `src/lib/status-client-event-policy.ts` | ack/dismiss client event intent 산출 |
+| `src/lib/status-session-history-adapter.ts` | runtime v2/legacy session history write fallback |
+| `src/lib/status-web-push-adapter.ts` | runtime v2/legacy Web Push payload와 send fallback |
 | `src/lib/status-metadata.ts` | JSONL metadata merge helper |
 | `src/lib/runtime/status/worker-service.ts` | runtime v2 Status Worker 정책 평가 command service |
 | `src/hooks/use-agent-status.ts` | status WebSocket hook |

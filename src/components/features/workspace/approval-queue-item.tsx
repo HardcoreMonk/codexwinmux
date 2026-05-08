@@ -85,10 +85,24 @@ const fetchPermissionOptions = async (sessionName: string): Promise<IApprovalOpt
           options?: unknown;
           metadata?: unknown;
           captureEmpty?: unknown;
+          captureFailed?: unknown;
+          fallbackReason?: unknown;
         };
         options = Array.isArray(data.options) ? data.options.filter((option): option is string => typeof option === 'string') : [];
         metadata = parseApprovalMetadata(data.metadata);
         captureEmpty = data.captureEmpty === true;
+        const fallbackReason = typeof data.fallbackReason === 'string'
+          ? data.fallbackReason as TApprovalFallbackReason
+          : null;
+        if (fallbackReason) {
+          return {
+            options,
+            metadata,
+            captureEmpty,
+            fallbackReason,
+          };
+        }
+        if (data.captureFailed === true) requestFailed = true;
       } else {
         requestFailed = true;
       }

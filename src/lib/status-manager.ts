@@ -19,10 +19,7 @@ import type { IPaneInfo } from '@/lib/tmux';
 import type { TCliState, TToolName } from '@/types/timeline';
 import type { ICurrentAction, TTerminalStatus, ITabStatusEntry, IClientTabStatusEntry, IStatusUpdateMessage, IRateLimitsData, TEventName, ILastEvent } from '@/types/status';
 import type { ISessionHistoryEntry } from '@/types/session-history';
-import { addSessionHistoryEntry, updateSessionHistoryDismissedAt } from '@/lib/session-history';
-import webpush from 'web-push';
-import { getSubscriptions, removeSubscription, isAnyDeviceVisible } from '@/lib/push-subscriptions';
-import { getVAPIDKeys } from '@/lib/vapid-keys';
+import { isAnyDeviceVisible } from '@/lib/push-subscriptions';
 import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import { watch, type FSWatcher } from 'fs';
@@ -34,7 +31,6 @@ import { createDedupeKeyStore } from '@/lib/dedupe-key-store';
 import { completionKeyFor, normalizeSessionId, resolveAgentSessionId, sessionIdFromJsonlPath } from '@/lib/status-session-mapping';
 import { shouldProcessHookEvent } from '@/lib/status-notification-policy';
 import { mergeStatusMetadata } from '@/lib/status-metadata';
-import { buildApprovalPushBody, getApprovalMetadataDetail } from '@/lib/approval-queue';
 import { forwardBridgeTraceStatusUpdate } from '@/lib/bridge-trace-forwarder';
 import { getPerfNow, recordPerfCounter, recordPerfDuration } from '@/lib/perf-metrics';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
@@ -50,6 +46,11 @@ import {
   type IStatusSideEffectIntent,
   type IStatusSideEffectPolicyInput,
 } from '@/lib/status-side-effect-policy';
+import {
+  createStatusSessionHistoryAdapter,
+  type IStatusSessionHistoryAdapter,
+} from '@/lib/status-session-history-adapter';
+import { createStatusWebPushAdapter } from '@/lib/status-web-push-adapter';
 
 const log = createLogger('status');
 const hookLog = createLogger('hooks');
@@ -435,8 +436,21 @@ export class StatusManager {
   private reviewNotificationDedupe = createDedupeKeyStore();
   private sessionHistoryDedupe = createDedupeKeyStore();
   private lastPoll: IStatusPollSnapshot | null = null;
+  private sessionHistoryAdapter: IStatusSessionHistoryAdapter;
+  private webPushAdapter: ReturnType<typeof createStatusWebPushAdapter>;
 
-  constructor(private readonly options: IStatusManagerOptions = {}) {}
+  constructor(private readonly options: IStatusManagerOptions = {}) {
+    this.sessionHistoryAdapter = createStatusSessionHistoryAdapter({
+      shouldUseRuntimeStatusDefault: () => this.shouldUseRuntimeStatusDefault(),
+      recordCounter: recordPerfCounter,
+      logWarning: (message) => log.warn(message),
+    });
+    this.webPushAdapter = createStatusWebPushAdapter({
+      shouldUseRuntimeStatusDefault: () => this.shouldUseRuntimeStatusDefault(),
+      recordCounter: recordPerfCounter,
+      logWarning: (message) => log.warn(message),
+    });
+  }
 
   async init(): Promise<void> {
     if (this.initialized) return;
@@ -1120,34 +1134,14 @@ export class StatusManager {
   }
 
   private async addSessionHistoryEntry(entry: ISessionHistoryEntry): Promise<void> {
-    if (this.shouldUseRuntimeStatusDefault()) {
-      try {
-        await getRuntimeSupervisor().addStatusSessionHistoryEntry(entry);
-        recordPerfCounter('runtime_v2.status_session_history.add');
-        return;
-      } catch (err) {
-        recordPerfCounter('runtime_v2.status_session_history.add_fallback');
-        log.warn('runtime v2 session history add failed, falling back: %s', err instanceof Error ? err.message : String(err));
-      }
-    }
-    await addSessionHistoryEntry(entry);
+    await this.sessionHistoryAdapter.addEntry(entry);
   }
 
   private async updateSessionHistoryDismissedAt(
     tabId: string,
     dismissedAt: number,
   ): Promise<ISessionHistoryEntry | null> {
-    if (this.shouldUseRuntimeStatusDefault()) {
-      try {
-        const result = await getRuntimeSupervisor().updateStatusSessionHistoryDismissedAt({ tabId, dismissedAt });
-        recordPerfCounter('runtime_v2.status_session_history.dismiss_update');
-        return result.entry;
-      } catch (err) {
-        recordPerfCounter('runtime_v2.status_session_history.dismiss_update_fallback');
-        log.warn('runtime v2 session history dismiss update failed, falling back: %s', err instanceof Error ? err.message : String(err));
-      }
-    }
-    return updateSessionHistoryDismissedAt(tabId, dismissedAt);
+    return this.sessionHistoryAdapter.updateDismissedAt(tabId, dismissedAt);
   }
 
   dismissTab(tabId: string, exclude?: WebSocket): boolean {
@@ -1746,67 +1740,17 @@ export class StatusManager {
   }
 
   private async sendWebPush(tabId: string, entry: ITabStatusEntry, pushType: 'review' | 'needs-input'): Promise<void> {
-    const title = pushType === 'needs-input' ? 'Input Required' : 'Task Complete';
-    const fallbackBody = entry.lastUserMessage?.slice(0, 100) || entry.tabName || tabId;
-    const approvalPromptMetadata = pushType === 'needs-input' ? entry.approvalPromptMetadata ?? null : null;
-    const body = pushType === 'needs-input'
-      ? buildApprovalPushBody({ metadata: approvalPromptMetadata, fallbackText: fallbackBody })
-      : fallbackBody;
     const ws = (await getWorkspaces()).workspaces.find((w) => w.id === entry.workspaceId);
     const config = await getConfig();
-    const approvalMetadata = pushType === 'needs-input'
-      ? {
-        approvalKind: approvalPromptMetadata?.approvalKind ?? 'unknown',
-        promptType: approvalPromptMetadata?.promptType ?? 'unknown',
-        riskLevel: approvalPromptMetadata?.riskLevel ?? 'unknown',
-        approvalDetail: getApprovalMetadataDetail(approvalPromptMetadata),
-      }
-      : {};
-    const payload = {
-      title,
-      body,
-      silent: pushType === 'review' && config.soundOnCompleteEnabled === false,
+    await this.webPushAdapter.send({
       tabId,
-      workspaceId: entry.workspaceId,
-      agentSessionId: entry.agentSessionId ?? null,
+      entry,
+      pushType,
       workspaceName: ws?.name ?? '',
       workspaceDir: ws?.directories[0] ?? null,
-      ...approvalMetadata,
-    };
-
-    const anyDeviceVisible = isAnyDeviceVisible();
-    if (this.shouldUseRuntimeStatusDefault()) {
-      try {
-        const result = await getRuntimeSupervisor().sendStatusWebPush({ anyDeviceVisible, payload });
-        recordPerfCounter('runtime_v2.status_web_push.sent', result.sent);
-        recordPerfCounter('runtime_v2.status_web_push.failed', result.failed);
-        recordPerfCounter('runtime_v2.status_web_push.removed', result.removed);
-        if (result.skippedVisible) recordPerfCounter('runtime_v2.status_web_push.skipped_visible');
-        return;
-      } catch (err) {
-        recordPerfCounter('runtime_v2.status_web_push.fallback');
-        log.warn('runtime v2 Web Push send failed, falling back: %s', err instanceof Error ? err.message : String(err));
-      }
-    }
-
-    if (anyDeviceVisible) return;
-    const subs = await getSubscriptions();
-    if (subs.length === 0) return;
-
-    const keys = await getVAPIDKeys();
-    webpush.setVapidDetails('mailto:noreply@codexmux.app', keys.publicKey, keys.privateKey);
-    const payloadText = JSON.stringify(payload);
-    for (const sub of subs) {
-      try {
-        await webpush.sendNotification(sub, payloadText);
-      } catch (err: unknown) {
-        const status = (err as { statusCode?: number }).statusCode;
-        if (status === 410 || status === 404) {
-          await removeSubscription(sub.endpoint);
-        }
-        log.warn('Web push send error: %s', status);
-      }
-    }
+      soundOnCompleteEnabled: config.soundOnCompleteEnabled !== false,
+      anyDeviceVisible: isAnyDeviceVisible(),
+    });
   }
 }
 

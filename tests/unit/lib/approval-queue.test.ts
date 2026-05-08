@@ -60,6 +60,7 @@ describe('approval queue helpers', () => {
     expect(getApprovalFallbackKey('no-session')).toBe('approvalFallback_noSession');
     expect(getApprovalFallbackKey('capture-empty')).toBe('approvalFallback_captureEmpty');
     expect(getApprovalFallbackKey('parse-empty')).toBe('approvalFallback_parseEmpty');
+    expect(getApprovalFallbackKey('capture-failed')).toBe('approvalFallback_captureFailed');
     expect(getApprovalFallbackKey('send-failed')).toBe('approvalFallback_sendFailed');
     expect(getApprovalFallbackKey('request-failed')).toBe('approvalFallback_requestFailed');
     expect(getApprovalFallbackKey('future-fallback')).toBe('approvalFallback_requestFailed');
@@ -80,6 +81,7 @@ describe('approval queue helpers', () => {
       getApprovalFallbackKey('no-session'),
       getApprovalFallbackKey('capture-empty'),
       getApprovalFallbackKey('parse-empty'),
+      getApprovalFallbackKey('capture-failed'),
       getApprovalFallbackKey('send-failed'),
       getApprovalFallbackKey('request-failed'),
     ];

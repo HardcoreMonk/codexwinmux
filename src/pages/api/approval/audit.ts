@@ -31,6 +31,7 @@ const riskLevels = new Set<TApprovalRiskLevel>(['low', 'medium', 'high', 'unknow
 const fallbackReasons = new Set<TApprovalFallbackReason>([
   'no-session',
   'capture-empty',
+  'capture-failed',
   'parse-empty',
   'send-failed',
   'request-failed',

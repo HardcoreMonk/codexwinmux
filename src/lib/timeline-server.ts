@@ -19,7 +19,7 @@ import { getProviderByPanelType } from '@/lib/providers';
 import type { IAgentJsonlResolution, IAgentProvider } from '@/lib/providers';
 import { extractSessionIdFromJsonlPath, readSessionStats } from './session-stats';
 import { checkCodexJsonlState } from '@/lib/codex-jsonl-state';
-import type { TTimelineServerMessage, IInitMeta, ITimelineEntry, ISessionStats } from '@/types/timeline';
+import type { TTimelineServerMessage, ISessionStats } from '@/types/timeline';
 import path from 'path';
 import { isAllowedJsonlPath } from './path-validation';
 import { createLogger } from '@/lib/logger';
@@ -45,6 +45,13 @@ import { handleRuntimeTimelineConnection } from '@/lib/runtime/timeline-ws';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import { buildTimelineResumeErrorMessage } from '@/lib/resume-error';
+import {
+  computeInitMeta,
+  findLastUserMessage,
+  MAX_TIMELINE_INIT_ENTRIES,
+} from '@/lib/timeline-file-watcher-service';
+import { isTimelineResumeSessionIdValid } from '@/lib/timeline-resume-service';
+import { getTimelineSessionConnections } from '@/lib/timeline-subscription-service';
 
 const log = createLogger('timeline');
 
@@ -54,7 +61,6 @@ const DEBOUNCE_MS = 50;
 const MAX_WATCHERS = 32;
 const MAX_CONNECTIONS = 32;
 const MAX_WATCHER_RETRIES = 3;
-const MAX_INIT_ENTRIES = 64;
 const runtimeConnections = new Set<WebSocket>();
 
 const shouldUseRuntimeStatusLive = (): boolean =>
@@ -99,21 +105,6 @@ const sendEmptyInit = (ws: WebSocket, sessionId = '', isAgentStarting = false) =
   });
 };
 
-const MAX_USER_MESSAGE_LENGTH = 200;
-
-const findLastUserMessage = (entries: ITimelineEntry[]): string | null => {
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const entry = entries[i];
-    if (entry.type === 'user-message' && entry.text.trim()) {
-      const text = entry.text.trim();
-      return text.length > MAX_USER_MESSAGE_LENGTH
-        ? text.slice(0, MAX_USER_MESSAGE_LENGTH) + '…'
-        : text;
-    }
-  }
-  return null;
-};
-
 const subscribeAndUpdateSummary = async (
   ws: WebSocket,
   jsonlPath: string,
@@ -151,7 +142,7 @@ const readTailSnapshot = async (
   const cached = fw.tailSnapshot;
   if (
     cached
-    && cached.maxEntries === MAX_INIT_ENTRIES
+    && cached.maxEntries === MAX_TIMELINE_INIT_ENTRIES
     && cached.fileSize === stat.size
     && cached.mtimeMs === stat.mtimeMs
   ) {
@@ -161,13 +152,13 @@ const readTailSnapshot = async (
 
   recordPerfCounter('timeline.tail_cache_miss');
   const startedAt = getPerfNow();
-  const result = await provider.readTailEntries(jsonlPath, MAX_INIT_ENTRIES);
+  const result = await provider.readTailEntries(jsonlPath, MAX_TIMELINE_INIT_ENTRIES);
   recordPerfDuration('timeline.read_tail', getPerfNow() - startedAt);
   recordPerfCounter('timeline.read_tail.entries', result.entries.length);
 
   const firstTimestamp = result.hasMore ? await readFirstTimestamp(jsonlPath) : null;
   const snapshot: ITimelineTailSnapshot = {
-    maxEntries: MAX_INIT_ENTRIES,
+    maxEntries: MAX_TIMELINE_INIT_ENTRIES,
     fileSize: result.fileSize,
     mtimeMs: stat.mtimeMs,
     result,
@@ -310,37 +301,6 @@ const readFirstTimestamp = async (filePath: string): Promise<string | null> => {
   return null;
 };
 
-const computeInitMeta = (entries: ITimelineEntry[], fileSize: number, createdAtOverride?: string | null, customTitle?: string): IInitMeta => {
-  let createdAt: string | null = null;
-  let updatedAt: string | null = null;
-  let lastTimestamp = 0;
-  let userCount = 0;
-  let assistantCount = 0;
-
-  for (const entry of entries) {
-    if (!createdAt && entry.timestamp) {
-      createdAt = new Date(entry.timestamp).toISOString();
-    }
-    if (entry.timestamp) {
-      lastTimestamp = Math.max(lastTimestamp, entry.timestamp);
-    }
-    updatedAt = new Date(entry.timestamp).toISOString();
-
-    if (entry.type === 'user-message') userCount++;
-    else if (entry.type === 'assistant-message') assistantCount++;
-  }
-
-  return {
-    createdAt: createdAtOverride ?? createdAt,
-    updatedAt,
-    lastTimestamp,
-    fileSize,
-    userCount,
-    assistantCount,
-    customTitle,
-  };
-};
-
 const subscribeToFile = async (
   ws: WebSocket,
   jsonlPath: string,
@@ -465,13 +425,7 @@ const unsubscribeFromFile = (ws: WebSocket, jsonlPath: string) => {
 };
 
 const getSessionConnections = (sessionName: string): ITimelineConnection[] => {
-  const result: ITimelineConnection[] = [];
-  for (const [, conn] of connections) {
-    if (conn.sessionName === sessionName) {
-      result.push(conn);
-    }
-  }
-  return result;
+  return getTimelineSessionConnections(connections, sessionName);
 };
 
 const cleanup = (conn: ITimelineConnection) => {
@@ -742,7 +696,7 @@ export const handleTimelineConnection = async (ws: WebSocket, request: IncomingM
         };
       },
       handleResume: async (payload) => {
-        if (!provider.isValidSessionId(payload.sessionId)) {
+        if (!isTimelineResumeSessionIdValid(provider, payload.sessionId)) {
           sendJson(ws, buildTimelineResumeErrorMessage('invalid-session-id'));
           return;
         }
@@ -804,7 +758,7 @@ export const handleTimelineConnection = async (ws: WebSocket, request: IncomingM
           conn.currentJsonlPath = null;
         }
       } else if (msg.type === 'timeline:resume' && msg.sessionId && msg.tmuxSession) {
-        if (!conn.provider.isValidSessionId(msg.sessionId)) {
+        if (!isTimelineResumeSessionIdValid(conn.provider, msg.sessionId)) {
           sendJson(ws, buildTimelineResumeErrorMessage('invalid-session-id'));
         } else {
           await handleResumeMessage(ws, conn, {
