@@ -62,7 +62,7 @@ pnpm dev
 
 ## 포트와 환경변수
 
-codexmux는 **8122** 포트에서 listen합니다 (web + ssh 합성, 농담). `PORT`로 바꿀 수 있습니다:
+codexmux는 **8121** 포트에서 listen합니다 (web + ssh 합성, 농담). `PORT`로 바꿀 수 있습니다:
 
 ```bash
 PORT=9000 codexmux

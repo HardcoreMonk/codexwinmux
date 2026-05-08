@@ -47,13 +47,13 @@ describe('runtime v2 phase 2 smoke helpers', () => {
     const { buildSmokeTerminalWsUrl } = await loadLib();
 
     expect(buildSmokeTerminalWsUrl({
-      baseUrl: 'http://127.0.0.1:8122',
+      baseUrl: 'http://127.0.0.1:8121',
       endpoint: '/api/terminal',
       sessionName: 'pt-ws-pane-tab',
       clientId: 'client-a',
       cols: 100,
       rows: 30,
-    }).toString()).toBe('ws://127.0.0.1:8122/api/terminal?clientId=client-a&session=pt-ws-pane-tab&cols=100&rows=30');
+    }).toString()).toBe('ws://127.0.0.1:8121/api/terminal?clientId=client-a&session=pt-ws-pane-tab&cols=100&rows=30');
 
     expect(buildSmokeTerminalWsUrl({
       baseUrl: 'https://codexmux.test/base',

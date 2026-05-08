@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const port = process.env.PORT || '8122';
+const port = process.env.PORT || '8121';
 const healthUrl = `http://127.0.0.1:${port}/api/health`;
 
 const readGit = (args) => {

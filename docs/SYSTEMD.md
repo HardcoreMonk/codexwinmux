@@ -14,7 +14,7 @@ codexmux는 Linux에서 `systemd --user` 서비스로 상시 실행하는 방식
 
 ```text
 HOST=localhost,tailscale,192.168.0.0/16
-PORT=8122
+PORT=8121
 ```
 
 접속 범위:
@@ -39,7 +39,7 @@ Type=simple
 WorkingDirectory=/data/projects/codex-zone/codexmux
 Environment=NODE_ENV=production
 Environment=HOST=localhost,tailscale,192.168.0.0/16
-Environment=PORT=8122
+Environment=PORT=8121
 Environment=PATH=/home/hardcoremonk/.nvm/versions/node/v24.15.0/bin:/home/hardcoremonk/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/home/hardcoremonk/.nvm/versions/node/v24.15.0/bin/node /data/projects/codex-zone/codexmux/bin/codexmux.js
 Restart=on-failure
@@ -116,7 +116,7 @@ journalctl --user -u codexmux.service -f
 health check:
 
 ```bash
-curl -sS http://127.0.0.1:8122/api/health
+curl -sS http://127.0.0.1:8121/api/health
 ```
 
 정상 응답 형식:
@@ -131,7 +131,7 @@ curl -sS http://127.0.0.1:8122/api/health
 
 ```bash
 corepack pnpm deploy:local
-curl -fsS http://127.0.0.1:8122/api/health
+curl -fsS http://127.0.0.1:8121/api/health
 ```
 
 `deploy:local`은 `corepack pnpm build`, `systemctl --user restart codexmux.service`, health check를 한 번에 실행한다. 정상 응답은 `app`, `version`, `commit`, `buildTime`을 포함한다. 브라우저가 이전 hashed chunk를 들고 있으면 UI 동작이 오래된 것처럼 보일 수 있으므로, 배포 후에도 타임라인 표시가 예전과 같으면 페이지를 새로고침한다. 이미 화면에 쌓인 중복 메시지는 새 parser로 초기 snapshot을 다시 읽을 때 정규화된다.
@@ -159,16 +159,16 @@ service restart를 실행하지 않으며 `"mutates": false`를 포함한다. �
 
 Runtime v2 shadow mode를 켠 뒤에는 `/api/v2/runtime/health`와 `/api/debug/perf`의 `services.runtimeWorkers`를 같이 확인한다. surface mode가 모두 `off`이면 legacy `/api/terminal`, `/api/timeline`, `/api/status`, `/api/sync`와 JSON store가 production source of truth이며, worker `restarts`, `timeouts`, `healthFailures`, `readyFailures`, `commandFailures`가 증가하지 않는지 관찰한다.
 
-서비스가 이미 8122 포트를 사용하므로 수동 실행을 병행하지 않는다. 임시로 수동 실행이 필요하면 먼저 서비스를 중지한다.
+서비스가 이미 8121 포트를 사용하므로 수동 실행을 병행하지 않는다. 임시로 수동 실행이 필요하면 먼저 서비스를 중지한다.
 
 ```bash
 systemctl --user stop codexmux.service
-HOST=localhost,tailscale,192.168.0.0/16 PORT=8122 codexmux
+HOST=localhost,tailscale,192.168.0.0/16 PORT=8121 codexmux
 ```
 
 ## 2026-05-05 운영 기준
 
-2026-05-05 `d3248c4` 배포 기준 live service는 `0.4.1` build를 실행한다. 정확한 배포 commit은 `curl -sS http://127.0.0.1:8122/api/health`의 `commit` 값을 기준으로 판단한다.
+2026-05-05 `d3248c4` 배포 기준 live service는 `0.4.1` build를 실행한다. 정확한 배포 commit은 `curl -sS http://127.0.0.1:8121/api/health`의 `commit` 값을 기준으로 판단한다.
 
 ```text
 ActiveState=active

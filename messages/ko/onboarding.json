@@ -39,7 +39,7 @@
     },
     "tailscale": {
       "label": "Localhost + Tailscale",
-      "hint": "다른 기기에서 Tailscale IP로 직접 접속하는 경우 (예: http://100.x.x.x:8122)."
+      "hint": "다른 기기에서 Tailscale IP로 직접 접속하는 경우 (예: http://100.x.x.x:8121)."
     },
     "all": {
       "label": "모든 인터페이스",

@@ -1,5 +1,6 @@
 import { Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { APP_DISPLAY_NAME } from '@/lib/app-brand';
 
 interface IAppLogoProps {
   shimmer?: boolean;
@@ -12,9 +13,10 @@ const AppLogo = ({ shimmer = false, size = 'sm', className }: IAppLogoProps) => 
   const textSize = size === 'xl' ? 'text-xl' : 'text-sm';
 
   return (
-    <div className={cn('flex items-center gap-1.5', size === 'xl' && 'gap-2.5', className)}>
+    <div className={cn('flex items-center gap-1.5', size === 'xl' && 'gap-2.5', className)} title={APP_DISPLAY_NAME}>
       <Terminal className={cn(iconSize, 'shrink-0 text-brand')} />
-      <span className={cn(textSize, shimmer ? 'animate-shimmer' : 'text-brand')}>
+      <span className={cn('min-w-0 truncate', textSize, shimmer ? 'animate-shimmer' : 'text-brand')}>
+        <span className="font-medium">windows native </span>
         <span className="font-bold">codex</span>
         <span className="font-normal">mux</span>
       </span>

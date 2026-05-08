@@ -635,7 +635,14 @@ const useLayoutStore = create<ILayoutState>((set, get) => ({
   clearLayout: () => {
     _suppressFetch = true;
     _abortController?.abort();
-    set({ layout: null, paneCount: 0, canSplit: false });
+    set({
+      layout: null,
+      isLoading: false,
+      error: null,
+      paneCount: 0,
+      canSplit: false,
+      pendingFocusTabId: null,
+    });
   },
 
   focusTab: (tabId) => {
@@ -816,10 +823,13 @@ const useLayout = ({ workspaceId, onFetchError }: { workspaceId: string | null; 
   }, [onFetchError]);
 
   useEffect(() => {
+    const store = useLayoutStore.getState();
     if (workspaceId) {
-      const store = useLayoutStore.getState();
       store.setWorkspaceId(workspaceId);
       store.fetchLayout(workspaceId);
+    } else {
+      store.setWorkspaceId(null);
+      store.clearLayout();
     }
   }, [workspaceId]);
 

@@ -1,5 +1,5 @@
 {
-  "pageTitle": "초기화 - codexmux",
+  "pageTitle": "초기화 - windows native codexmux",
   "title": "tmux 초기화",
   "stepCleanup": "기존 연결 정리",
   "stepReset": "tmux 서버 종료 및 재설정",

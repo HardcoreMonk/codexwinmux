@@ -38,6 +38,7 @@ export const validateWindowsElectronPackaging = ({
   packageJson,
   builderConfig,
   resources,
+  nsisIncludeText = '',
 }) => {
   const blockers = [];
   const checks = [];
@@ -108,6 +109,21 @@ export const validateWindowsElectronPackaging = ({
       blockers,
       'windows-nsis-artifact-name-unstable',
       'electron-builder nsis.artifactName must match latest.yml updater metadata.',
+    );
+  }
+
+  const nsisInclude = typeof nsis?.include === 'string'
+    ? normalizePath(nsis.include)
+    : null;
+  const installDetailsVisible = /\bShowInstDetails\s+show\b/i.test(nsisIncludeText);
+  const uninstallDetailsVisible = /\bShowUninstDetails\s+show\b/i.test(nsisIncludeText);
+  if (nsisInclude != null && resources.has(nsisInclude) && installDetailsVisible && uninstallDetailsVisible) {
+    checks.push('windows-nsis-install-details-visible');
+  } else if (nsis != null) {
+    addBlocker(
+      blockers,
+      'windows-nsis-install-details-hidden',
+      'electron-builder nsis include must keep install and uninstall detail panes visible.',
     );
   }
 

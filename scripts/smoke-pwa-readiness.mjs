@@ -125,7 +125,7 @@ const runBrowserProbe = async ({ baseUrl, timeoutMs }) => {
 };
 
 const main = async () => {
-  const baseUrl = normalizePwaSmokeUrl(process.env.CODEXMUX_PWA_SMOKE_URL || 'http://127.0.0.1:8122');
+  const baseUrl = normalizePwaSmokeUrl(process.env.CODEXMUX_PWA_SMOKE_URL || 'http://127.0.0.1:8121');
   const timeoutMs = Number(process.env.CODEXMUX_PWA_SMOKE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
   const checks = [];
   const assets = [];

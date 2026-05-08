@@ -37,6 +37,20 @@ const prependMissingPathEntries = (
   return parts.join(delimiter);
 };
 
+const applyDefault = (env: Record<string, string | undefined>, key: string, value: string): void => {
+  if (env[key] === undefined || env[key] === '') env[key] = value;
+};
+
+const applyWindowsRuntimeDefaults = (env: Record<string, string | undefined>): void => {
+  applyDefault(env, 'CODEXMUX_RUNTIME_V2', '1');
+  applyDefault(env, 'CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs');
+  applyDefault(env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'default');
+  applyDefault(env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'default');
+  applyDefault(env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE', 'default');
+  applyDefault(env, 'CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows');
+  applyDefault(env, 'CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows');
+};
+
 export const buildElectronBootstrapEnv = ({
   platform = process.platform,
   env = process.env,
@@ -44,6 +58,7 @@ export const buildElectronBootstrapEnv = ({
   const nextEnv: Record<string, string | undefined> = { ...env };
 
   if (platform === 'win32') {
+    applyWindowsRuntimeDefaults(nextEnv);
     return nextEnv;
   }
 

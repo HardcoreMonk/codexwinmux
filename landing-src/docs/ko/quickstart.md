@@ -27,10 +27,10 @@ codexmux는 웹 기반 터미널 멀티플렉서입니다. 모든 Codex 세션�
 npx codexmux
 ```
 
-`8122` 포트에서 서버가 뜹니다. 브라우저로 열어보세요.
+`8121` 포트에서 서버가 뜹니다. 브라우저로 열어보세요.
 
 ```
-http://localhost:8122
+http://localhost:8121
 ```
 
 처음 실행 시 비밀번호 설정과 첫 워크스페이스 생성 절차가 안내됩니다.
@@ -54,7 +54,7 @@ http://localhost:8122
 기본값으로 codexmux는 `localhost`에만 바인드합니다. 외부에서 안전하게 접근하려면 Tailscale Serve를 쓰세요 (WireGuard + 자동 HTTPS, 포트 포워딩 불필요):
 
 ```bash
-tailscale serve --bg --https=443 localhost:8122
+tailscale serve --bg --https=443 localhost:8121
 ```
 
 휴대폰에서 `https://<machine>.<tailnet>.ts.net`를 열고 **공유 → 홈 화면에 추가**하면 PWA로 설치되고, 백그라운드에서도 Web Push 알림을 받을 수 있습니다.

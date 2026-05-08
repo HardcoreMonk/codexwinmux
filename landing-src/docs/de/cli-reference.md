@@ -16,7 +16,7 @@ codexmux start
 PORT=9000 HOST=localhost,tailscale codexmux
 ```
 
-`8122`가 이미 사용 중이면 codexmux는 비어 있는 port를 찾아 바인딩하고 실제 port를 `~/.codexmux/port`에 기록합니다.
+`8121`가 이미 사용 중이면 codexmux는 비어 있는 port를 찾아 바인딩하고 실제 port를 `~/.codexmux/port`에 기록합니다.
 
 ## tab 생성
 

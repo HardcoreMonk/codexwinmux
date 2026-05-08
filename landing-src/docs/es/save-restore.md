@@ -24,7 +24,7 @@ codexmux는 "브라우저 탭을 닫는 것이 세션을 끝내는 것이어선 
 
 탭을 닫든, 새로고침하든, 노트북을 덮든 — 세션이 끝나지 않습니다.
 
-모든 쉘은 전용 `codexmux` 소켓의 tmux 세션 안에 살아있습니다. 사용자의 `~/.tmux.conf`와 완전히 격리됩니다. 한 시간 뒤에 `http://localhost:8122`를 다시 열면 WebSocket이 동일한 tmux 세션에 재연결되고, 스크롤백을 재생한 뒤 살아있는 PTY를 xterm.js로 넘겨줍니다.
+모든 쉘은 전용 `codexmux` 소켓의 tmux 세션 안에 살아있습니다. 사용자의 `~/.tmux.conf`와 완전히 격리됩니다. 한 시간 뒤에 `http://localhost:8121`를 다시 열면 WebSocket이 동일한 tmux 세션에 재연결되고, 스크롤백을 재생한 뒤 살아있는 PTY를 xterm.js로 넘겨줍니다.
 
 복원이 아니라 재연결입니다.
 

@@ -36,14 +36,14 @@ npx codexmux
 브라우저에서 접속합니다.
 
 ```text
-http://localhost:8122
+http://localhost:8121
 ```
 
 > Node.js 20 이상과 tmux가 필요합니다. 서버 실행은 macOS와 Linux를 지원합니다.
 
 ## 서버 실행 옵션
 
-기본 포트는 `8122`입니다.
+기본 포트는 `8121`입니다.
 
 ```bash
 codexmux
@@ -52,7 +52,7 @@ codexmux
 포트와 접속 허용 범위를 고정하려면 `PORT`와 `HOST`를 지정합니다.
 
 ```bash
-HOST=localhost,tailscale PORT=8122 codexmux
+HOST=localhost,tailscale PORT=8121 codexmux
 ```
 
 `HOST`는 콤마로 여러 값을 받을 수 있습니다.
@@ -69,7 +69,7 @@ HOST=localhost,tailscale PORT=8122 codexmux
 
 ```zsh
 codexmux() {
-  HOST=localhost,tailscale,192.168.0.0/16 PORT=8122 command codexmux "$@"
+  HOST=localhost,tailscale,192.168.0.0/16 PORT=8121 command codexmux "$@"
 }
 ```
 
@@ -80,7 +80,7 @@ Linux에서 상시 실행하려면 system-wide service보다 user service를 권
 ```text
 ~/.config/systemd/user/codexmux.service
 HOST=localhost,tailscale,192.168.0.0/16
-PORT=8122
+PORT=8121
 ```
 
 관리 명령:
@@ -104,7 +104,7 @@ loginctl enable-linger "$USER"
 
 ```bash
 corepack pnpm deploy:local
-curl -fsS http://127.0.0.1:8122/api/health
+curl -fsS http://127.0.0.1:8121/api/health
 ```
 
 소스 체크아웃 상태에서 `codexmux`가 `../dist/server.js`를 찾지 못하면 아직 배포용 빌드가 없는 상태입니다. 개발 중에는 아래 명령을 사용합니다.
@@ -156,13 +156,13 @@ corepack pnpm start
 모바일에서 같은 세션을 쓰려면 서버를 Tailscale 대역에서 접근 가능하게 실행합니다.
 
 ```bash
-HOST=localhost,tailscale PORT=8122 codexmux
+HOST=localhost,tailscale PORT=8121 codexmux
 ```
 
 Tailscale 앱 설치와 로그인 후 HTTPS로 노출합니다.
 
 ```bash
-tailscale serve --bg --https=443 http://localhost:8122
+tailscale serve --bg --https=443 http://localhost:8121
 ```
 
 접속 주소는 Tailscale이 제공하는 MagicDNS 주소입니다.
@@ -177,10 +177,10 @@ https://<machine>.<tailnet>.ts.net
 tailscale serve off --https=443
 ```
 
-기본 포트 `8122`로 실행 중이면 마지막 인자만 바꿉니다.
+기본 포트 `8121`로 실행 중이면 마지막 인자만 바꿉니다.
 
 ```bash
-tailscale serve --bg --https=443 http://localhost:8122
+tailscale serve --bg --https=443 http://localhost:8121
 ```
 
 iPad에서는 현재 Safari로 접속한 뒤 홈 화면에 추가하는 방식이 권장됩니다. iPadOS 네이티브 앱은 아직 포함되어 있지 않으며, 필요하면 Capacitor iOS project를 별도로 추가해야 합니다. iOS 시작 화면은 `public/splash/*.png` 정적 이미지이며 `scripts/generate-splash.js`로 `codexmux` branding을 생성합니다. 이미 홈 화면에 추가된 아이콘에서 이전 startup image가 계속 보이면 iOS cache 때문에 홈 화면 앱을 삭제한 뒤 다시 추가합니다.
@@ -413,7 +413,7 @@ codexmux tab result -w <workspace-id> <tab-id>
 외부 스크립트에서 직접 지정할 수도 있습니다.
 
 ```bash
-CMUX_PORT=8122 CMUX_TOKEN=<token> codexmux workspaces
+CMUX_PORT=8121 CMUX_TOKEN=<token> codexmux workspaces
 ```
 
 ## 아키텍처
@@ -492,14 +492,14 @@ npx codexmux
 Open:
 
 ```text
-http://localhost:8122
+http://localhost:8121
 ```
 
 Requirements: Node.js 20 or newer and tmux. Server execution is supported on macOS and Linux.
 
 ### Server Options
 
-The default port is `8122`.
+The default port is `8121`.
 
 ```bash
 codexmux
@@ -508,14 +508,14 @@ codexmux
 Pin the port and allow only localhost plus Tailscale clients:
 
 ```bash
-HOST=localhost,tailscale PORT=8122 codexmux
+HOST=localhost,tailscale PORT=8121 codexmux
 ```
 
 Recommended `~/.zshrc` wrapper:
 
 ```zsh
 codexmux() {
-  HOST=localhost,tailscale,192.168.0.0/16 PORT=8122 command codexmux "$@"
+  HOST=localhost,tailscale,192.168.0.0/16 PORT=8121 command codexmux "$@"
 }
 ```
 
@@ -526,7 +526,7 @@ Current workstation registration:
 ```text
 ~/.config/systemd/user/codexmux.service
 HOST=localhost,tailscale,192.168.0.0/16
-PORT=8122
+PORT=8121
 ```
 
 Service commands:
@@ -563,7 +563,7 @@ For the Linux user service used by this workstation, prefer the deploy wrapper:
 
 ```bash
 corepack pnpm deploy:local
-curl -fsS http://127.0.0.1:8122/api/health
+curl -fsS http://127.0.0.1:8121/api/health
 ```
 
 ### Electron Development
@@ -689,13 +689,13 @@ The app automatically connects to the saved server or the default Tailscale serv
 Run codexmux on a Tailscale-accessible interface:
 
 ```bash
-HOST=localhost,tailscale PORT=8122 codexmux
+HOST=localhost,tailscale PORT=8121 codexmux
 ```
 
 Expose it over HTTPS with Tailscale Serve:
 
 ```bash
-tailscale serve --bg --https=443 http://localhost:8122
+tailscale serve --bg --https=443 http://localhost:8121
 ```
 
 Open:

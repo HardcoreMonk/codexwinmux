@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-const port = process.env.PORT || '8122';
+const port = process.env.PORT || '8121';
 const host = process.env.HOST || 'localhost';
 const devUrl = process.env.ELECTRON_DEV_URL || `http://localhost:${port}`;
 const healthUrl = `http://127.0.0.1:${port}/api/health`;

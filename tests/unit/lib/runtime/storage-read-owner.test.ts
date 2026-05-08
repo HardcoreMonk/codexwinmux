@@ -6,6 +6,14 @@ import { importLegacyStorageSnapshot } from '@/lib/runtime/storage-import';
 import { openRuntimeDatabase } from '@/lib/runtime/storage/schema';
 import type { ILayoutData, IWorkspacesData } from '@/types/terminal';
 
+const restoreEnv = (key: string, value: string | undefined): void => {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+  process.env[key] = value;
+};
+
 describe('runtime storage v2 default read ownership', () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
@@ -15,11 +23,11 @@ describe('runtime storage v2 default read ownership', () => {
   let homeDir: string | null = null;
 
   afterEach(async () => {
-    process.env.HOME = originalHome;
-    process.env.USERPROFILE = originalUserProfile;
-    process.env.CODEXMUX_RUNTIME_V2 = originalRuntimeV2;
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = originalStorageMode;
-    process.env.CODEXMUX_RUNTIME_DB = originalRuntimeDb;
+    restoreEnv('HOME', originalHome);
+    restoreEnv('USERPROFILE', originalUserProfile);
+    restoreEnv('CODEXMUX_RUNTIME_V2', originalRuntimeV2);
+    restoreEnv('CODEXMUX_RUNTIME_STORAGE_V2_MODE', originalStorageMode);
+    restoreEnv('CODEXMUX_RUNTIME_DB', originalRuntimeDb);
     vi.resetModules();
     if (homeDir) {
       await fs.rm(homeDir, { recursive: true, force: true });
@@ -176,5 +184,40 @@ describe('runtime storage v2 default read ownership', () => {
       sidebarCollapsed: false,
       sidebarWidth: 240,
     });
+  });
+
+  it('keeps an empty SQLite snapshot authoritative over stale JSON workspaces', async () => {
+    homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-empty-authority-'));
+    const dataDir = path.join(homeDir, '.codexmux');
+    const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify({
+      workspaces: [],
+      groups: [],
+      activeWorkspaceId: 'ws-stale',
+      sidebarCollapsed: false,
+      sidebarWidth: 240,
+      updatedAt: '2026-05-04T00:00:00.000Z',
+    }), { mode: 0o600 });
+
+    openRuntimeDatabase(dbPath).close();
+
+    process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
+    process.env.CODEXMUX_RUNTIME_V2 = '1';
+    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXMUX_RUNTIME_DB = dbPath;
+    vi.resetModules();
+
+    const { getWorkspaces, getActiveWorkspaceId } = await import('@/lib/workspace-store');
+
+    expect(await getWorkspaces()).toEqual({
+      workspaces: [],
+      groups: [],
+      activeWorkspaceId: undefined,
+      sidebarCollapsed: false,
+      sidebarWidth: 240,
+    });
+    expect(await getActiveWorkspaceId()).toBeNull();
   });
 });

@@ -16,6 +16,7 @@ import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import useIsMobile from '@/hooks/use-is-mobile';
 import useBrowserTitle from '@/hooks/use-browser-title';
+import { APP_DISPLAY_NAME } from '@/lib/app-brand';
 import { getPageShellLayout } from '@/components/layout/page-shell';
 import { requireAuth } from '@/lib/require-auth';
 import { loadMessagesServer } from '@/lib/load-messages';
@@ -40,7 +41,7 @@ interface IIndexProps {
 const Index = ({ initialConfig, initialQuickPrompts, initialSidebarItems }: IIndexProps) => {
   const isMobile = useIsMobile();
   const { setTheme } = useTheme();
-  useBrowserTitle('codexmux');
+  useBrowserTitle(APP_DISPLAY_NAME);
   const themeInitRef = useRef(false);
   useEffect(() => {
     if (!themeInitRef.current) {
@@ -57,7 +58,7 @@ const Index = ({ initialConfig, initialQuickPrompts, initialSidebarItems }: IInd
   return (
     <SWRConfig value={{ fallback: { '/api/quick-prompts': initialQuickPrompts, '/api/sidebar-items': initialSidebarItems } }}>
       <Head>
-        <title>codexmux</title>
+        <title>{APP_DISPLAY_NAME}</title>
       </Head>
       {isMobile ? <MobileTerminalPage /> : <TerminalPage />}
     </SWRConfig>

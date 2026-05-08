@@ -35,10 +35,30 @@ export const readRuntimeStorageWorkspaces = (): IWorkspacesData | null => {
   try {
     db = openRuntimeDatabase(getDefaultDbPath());
     const snapshot = createStorageRepository(db).getWorkspaceSnapshot();
-    return snapshot.workspaces.length > 0 ? snapshot : null;
+    return snapshot;
   } catch (err) {
     log.warn(`runtime v2 workspace read failed, falling back to JSON: ${err instanceof Error ? err.message : err}`);
     return null;
+  } finally {
+    db?.close();
+  }
+};
+
+export const writeRuntimeWorkspaceUiState = (input: {
+  activeWorkspaceId?: string | null;
+  sidebarCollapsed?: boolean;
+  sidebarWidth?: number;
+}): boolean => {
+  if (!shouldReadRuntimeStorageV2()) return false;
+
+  let db: ReturnType<typeof openRuntimeDatabase> | null = null;
+  try {
+    db = openRuntimeDatabase(getDefaultDbPath());
+    createStorageRepository(db).setWorkspaceUiState(input);
+    return true;
+  } catch (err) {
+    log.warn(`runtime v2 workspace UI state write failed: ${err instanceof Error ? err.message : err}`);
+    return false;
   } finally {
     db?.close();
   }

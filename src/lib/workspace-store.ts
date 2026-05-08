@@ -19,12 +19,24 @@ import {
 import type { ICreateLayoutOptions } from '@/lib/layout-store';
 import { getVisuallyOrderedWorkspaces } from '@/lib/workspace-order';
 import { mirrorLegacyStorageToRuntimeV2BestEffort } from '@/lib/runtime/storage-mirror';
-import { readRuntimeStorageWorkspaces } from '@/lib/runtime/storage-read-owner';
+import {
+  readRuntimeStorageWorkspaces,
+  shouldReadRuntimeStorageV2,
+  writeRuntimeWorkspaceUiState,
+} from '@/lib/runtime/storage-read-owner';
+import type { IRuntimeWorkspace } from '@/lib/runtime/contracts';
 import type { IWorkspace, IWorkspaceGroup, IWorkspacesData, ILayoutData } from '@/types/terminal';
 
 const log = createLogger('workspace');
 
 const WORKSPACE_PREFIX = 'Workspace ';
+
+const mapRuntimeWorkspace = (workspace: IRuntimeWorkspace): IWorkspace => ({
+  id: workspace.id,
+  name: workspace.name,
+  directories: [workspace.defaultCwd],
+  groupId: workspace.groupId ?? null,
+});
 
 const nextWorkspaceName = (workspaces: IWorkspace[]): string => {
   let max = 0;
@@ -70,6 +82,37 @@ const emptyState = (): IWorkspacesData => ({
   sidebarWidth: 240,
   updatedAt: new Date().toISOString(),
 });
+
+const createRuntimeWorkspace = async (directory: string, name?: string): Promise<IWorkspace> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  const supervisor = getRuntimeSupervisor();
+  const existing = (await supervisor.listWorkspaces()).map(mapRuntimeWorkspace);
+  const wsName = name?.trim() || nextWorkspaceName(existing);
+  const created = await supervisor.createWorkspace({ name: wsName, defaultCwd: directory });
+  try {
+    await supervisor.createTerminalTab({
+      workspaceId: created.id,
+      paneId: created.rootPaneId,
+      cwd: directory,
+    });
+  } catch (err) {
+    await supervisor.deleteWorkspace(created.id).catch(() => undefined);
+    throw err;
+  }
+  const workspaces = await supervisor.listWorkspaces();
+  const workspace = workspaces.find((candidate) => candidate.id === created.id);
+
+  return workspace
+    ? mapRuntimeWorkspace(workspace)
+    : { id: created.id, name: wsName, directories: [directory], groupId: null };
+};
+
+const deleteRuntimeWorkspace = async (workspaceId: string): Promise<boolean> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  const supervisor = getRuntimeSupervisor();
+  const result = await supervisor.deleteWorkspace(workspaceId);
+  return result.deleted;
+};
 
 const ensureGroups = (data: IWorkspacesData): IWorkspaceGroup[] => {
   if (!data.groups) data.groups = [];
@@ -333,6 +376,10 @@ export const createWorkspace = async (directory: string, name?: string, layoutOp
       throw new Error('Please enter a directory path, not a file');
     }
 
+    if (shouldReadRuntimeStorageV2()) {
+      return createRuntimeWorkspace(directory, name);
+    }
+
     const data = (await readWorkspacesFile()) ?? emptyState();
 
     const wsId = `ws-${nanoid(6)}`;
@@ -352,6 +399,12 @@ export const createWorkspace = async (directory: string, name?: string, layoutOp
 
 export const deleteWorkspace = async (workspaceId: string): Promise<boolean> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const deleted = await deleteRuntimeWorkspace(workspaceId);
+      if (deleted) broadcastSync({ type: 'workspace' });
+      return deleted;
+    }
+
     const data = (await readWorkspacesFile()) ?? emptyState();
     const idx = data.workspaces.findIndex((w) => w.id === workspaceId);
     if (idx === -1) return false;
@@ -403,6 +456,13 @@ export const updateActive = async (updates: {
   sidebarWidth?: number;
 }): Promise<void> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      if (writeRuntimeWorkspaceUiState(updates)) {
+        broadcastSync({ type: 'workspace' });
+      }
+      return;
+    }
+
     const data = (await readWorkspacesFile()) ?? emptyState();
     if (updates.activeWorkspaceId !== undefined) data.activeWorkspaceId = updates.activeWorkspaceId;
     if (updates.sidebarCollapsed !== undefined) data.sidebarCollapsed = updates.sidebarCollapsed;

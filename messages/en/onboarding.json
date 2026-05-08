@@ -39,7 +39,7 @@
     },
     "tailscale": {
       "label": "Localhost + Tailscale",
-      "hint": "Connecting from another device by Tailscale IP directly (e.g. http://100.x.x.x:8122)."
+      "hint": "Connecting from another device by Tailscale IP directly (e.g. http://100.x.x.x:8121)."
     },
     "all": {
       "label": "All interfaces",

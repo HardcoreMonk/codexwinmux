@@ -31,10 +31,14 @@ const collectResourceFiles = (dir) => {
 
 const packageJson = readJson(path.join(root, 'package.json'));
 const builderConfig = readYaml(path.join(root, 'electron-builder.yml'));
+const nsisIncludePath = typeof builderConfig.nsis?.include === 'string'
+  ? path.join(root, builderConfig.nsis.include)
+  : null;
 const result = validateWindowsElectronPackaging({
   packageJson,
   builderConfig,
   resources: collectResourceFiles(path.join(root, 'build-resources')),
+  nsisIncludeText: nsisIncludePath && fs.existsSync(nsisIncludePath) ? fs.readFileSync(nsisIncludePath, 'utf8') : '',
 });
 
 const output = {

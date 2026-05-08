@@ -48,7 +48,7 @@ export interface IWindowsServiceHostPlan {
   };
 }
 
-const defaultPort = '8122';
+const defaultPort = '8121';
 const defaultHost = '127.0.0.1';
 const defaultServiceName = 'codexmux';
 

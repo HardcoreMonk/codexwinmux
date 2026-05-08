@@ -16,6 +16,32 @@ describe('Electron runtime environment helpers', () => {
 
     expect(env.PATH).toBe('C:\\Windows\\System32;C:\\Program Files\\nodejs');
     expect(env.LANG).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_V2).toBe('1');
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('new-tabs');
+    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('default');
+    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('default');
+    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('default');
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
+    expect(env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER).toBe('windows');
+  });
+
+  it('preserves explicit Windows runtime rollback settings', () => {
+    const env = buildElectronBootstrapEnv({
+      platform: 'win32',
+      env: {
+        CODEXMUX_RUNTIME_V2: '0',
+        CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
+        CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'off',
+        CODEXMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
+        CODEXMUX_RUNTIME_STATUS_V2_MODE: 'off',
+      },
+    });
+
+    expect(env.CODEXMUX_RUNTIME_V2).toBe('0');
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
   });
 
   it('keeps macOS Finder launch PATH compatibility', () => {

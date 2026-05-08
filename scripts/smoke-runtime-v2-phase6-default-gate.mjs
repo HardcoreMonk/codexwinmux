@@ -10,7 +10,7 @@ import {
 const baseUrl =
   process.env.CODEXMUX_RUNTIME_V2_PHASE6_GATE_URL ||
   process.env.CODEXMUX_RUNTIME_V2_SMOKE_URL ||
-  'http://127.0.0.1:8122';
+  'http://127.0.0.1:8121';
 
 const token =
   process.env.CODEXMUX_TOKEN ||

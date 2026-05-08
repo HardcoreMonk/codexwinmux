@@ -5,6 +5,7 @@ import { Check, Copy, ExternalLink, Info, RefreshCw, Trash2, AlertTriangle } fro
 import Spinner from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import isElectron from '@/hooks/use-is-electron';
+import { WINDOWS_TAILSCALE_INSTALL_GUIDE, buildWindowsTailscaleServeGuide } from '@/lib/tailscale-install-guide';
 
 interface IServeEntry {
   httpsPort: string;
@@ -22,7 +23,7 @@ interface ITailscaleStatus {
   serverPort: number;
 }
 
-const DEFAULT_PORT = 8122;
+const DEFAULT_PORT = 8121;
 
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
@@ -55,13 +56,12 @@ const NotInstalledGuide = () => {
         </div>
       </div>
       <div className="rounded-md bg-muted p-3 font-mono text-xs leading-relaxed">
-        <p className="text-muted-foreground/60">{t('commentMac')}</p>
-        <p>brew install tailscale</p>
-        <p className="mt-2 text-muted-foreground/60">{t('commentMacAppStore')}</p>
-        <p className="mt-2 text-muted-foreground/60">{t('commentLinux')}</p>
-        <p>curl -fsSL https://tailscale.com/install.sh | sh</p>
-        <p className="mt-2 text-muted-foreground/60">{t('commentAfterInstall')}</p>
-        <p>tailscale up</p>
+        {WINDOWS_TAILSCALE_INSTALL_GUIDE.map((step, index) => (
+          <div key={step.commentKey} className={index === 0 ? undefined : 'mt-2'}>
+            <p className="text-muted-foreground/60">{t(step.commentKey)}</p>
+            <p>{step.command}</p>
+          </div>
+        ))}
       </div>
       <p className="text-sm text-muted-foreground">
         {t.rich('installGuide', {
@@ -275,12 +275,12 @@ const TailscaleSettings = () => {
       <div className="space-y-3">
         <p className="text-sm font-medium">{t('setupGuide')}</p>
         <div className="rounded-md bg-muted p-3 font-mono text-xs leading-relaxed">
-          <p className="text-muted-foreground/60">{t('commentStep1Install')}</p>
-          <p>brew install tailscale</p>
-          <p className="mt-2 text-muted-foreground/60">{t('commentStep2Activate')}</p>
-          <p>tailscale up</p>
-          <p className="mt-2 text-muted-foreground/60">{t('commentStep3Add')}</p>
-          <p>tailscale serve --bg --https=443 http://localhost:{currentPort}</p>
+          {buildWindowsTailscaleServeGuide(currentPort).map((step, index) => (
+            <div key={step.commentKey} className={index === 0 ? undefined : 'mt-2'}>
+              <p className="text-muted-foreground/60">{t(step.commentKey)}</p>
+              <p>{step.command}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

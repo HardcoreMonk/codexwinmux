@@ -48,7 +48,7 @@ const waitForExpectedPage = (cdp, targetUrl, timeoutMs = DEFAULT_TIMEOUT_MS) =>
 
 const main = async () => {
   const targetUrl = normalizeElectronSmokeUrl(
-    process.env.CODEXMUX_ELECTRON_SMOKE_URL || process.env.ELECTRON_DEV_URL || 'http://127.0.0.1:8122',
+    process.env.CODEXMUX_ELECTRON_SMOKE_URL || process.env.ELECTRON_DEV_URL || 'http://127.0.0.1:8121',
   );
   const requestedPort = process.env.CODEXMUX_ELECTRON_DEVTOOLS_PORT
     ? Number(process.env.CODEXMUX_ELECTRON_DEVTOOLS_PORT)

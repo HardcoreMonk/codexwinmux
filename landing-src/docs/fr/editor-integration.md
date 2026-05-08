@@ -53,8 +53,8 @@ tailscale serve --bg --https=8443 http://localhost:8080
 
 그다음 Editor 탭에 code-server 주소를 입력합니다. 로컬이면 `http://localhost:8080`, Tailscale Serve를 통한다면 `https://<machine>.<tailnet>.ts.net:8443`처럼 입력합니다. codexmux가 `http://` 또는 `https://` 여부를 검증한 뒤, 절대 경로를 `?folder=<path>` 형태로 자동 부착합니다.
 
-{% call callout('note', '8122 포트는 피하세요') %}
-codexmux가 이미 `8122`를 씁니다. code-server는 다른 포트(예시는 `8080`)에서 띄우세요.
+{% call callout('note', '8121 포트는 피하세요') %}
+codexmux가 이미 `8121`를 씁니다. code-server는 다른 포트(예시는 `8080`)에서 띄우세요.
 {% endcall %}
 
 ## 커스텀 URL 템플릿

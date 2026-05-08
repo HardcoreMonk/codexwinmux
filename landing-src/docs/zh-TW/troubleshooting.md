@@ -70,15 +70,15 @@ rm ~/.codexmux/cmux.lock
 
 과거에 `sudo`로 실행한 적이 있다면 root 소유일 수 있으니 `sudo rm`로 한 번 정리하세요.
 
-### `Port 8122 is in use, finding an available port...`
+### `Port 8121 is in use, finding an available port...`
 
-다른 프로세스가 `8122`를 사용 중입니다. 서버는 임의의 빈 포트로 폴백하고 새 URL을 출력합니다. 직접 포트를 지정하려면:
+다른 프로세스가 `8121`를 사용 중입니다. 서버는 임의의 빈 포트로 폴백하고 새 URL을 출력합니다. 직접 포트를 지정하려면:
 
 ```bash
 PORT=9000 codexmux
 ```
 
-`8122`을 잡고 있는 프로세스는 `lsof -iTCP:8122 -sTCP:LISTEN -n -P`로 찾을 수 있습니다.
+`8121`을 잡고 있는 프로세스는 `lsof -iTCP:8121 -sTCP:LISTEN -n -P`로 찾을 수 있습니다.
 
 ### Windows에서 동작하나요?
 
@@ -90,7 +90,7 @@ PORT=9000 codexmux
 
 그럴 리가 없습니다 — tmux가 모든 셸을 서버에서 유지합니다. 새로고침해도 탭이 돌아오지 않으면:
 
-1. 서버가 살아 있는지 확인 (`http://localhost:8122/api/health`).
+1. 서버가 살아 있는지 확인 (`http://localhost:8121/api/health`).
 2. tmux 세션 존재 확인: `tmux -L codexmux ls`.
 3. `autoResumeOnStartup` 중 에러가 없었는지 `~/.codexmux/logs/codexmux.YYYY-MM-DD.N.log` 확인.
 
@@ -156,7 +156,7 @@ Capacitor Android 앱에서는 모바일 메뉴의 앱 정보에서 Android 앱 
 
 가능하지만 항상 HTTPS로. 권장:
 
-1. **Tailscale Serve** — `tailscale serve --bg --https=443 localhost:8122`로 WireGuard 암호화 + 자동 인증서. 포트 포워딩 불필요.
+1. **Tailscale Serve** — `tailscale serve --bg --https=443 localhost:8121`로 WireGuard 암호화 + 자동 인증서. 포트 포워딩 불필요.
 2. **리버스 프록시** — Nginx / Caddy / Traefik. `Upgrade`와 `Connection` 헤더를 반드시 포워딩하세요. 안 그러면 WebSocket이 깨집니다.
 
 오픈 인터넷 위 평문 HTTP는 권하지 않습니다 — 인증 쿠키는 HMAC 서명이지만 WebSocket 페이로드(터미널 바이트!)는 암호화되지 않습니다.
@@ -171,16 +171,16 @@ tailscale status
 tailscale ip -4
 ```
 
-codexmux는 Tailscale 대역을 허용해서 실행합니다. 아래 예시는 포트를 `8122`로 고정한 경우입니다:
+codexmux는 Tailscale 대역을 허용해서 실행합니다. 아래 예시는 포트를 `8121`로 고정한 경우입니다:
 
 ```bash
-HOST=localhost,tailscale PORT=8122 codexmux
+HOST=localhost,tailscale PORT=8121 codexmux
 ```
 
-모바일 Tailscale 앱에서 VPN을 켠 뒤 브라우저에서 `http://<tailscale-ip>:8122`로 접속합니다. HTTPS와 짧은 `*.ts.net` 주소가 필요하면 codexmux를 켜둔 상태에서 서버 PC에 Serve를 설정하세요:
+모바일 Tailscale 앱에서 VPN을 켠 뒤 브라우저에서 `http://<tailscale-ip>:8121`로 접속합니다. HTTPS와 짧은 `*.ts.net` 주소가 필요하면 codexmux를 켜둔 상태에서 서버 PC에 Serve를 설정하세요:
 
 ```bash
-tailscale serve --bg --https=443 localhost:8122
+tailscale serve --bg --https=443 localhost:8121
 tailscale serve status
 ```
 
@@ -204,7 +204,7 @@ HOST=all codexmux                 # 모두
 
 ```nginx
 location / {
-  proxy_pass http://127.0.0.1:8122;
+  proxy_pass http://127.0.0.1:8121;
   proxy_http_version 1.1;
   proxy_set_header Upgrade $http_upgrade;
   proxy_set_header Connection "upgrade";
@@ -212,7 +212,7 @@ location / {
 }
 ```
 
-Caddy는 WebSocket 포워딩이 기본이므로 `reverse_proxy 127.0.0.1:8122`만 적으면 됩니다.
+Caddy는 WebSocket 포워딩이 기본이므로 `reverse_proxy 127.0.0.1:8121`만 적으면 됩니다.
 
 ## 데이터와 저장소
 

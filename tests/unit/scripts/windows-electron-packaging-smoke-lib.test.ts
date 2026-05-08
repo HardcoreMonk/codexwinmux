@@ -59,9 +59,16 @@ describe('Windows Electron packaging smoke helpers', () => {
           allowToChangeInstallationDirectory: true,
           runAfterFinish: false,
           artifactName: '${productName}-Setup-${version}.${ext}',
+          include: 'build-resources/installer.nsh',
         },
       },
-      resources: new Set(['build-resources/icon.ico']),
+      nsisIncludeText: `
+!macro customHeader
+  ShowInstDetails show
+  ShowUninstDetails show
+!macroend
+`,
+      resources: new Set(['build-resources/icon.ico', 'build-resources/installer.nsh']),
     });
 
     expect(result).toMatchObject({
@@ -74,6 +81,7 @@ describe('Windows Electron packaging smoke helpers', () => {
         'windows-nsis-installer-options',
         'windows-nsis-run-after-finish-disabled',
         'windows-nsis-artifact-name-stable',
+        'windows-nsis-install-details-visible',
         'windows-icon-present',
       ],
     });
@@ -103,15 +111,57 @@ describe('Windows Electron packaging smoke helpers', () => {
           allowToChangeInstallationDirectory: true,
           runAfterFinish: false,
           artifactName: '${productName}-Setup-${version}.${ext}',
+          include: 'build-resources/installer.nsh',
         },
       },
-      resources: new Set(['build-resources/icon.ico']),
+      nsisIncludeText: `
+!macro customHeader
+  ShowInstDetails show
+  ShowUninstDetails show
+!macroend
+`,
+      resources: new Set(['build-resources/icon.ico', 'build-resources/installer.nsh']),
     });
 
     expect(result.ok).toBe(true);
     expect(result.checks).toContain('pack-electron-default-windows');
     expect(result.checks).toContain('pack-electron-dev-windows-dir');
     expect(result.checks).toContain('windows-nsis-artifact-name-stable');
+    expect(result.checks).toContain('windows-nsis-install-details-visible');
+  });
+
+  it('requires NSIS install and uninstall detail panes to stay visible', async () => {
+    const { validateWindowsElectronPackaging } = await loadLib();
+    const result = validateWindowsElectronPackaging({
+      packageJson: {
+        scripts: {
+          'pack:electron': 'electron-builder --win',
+          'pack:electron:dev': 'electron-builder --win --dir',
+        },
+      },
+      builderConfig: {
+        win: {
+          icon: 'build-resources/icon.ico',
+          target: [
+            { target: 'nsis', arch: ['x64'] },
+            { target: 'zip', arch: ['x64'] },
+          ],
+        },
+        nsis: {
+          oneClick: false,
+          perMachine: false,
+          allowToChangeInstallationDirectory: true,
+          runAfterFinish: false,
+          artifactName: '${productName}-Setup-${version}.${ext}',
+        },
+      },
+      resources: new Set(['build-resources/icon.ico']),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toContain(
+      'windows-nsis-install-details-hidden',
+    );
   });
 
   it('normalizes string and object target entries', async () => {

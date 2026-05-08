@@ -3,6 +3,7 @@ import Head from 'next/head';
 import type { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import useBrowserTitle from '@/hooks/use-browser-title';
+import { APP_DISPLAY_NAME } from '@/lib/app-brand';
 import { getPageShellWithTitlebarLayout } from '@/components/layout/page-shell';
 import useWebviewStore from '@/hooks/use-webview-store';
 
@@ -16,7 +17,7 @@ const WebviewPage = () => {
     catch { return 'Webview'; }
   }, [url]);
 
-  useBrowserTitle(hostname);
+  useBrowserTitle(`${hostname} - ${APP_DISPLAY_NAME}`);
 
   useEffect(() => {
     if (url) {
@@ -27,7 +28,7 @@ const WebviewPage = () => {
   return (
     <>
       <Head>
-        <title>{hostname} - codexmux</title>
+        <title>{hostname} - {APP_DISPLAY_NAME}</title>
       </Head>
       <div className="flex min-h-0 flex-1" />
     </>

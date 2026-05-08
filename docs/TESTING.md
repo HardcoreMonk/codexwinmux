@@ -106,7 +106,7 @@ corepack pnpm smoke:runtime-v2
 target URL을 지정한다.
 
 ```bash
-CODEXMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8122 corepack pnpm smoke:runtime-v2
+CODEXMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8121 corepack pnpm smoke:runtime-v2
 corepack pnpm smoke:runtime-v2:target
 ```
 
@@ -288,7 +288,7 @@ corepack pnpm test tests/unit/scripts/runtime-v2-phase6-gate-lib.test.ts
 corepack pnpm smoke:runtime-v2:phase6-default-gate
 ```
 
-`smoke:runtime-v2:phase6-default-gate`는 기본적으로 live `http://127.0.0.1:8122`를
+`smoke:runtime-v2:phase6-default-gate`는 기본적으로 live `http://127.0.0.1:8121`를
 조회하고, 필요하면 `CODEXMUX_RUNTIME_V2_PHASE6_GATE_URL` 또는
 `CODEXMUX_RUNTIME_V2_SMOKE_URL`로 target을 바꾼다. 이 smoke는 `/api/v2/runtime/health`의
 terminal `new-tabs`, storage/timeline/status `default`, worker health `ok`와
@@ -600,7 +600,7 @@ stdout, auth cookie를 payload에 추가하는 변경은 이 테스트와 `docs/
 
 ```bash
 corepack pnpm deploy:local
-curl -fsS http://127.0.0.1:8122/api/health
+curl -fsS http://127.0.0.1:8121/api/health
 systemctl --user show codexmux.service --property=ActiveState,SubState,ExecMainPID,Result,NRestarts,WorkingDirectory
 journalctl --user -u codexmux.service --since '10 minutes ago' -p warning --no-pager
 ```

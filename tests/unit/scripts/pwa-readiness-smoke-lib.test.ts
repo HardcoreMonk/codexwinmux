@@ -10,7 +10,7 @@ describe('PWA readiness smoke helpers', () => {
   it('normalizes PWA smoke URLs', async () => {
     const { normalizePwaSmokeUrl } = await loadLib();
 
-    expect(normalizePwaSmokeUrl('127.0.0.1:8122/')).toBe('http://127.0.0.1:8122');
+    expect(normalizePwaSmokeUrl('127.0.0.1:8121/')).toBe('http://127.0.0.1:8121');
     expect(normalizePwaSmokeUrl('https://gti12.tail73c4be.ts.net/login')).toBe('https://gti12.tail73c4be.ts.net/login');
   });
 

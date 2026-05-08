@@ -37,7 +37,7 @@ describe('Windows service host baseline', () => {
           CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
           CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
           HOST: '127.0.0.1',
-          PORT: '8122',
+          PORT: '8121',
         },
       },
       restartPolicy: {

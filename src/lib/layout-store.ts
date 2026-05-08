@@ -20,7 +20,7 @@ import { isAgentPanelType, normalizePanelType } from '@/lib/panel-type';
 import { normalizeAgentFields } from '@/lib/agent-tab-fields';
 import { resolveTabRuntimeVersion } from '@/lib/runtime/terminal-mode';
 import { mirrorLegacyStorageToRuntimeV2BestEffort } from '@/lib/runtime/storage-mirror';
-import { readRuntimeStorageLayout } from '@/lib/runtime/storage-read-owner';
+import { readRuntimeStorageLayout, shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import type { ITab, TLayoutNode, IPaneNode, ILayoutData, TPanelType } from '@/types/terminal';
 import type { TCliState } from '@/types/timeline';
@@ -274,6 +274,11 @@ export const getLayout = async (wsId: string, defaultCwd?: string): Promise<ILay
     const filePath = resolveLayoutFile(wsId);
     const existing = await readLayoutFile(filePath);
     if (existing) return existing;
+    if (shouldReadRuntimeStorageV2()) {
+      throw Object.assign(new Error(`runtime v2 layout not found: ${wsId}`), {
+        code: 'runtime-v2-layout-not-found',
+      });
+    }
 
     const { pane, tab } = createDefaultPaneNode(wsId, defaultCwd);
     await createSession(tab.sessionName, 80, 24, defaultCwd);
@@ -288,6 +293,12 @@ export const getLayout = async (wsId: string, defaultCwd?: string): Promise<ILay
   });
 
 export const createPane = async (wsId: string, cwd?: string): Promise<{ paneId: string; tab: ITab }> => {
+  if (shouldReadRuntimeStorageV2()) {
+    throw Object.assign(new Error(`runtime v2 workspace pane not found: ${wsId}`), {
+      code: 'runtime-v2-pane-not-found',
+    });
+  }
+
   const paneId = generatePaneId();
   const tabId = generateTabId();
   const sessionName = workspaceSessionName(wsId, paneId, tabId);
@@ -698,6 +709,12 @@ export const splitPaneInLayout = async (
   cwd?: string,
   panelType?: string,
 ): Promise<ILayoutData | null> => {
+  if (shouldReadRuntimeStorageV2()) {
+    throw Object.assign(new Error(`runtime v2 split panes are not implemented for workspace: ${wsId}`), {
+      code: 'runtime-v2-split-pane-not-implemented',
+    });
+  }
+
   const isWebBrowser = panelType === 'web-browser';
   const paneId = generatePaneId();
   const tabId = generateTabId();

@@ -21,7 +21,7 @@ interface ITailscaleStatus {
   serverPort: number;
 }
 
-const DEFAULT_PORT = 8122;
+const DEFAULT_PORT = 8121;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'GET') {

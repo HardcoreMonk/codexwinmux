@@ -11,7 +11,7 @@ describe('Electron smoke helpers', () => {
   it('normalizes attach URLs with a default http scheme', async () => {
     const { normalizeElectronSmokeUrl } = await loadLib();
 
-    expect(normalizeElectronSmokeUrl('127.0.0.1:8122')).toBe('http://127.0.0.1:8122');
+    expect(normalizeElectronSmokeUrl('127.0.0.1:8121')).toBe('http://127.0.0.1:8121');
     expect(normalizeElectronSmokeUrl('https://gti12.tail73c4be.ts.net/')).toBe('https://gti12.tail73c4be.ts.net');
   });
 
@@ -19,22 +19,22 @@ describe('Electron smoke helpers', () => {
     const { selectElectronPageTarget } = await loadLib();
     const targets = [
       { type: 'other', url: 'devtools://devtools/bundled/inspector.html', webSocketDebuggerUrl: 'ws://other' },
-      { type: 'page', url: 'http://127.0.0.1:8122/login', webSocketDebuggerUrl: 'ws://local' },
+      { type: 'page', url: 'http://127.0.0.1:8121/login', webSocketDebuggerUrl: 'ws://local' },
       { type: 'page', url: 'https://example.invalid/', webSocketDebuggerUrl: 'ws://example' },
     ];
 
-    expect(selectElectronPageTarget(targets, 'http://127.0.0.1:8122')?.url).toBe('http://127.0.0.1:8122/login');
+    expect(selectElectronPageTarget(targets, 'http://127.0.0.1:8121')?.url).toBe('http://127.0.0.1:8121/login');
   });
 
   it('selects a packaged Electron local server page target', async () => {
     const { selectElectronLocalPageTarget } = await loadLib();
     const targets = [
       { type: 'page', url: 'data:text/html,splash', webSocketDebuggerUrl: 'ws://splash' },
-      { type: 'page', url: 'http://localhost:8122/login', webSocketDebuggerUrl: 'ws://local' },
+      { type: 'page', url: 'http://localhost:8121/login', webSocketDebuggerUrl: 'ws://local' },
       { type: 'page', url: 'https://example.invalid/', webSocketDebuggerUrl: 'ws://remote' },
     ];
 
-    expect(selectElectronLocalPageTarget(targets)?.url).toBe('http://localhost:8122/login');
+    expect(selectElectronLocalPageTarget(targets)?.url).toBe('http://localhost:8121/login');
   });
 
   it('builds Electron launch args with remote debugging before the app path', async () => {

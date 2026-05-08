@@ -19,17 +19,17 @@ permalink: /pt-BR/docs/tailscale/index.html
 
 - Tailscale 계정과, codexmux 실행 머신에 설치/로그인된 `tailscale` 데몬
 - 테일넷 HTTPS 활성화 (Admin console → DNS → HTTPS Certificates, 이미 켜져 있으면 패스)
-- codexmux가 기본 포트 `8122` (또는 `PORT`로 지정한 포트)에서 실행 중
+- codexmux가 기본 포트 `8121` (또는 `PORT`로 지정한 포트)에서 실행 중
 
 ## 실행
 
 한 줄이면 됩니다.
 
 ```bash
-tailscale serve --bg --https=443 localhost:8122
+tailscale serve --bg --https=443 localhost:8121
 ```
 
-Tailscale이 로컬 `http://localhost:8122`를 HTTPS로 감싸 테일넷 내부에 노출합니다.
+Tailscale이 로컬 `http://localhost:8121`를 HTTPS로 감싸 테일넷 내부에 노출합니다.
 
 ```
 https://<machine>.<tailnet>.ts.net
@@ -61,7 +61,7 @@ Nginx 예시:
 
 ```
 location / {
-  proxy_pass http://127.0.0.1:8122;
+  proxy_pass http://127.0.0.1:8121;
   proxy_http_version 1.1;
   proxy_set_header Upgrade $http_upgrade;
   proxy_set_header Connection "upgrade";
@@ -70,13 +70,13 @@ location / {
 }
 ```
 
-Caddy는 더 간단합니다 — `reverse_proxy 127.0.0.1:8122`만 써도 업그레이드 헤더를 알아서 처리합니다.
+Caddy는 더 간단합니다 — `reverse_proxy 127.0.0.1:8121`만 써도 업그레이드 헤더를 알아서 처리합니다.
 
 `Upgrade` / `Connection` 포워딩이 빠지면 대시보드는 렌더링되지만 터미널이 연결되지 않고 상태도 그대로 멈춥니다. 반쪽짜리로 동작한다면 이 헤더부터 의심하세요.
 
 ## 문제 해결
 
-- **HTTPS 인증서 미발급** — 첫 발급은 1분 정도 걸릴 수 있습니다. 잠시 기다린 후 `tailscale serve --bg --https=443 localhost:8122`를 다시 실행하면 보통 해결됩니다.
+- **HTTPS 인증서 미발급** — 첫 발급은 1분 정도 걸릴 수 있습니다. 잠시 기다린 후 `tailscale serve --bg --https=443 localhost:8121`를 다시 실행하면 보통 해결됩니다.
 - **브라우저가 인증서 경고** — `<machine>.<tailnet>.ts.net` URL을 정확히 사용하고 있는지, LAN IP를 쓰고 있지 않은지 확인하세요.
 - **모바일에서 접근 불가** — 휴대폰이 같은 테일넷에 로그인되어 있고 OS 설정에서 Tailscale이 활성 상태인지 확인하세요.
 - **자체 서명 인증서** — Web Push 등록이 거부됩니다. Tailscale Serve 또는 ACME가 발급한 실제 인증서를 사용하세요.
