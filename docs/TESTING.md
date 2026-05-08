@@ -366,6 +366,7 @@ corepack pnpm smoke:windows:packaged-runtime-v2
 corepack pnpm pack:electron
 corepack pnpm smoke:windows:zip-artifact
 corepack pnpm smoke:windows:update-metadata
+corepack pnpm smoke:windows:signing-evidence
 corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
 corepack pnpm smoke:windows:updater-github-feed
@@ -384,6 +385,12 @@ ConPTY files, and the Electron ABI `better-sqlite3` native binding.
 installer artifact that exists in `release/`, has matching size and sha512
 metadata, has a matching `.blockmap`, and that packaged `app-update.yml` points
 to the same GitHub publish owner/repo as `electron-builder.yml`.
+`smoke:windows:signing-evidence`는 NSIS installer와 `win-unpacked` 실행 파일이
+Authenticode로 서명됐는지, timestamp가 있는지, 명시적인 SmartScreen 증거가 있는지
+확인한다. `CODEXMUX_SMARTSCREEN_EVIDENCE_PATH` 또는
+`CODEXMUX_SMARTSCREEN_STATUS=passed`가 없으면 code signing이 유효해도 SmartScreen
+gate는 계속 막힌다. 서명되지 않은 artifact는 `windows-smartscreen-blocked-unsigned`로
+실패한다.
 `smoke:windows:updater-local-feed` mutates the current Windows user install
 state temporarily: it silent-installs the generated NSIS artifact, creates a
 synthetic local `latest.yml` with a bumped patch version, verifies Electron
@@ -504,6 +511,7 @@ CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:timeline
 CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:release-gate
 CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:zip-artifact
 CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:update-metadata
+CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:signing-evidence
 CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:updater-local-feed
 CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:updater-published-channel
 CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:packaged-runtime-v2
@@ -528,6 +536,9 @@ write their own sanitized artifacts when the same artifact directory is set.
 summaries: current/latest version, release count, latest release tag/url,
 referenced installer name, checks, and blocker ids. They do not include tokens or
 raw GitHub API bodies.
+`smoke:windows:signing-evidence` artifact는 파일명, hash, signature status,
+signer/timestamp certificate subject/thumbprint, SmartScreen status, check,
+blocker id만 보존한다. 로컬 release path나 raw PowerShell output은 포함하지 않는다.
 
 The release workflow runs `smoke:browser-reconnect` on GitHub-hosted Ubuntu and uploads
 `smoke-browser-reconnect`. Android and packaged Electron smoke remain manual or self-hosted

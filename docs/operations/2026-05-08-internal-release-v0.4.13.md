@@ -140,6 +140,12 @@ Get-AuthenticodeSignature .\release\codexmux-Setup-0.4.13.exe
 Get-AuthenticodeSignature .\release\win-unpacked\codexmux.exe
 ```
 
+반복 가능한 gate:
+
+```bash
+corepack pnpm smoke:windows:signing-evidence
+```
+
 판정:
 
 - Code signing certificate trust: 미완료.
@@ -196,6 +202,7 @@ Windows 설치형 앱 기준 rollback은 이전 installer 보관, 새 버전 uni
 | `corepack pnpm smoke:windows:package-gate` | 통과 |
 | ZIP artifact | 통과, `codexmux-0.4.13-win.zip`, 12,484 entries |
 | update metadata | 통과, blockers `[]` |
+| signing evidence | 실패 예상, unsigned blocker |
 | updater local feed | 통과, synthetic `0.4.14`, `quitAndInstall` |
 | packaged launch | 통과 |
 | engine lifecycle | 통과, UI quit 뒤 health 유지 |

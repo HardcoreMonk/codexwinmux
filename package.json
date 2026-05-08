@@ -82,6 +82,7 @@
     "smoke:windows:electron-packaging": "node scripts/smoke-windows-electron-packaging.mjs",
     "smoke:windows:zip-artifact": "node scripts/smoke-windows-zip-artifact.mjs",
     "smoke:windows:update-metadata": "node scripts/smoke-windows-update-metadata.mjs",
+    "smoke:windows:signing-evidence": "node scripts/smoke-windows-signing-evidence.mjs",
     "smoke:windows:updater-local-feed": "node scripts/smoke-windows-updater-local-feed.mjs",
     "smoke:windows:updater-github-feed": "node scripts/smoke-windows-updater-github-feed.mjs",
     "smoke:windows:updater-published-channel": "node scripts/smoke-windows-updater-published-channel.mjs",
