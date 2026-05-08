@@ -583,6 +583,13 @@ corepack pnpm smoke:permission
 `event_msg.agent_message`와 paired `response_item.message`로 남은 JSONL에서도 한 번만
 표시되는지 확인한다.
 
+Codex CLI JSONL parser fixture는 `tests/fixtures/codex-jsonl/`에 둔다. 버전별 record shape가
+바뀌면 fixture를 추가하고 다음 focused test를 먼저 통과시킨다.
+
+```bash
+corepack pnpm vitest run tests/unit/lib/codex-session-parser-fixtures.test.ts
+```
+
 Bridge trace forwarding은 env-gated optional path이므로 unit test로 payload boundary를 먼저
 고정한다.
 

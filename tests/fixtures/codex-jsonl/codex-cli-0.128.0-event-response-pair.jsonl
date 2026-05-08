@@ -1,0 +1,10 @@
+{"timestamp":"2026-05-02T00:00:00.000Z","type":"session_meta","payload":{"id":"019dcf1f-3a02-73a0-a79e-8703b99a1280","timestamp":"2026-05-02T00:00:00.000Z"}}
+{"timestamp":"2026-05-02T00:00:01.000Z","type":"turn_context","payload":{"cwd":"C:\\work\\codexwinmux","model":"gpt-5.5"}}
+{"timestamp":"2026-05-02T00:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"Check paired messages"}}
+{"timestamp":"2026-05-02T00:00:02.003Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Check paired messages"}]}}
+{"timestamp":"2026-05-02T00:00:03.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Reading the timeline parser.","phase":"commentary"}}
+{"timestamp":"2026-05-02T00:00:03.003Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Reading the timeline parser."}],"phase":"commentary"}}
+{"timestamp":"2026-05-02T00:00:04.000Z","type":"response_item","payload":{"type":"reasoning","summary":["Need verify dedupe"],"content":null,"encrypted_content":"redacted"}}
+{"timestamp":"2026-05-02T00:00:05.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","call_id":"call_fixture_128","arguments":"{\"cmd\":\"Get-ChildItem tests\",\"workdir\":\"C:\\\\work\\\\codexwinmux\"}"}}
+{"timestamp":"2026-05-02T00:00:06.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_fixture_128","output":"Process exited with code 0\nfixtures present"}}
+{"timestamp":"2026-05-02T00:00:07.000Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"turn-fixture-128","last_agent_message":"Done."}}
