@@ -45,6 +45,7 @@
 - Codex live input prompt 복구: JSONL interrupt marker 없이 남은 `Conversation interrupted` prompt는 stale `busy`에서 `idle`로 복구하고, service restart 후 남는 resume working directory prompt는 persisted `idle`에서도 `needs-input`으로 노출한다. `7e83313` live deploy 기준 Android에서 보이던 purecvisor-single hang 표시는 `needs-input` prompt로 정정됐다.
 - Codex resume 실패 원인 분류: `timeline:resume-error`에 `invalid-session-id`, `command-build-failed`, `send-failed`, `unknown` reason을 추가하고 desktop/mobile toast가 reason별 한국어/영어 설명을 표시한다. 원본 error, command, cwd, session name, JSONL path, terminal output은 표시하지 않는다.
 - Codex CLI 버전별 JSONL fixture: `tests/fixtures/codex-jsonl/`에 `0.127.0` response-item 중심 fixture와 `0.128.0` event/response paired message fixture를 추가하고 parser regression test로 stable id와 중복 제거를 고정했다.
+- Codex fork/sub-agent 관계 UI: Codex `spawn_agent`/`Agent` function call과 matching output을 `agent-group` timeline entry로 접고, timeline 카드 헤더에 `Sub-agent`, agent type, 설명을 함께 표시한다.
 - runtime v2 lifecycle control UI/actions 1차: `/experimental/runtime` 상단에서 `/api/health`, `/api/v2/runtime/health`, `/api/debug/perf`, `/api/runtime/lifecycle/action`을 모아 release, surface mode, 24시간 observation gate, worker diagnostics, perf timing, allowlisted lifecycle actions, copy-only rollback runbook을 표시한다. 실행 action은 `phase6-gate`, `restart-service`, `deploy-local`로 제한하고 restart/deploy는 exact confirmation phrase를 요구한다. Endpoint 부분 실패는 section label만 노출하고 가능한 section은 계속 렌더링하며, token/cwd/session/prompt/terminal output 원문은 UI와 audit에 표시하거나 저장하지 않는다.
 - codex-ai-bridge external trace forwarding: `CODEXMUX_BRIDGE_TRACE_URL`/`CODEXMUX_BRIDGE_TRACE_TOKEN`이 설정된 경우 status update summary를 bridge-owned ingress로 best-effort POST한다. Discord token과 raw transcript는 codexmux가 소유하지 않고, 동일 tab/state/action 조합은 dedupe한다.
 - runtime v2 timeline WebSocket default ownership: `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`에서 기존 `/api/timeline` WebSocket URL이 Timeline Worker live subscribe/session watch를 사용하는 runtime bridge로 전환됐다. Default WebSocket smoke, live shadow, resume safety, session-changed, Android foreground timeline smoke가 temp HOME/DB 기준 통과했다.
@@ -182,7 +183,6 @@ P0/P1/P2/P3 후속 상태:
 
 ### Codex lifecycle
 
-- fork/sub-agent 관계를 UI에 표시.
 - `~/.codex/state_*.sqlite` read-only indexer 검토.
 - stable timeline id가 provider별 record identity에 맞게 확장되는지 fixture로 검증.
 

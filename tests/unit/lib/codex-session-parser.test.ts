@@ -203,4 +203,48 @@ describe('parseCodexJsonlContent', () => {
     expect(entries[0]).toMatchObject({ type: 'tool-call', status: 'error' });
     expect(entries[1]).toMatchObject({ type: 'tool-result', isError: true });
   });
+
+  it('groups Codex spawn_agent call and output as a sub-agent relationship', () => {
+    const content = [
+      line({
+        type: 'response_item',
+        timestamp: '2026-05-08T09:00:00.000Z',
+        payload: {
+          type: 'function_call',
+          name: 'spawn_agent',
+          call_id: 'call_spawn_1',
+          arguments: JSON.stringify({
+            agent_type: 'explorer',
+            message: 'Map timeline parser callers',
+          }),
+        },
+      }),
+      line({
+        type: 'response_item',
+        timestamp: '2026-05-08T09:00:10.000Z',
+        payload: {
+          type: 'function_call_output',
+          call_id: 'call_spawn_1',
+          output: 'Explorer found parser and timeline UI entry points.',
+        },
+      }),
+    ].join('\n');
+
+    const entries = parseCodexJsonlContent(content);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      type: 'agent-group',
+      agentType: 'explorer',
+      description: 'Map timeline parser callers',
+      entryCount: 2,
+      entries: [
+        {
+          type: 'assistant-message',
+          markdown: 'Explorer found parser and timeline UI entry points.',
+        },
+      ],
+    });
+    expect(parseCodexJsonlContent(content).map((entry) => entry.id)).toEqual(entries.map((entry) => entry.id));
+  });
 });

@@ -590,6 +590,12 @@ Codex CLI JSONL parser fixture는 `tests/fixtures/codex-jsonl/`에 둔다. 버�
 corepack pnpm vitest run tests/unit/lib/codex-session-parser-fixtures.test.ts
 ```
 
+Codex fork/sub-agent timeline 표시를 바꾸면 parser와 카드 header를 함께 검증한다.
+
+```bash
+corepack pnpm vitest run tests/unit/lib/codex-session-parser.test.ts tests/unit/components/agent-group-item.test.ts
+```
+
 Bridge trace forwarding은 env-gated optional path이므로 unit test로 payload boundary를 먼저
 고정한다.
 

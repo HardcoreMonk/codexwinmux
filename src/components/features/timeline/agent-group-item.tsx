@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import AssistantMessageItem from '@/components/features/timeline/assistant-message-item';
 import ToolGroupItem from '@/components/features/timeline/tool-group-item';
@@ -85,7 +85,10 @@ const AgentGroupItem = ({ entry }: IAgentGroupItemProps) => {
             isExpanded && 'rotate-90',
           )}
         />
-        <span>{entry.description}</span>
+        <Users size={12} className="shrink-0 text-agent-active/70" />
+        <span className="shrink-0 font-medium text-agent-active">Sub-agent</span>
+        <span className="shrink-0 text-muted-foreground/70">{entry.agentType}</span>
+        <span className="min-w-0 truncate">{entry.description}</span>
       </button>
       {isExpanded && (
         <div className="ml-[7px] mt-0.5 border-l border-border/40 pl-3">

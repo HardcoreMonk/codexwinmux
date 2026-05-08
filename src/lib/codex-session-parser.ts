@@ -7,6 +7,7 @@ import type {
   ITimelineThinking,
   ITimelineToolCall,
   ITimelineToolResult,
+  ITimelineAgentGroup,
   TToolStatus,
 } from '@/types/timeline';
 import fs from 'fs/promises';
@@ -24,6 +25,15 @@ interface ICodexParseResult {
   lastOffset: number;
   errorCount: number;
   summary?: string;
+}
+
+interface IPendingAgentCall {
+  callId: string;
+  agentType: string;
+  description: string;
+  timestamp: number;
+  lineOffset: number;
+  source: string;
 }
 
 const toTimestamp = (value: unknown): number => {
@@ -93,6 +103,84 @@ const summarizeCodexToolCall = (name: string, input: Record<string, unknown>): s
       return truncate(`${name}${firstVal ? ` ${firstVal}` : ''}`);
     }
   }
+};
+
+const isAgentForkToolName = (name: string): boolean =>
+  name === 'spawn_agent' || name === 'Agent';
+
+const toShortText = (value: unknown, max = 120): string => {
+  if (typeof value !== 'string') return '';
+  return truncate(value.trim(), max);
+};
+
+const buildPendingAgentCall = (
+  payload: Record<string, unknown>,
+  timestamp: number,
+  lineOffset: number,
+  source: string,
+): IPendingAgentCall | null => {
+  if (payload.type !== 'function_call') return null;
+  const name = typeof payload.name === 'string' ? payload.name : '';
+  if (!isAgentForkToolName(name)) return null;
+  const callId = typeof payload.call_id === 'string' ? payload.call_id : '';
+  if (!callId) return null;
+
+  const input = tryParseJson(payload.arguments);
+  const agentType = toShortText(input.agent_type ?? input.subagent_type ?? input.type, 40) || 'Agent';
+  const description = toShortText(input.message ?? input.description ?? input.prompt, 160) || 'Sub-agent';
+
+  return {
+    callId,
+    agentType,
+    description,
+    timestamp,
+    lineOffset,
+    source,
+  };
+};
+
+const createAgentResultEntry = (
+  pending: IPendingAgentCall,
+  output: string,
+  lineOffset: number,
+  source: string,
+): ITimelineAssistantMessage | null => {
+  const markdown = output.trim();
+  if (!markdown) return null;
+  return {
+    id: createTimelineEntryId({
+      lineOffset,
+      entryIndex: 0,
+      type: 'assistant-message',
+      source,
+    }),
+    type: 'assistant-message',
+    timestamp: pending.timestamp,
+    markdown,
+  };
+};
+
+const createAgentGroup = (
+  pending: IPendingAgentCall,
+  output: string,
+  lineOffset: number,
+  source: string,
+): ITimelineAgentGroup => {
+  const resultEntry = createAgentResultEntry(pending, output, lineOffset, source);
+  return {
+    id: createTimelineEntryId({
+      lineOffset: pending.lineOffset,
+      entryIndex: 0,
+      type: 'agent-group',
+      source: [pending.source, source],
+    }),
+    type: 'agent-group',
+    timestamp: pending.timestamp,
+    agentType: pending.agentType,
+    description: pending.description,
+    entryCount: 2,
+    entries: resultEntry ? [resultEntry] : [],
+  };
 };
 
 const parseMessage = (
@@ -256,6 +344,7 @@ const parseCodexContent = (content: string, baseOffset = 0): ICodexParseResult =
   const entries: ITimelineEntry[] = [];
   const entryLineOffsets: number[] = [];
   const seenMessages = new Map<string, number>();
+  const pendingAgentCalls = new Map<string, IPendingAgentCall>();
   let errorCount = 0;
   let summary: string | undefined;
   let bytePos = 0;
@@ -302,6 +391,25 @@ const parseCodexContent = (content: string, baseOffset = 0): ICodexParseResult =
     }
 
     if (record.type !== 'response_item') continue;
+
+    const pendingAgent = buildPendingAgentCall(payload, timestamp, lineByteOffset, trimmed);
+    if (pendingAgent) {
+      pendingAgentCalls.set(pendingAgent.callId, pendingAgent);
+      continue;
+    }
+
+    if (payload.type === 'function_call_output') {
+      const callId = typeof payload.call_id === 'string' ? payload.call_id : '';
+      const pending = pendingAgentCalls.get(callId);
+      if (pending) {
+        pendingAgentCalls.delete(callId);
+        const output = typeof payload.output === 'string' ? payload.output : '';
+        const agentGroup = createAgentGroup(pending, output, lineByteOffset, trimmed);
+        entries.push(agentGroup);
+        entryLineOffsets.push(pending.lineOffset);
+        continue;
+      }
+    }
 
     const message = parseMessage(payload, timestamp);
     if (message) {

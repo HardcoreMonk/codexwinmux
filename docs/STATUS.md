@@ -254,6 +254,11 @@ paired `response_item.payload.type="message"` record로 몇 ms 간격에 남길 
 `timeline-entry-dedupe`와 `timeline-entry-merge`가 같은 near-duplicate 규칙으로 한 번만
 표시한다. 이 때문에 assistant message identity를 timestamp 단독으로 잡지 않는다.
 
+Codex `spawn_agent` 또는 `Agent` function call이 matching `function_call_output`과 함께
+읽히면 parser는 일반 tool-call row 대신 `agent-group` entry를 만든다. 이 entry는 agent
+type, spawn prompt/description, sub-agent output summary를 보존하며 기존 timeline
+`AgentGroupItem`으로 접힌 관계 카드에 표시된다.
+
 `agent_message`는 commentary/final text 모두에 쓰일 수 있어 완료 신호로 보지 않는다.
 예를 들어 "이제 파일을 편집합니다" 같은 중간 commentary 뒤에 바로 tool call이 이어질
 수 있다. 따라서 작업 완료 알림과 `ready-for-review` 전환은 현재 turn의
