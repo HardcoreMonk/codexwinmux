@@ -112,6 +112,23 @@ terminal attach, updater local feed를 실제 Windows host에서 다시 검증�
 | Windows code signing / SmartScreen | 차단 | `Get-AuthenticodeSignature` 기준 `release/codexmux-Setup-0.4.8.exe`와 `release/win-unpacked/codexmux.exe` 모두 `NotSigned`; 인증서 신뢰/타임스탬프/SmartScreen reputation은 signed re-publish 전에는 통과 처리 불가 |
 | Cleanup hardening | 통과 | packaged launch smoke가 Browser close 후 exact `ExecutablePath` 기반 child process exit를 확인하며, 실패 시 app-scoped cleanup으로 제한한다. `7ff7302f` 이후 temp codexmux process 잔류 없음 |
 
+### 2026-05-08 Windows internal release v0.4.13 readiness
+
+`0.4.13` 내부 파일럿 후보 산출물을 같은 Windows host에서 다시 생성하고 package/update gate를 재확인했다.
+
+| 항목 | 상태 | 근거 |
+| --- | --- | --- |
+| Windows package build | 통과 | `corepack pnpm pack:electron`, `release/codexmux-Setup-0.4.13.exe`, `release/codexmux-0.4.13-win.zip`, `latest.yml`, installer blockmap 생성 |
+| updater metadata | 통과 | `release/win-unpacked/resources/app-update.yml` 생성, provider `github`, owner `HardcoreMonk`, repo `codexwinmux`, updater cache `codexmux-updater` |
+| package gate | 통과 | `corepack pnpm smoke:windows:package-gate`, zip artifact, update metadata, updater local feed, packaged launch, engine lifecycle, packaged Runtime v2, installer Runtime v2 모두 통과 |
+| updater local feed | 통과 | synthetic `0.4.14` feed에서 `download -> update-downloaded -> quitAndInstall -> post-update launch -> uninstall` 통과 |
+| engine lifecycle | 통과 | packaged app UI quit 이후 `127.0.0.1:8121/api/health` 유지 |
+| Runtime v2 terminal | 통과 | packaged app과 installer-installed app 모두 workspace/tab 생성 후 `/api/v2/terminal` marker 확인 |
+| Code signing | 차단 | `Get-AuthenticodeSignature release/codexmux-Setup-0.4.13.exe`와 `release/win-unpacked/codexmux.exe` 모두 `NotSigned` |
+| SmartScreen reputation | 차단 | unsigned artifact이므로 accepted reputation evidence로 처리 불가 |
+| Rollback dry-run | 통과 | `corepack pnpm lifecycle:rollback-dry-run`, `mutates=false`, rollback command 후보 출력 |
+| 운영 문서 | 작성 | `docs/operations/2026-05-08-internal-release-v0.4.13.md`에 release note, 설치/업데이트 안내, 파일럿 체크리스트, 전체 배포 gate, identity decision, rollback evidence 기록 |
+
 ### 2026-05-05 P2 -> P3 runtime v2 storage preflight
 
 P2 terminal gate evidence를 보강하고 P3 storage default rollout 전 preflight를 실제
@@ -156,8 +173,8 @@ P0/P1/P2/P3 후속 상태:
 - P1 남음: 자동 개발로 처리 가능한 platform smoke 항목은 없음.
 - P2 완료: runtime v2 phase2 gate, Electron/Android runtime v2 reconnect smoke, browser reconnect DOM smoke, live terminal `new-tabs` enable을 현재 코드 기준으로 확인했다.
 - P2 남음: self-hosted Android device scheduling과 macOS packaged UX artifact 자동화. Release smoke artifact foundation은 browser reconnect smoke를 release workflow artifact로 보존하고, Android/Electron smoke scripts가 같은 sanitized JSON을 local 또는 self-hosted run에서 쓸 수 있게 완료했다. 추가로 `Platform Smoke Artifacts` 수동 workflow가 browser reconnect, GitHub-hosted macOS Electron runtime v2, self-hosted Android device artifact 수집 경로를 분리했다. `smoke:ops:batch`는 browser reconnect와 선택적 PWA/runtime target check를 local evidence artifact로 묶고, iPad/Mac 실기기 항목은 `manual-required`로 표시한다. 실제 Android runner provision과 packaged Mac UX evidence는 외부 운영 검증으로 남긴다. runtime v2 shadow/new-tabs/default 24시간 worker restart-loop 관찰은 2026-05-05 14:20 KST에 운영자 승인 closeout으로 완료 처리했다. 원래 24시간 clock gate 종료 시각은 2026-05-06 01:42 KST였으므로 이는 elapsed-time pass가 아니라 operator-approved closeout이다.
-- P3 진행: storage `default` live mode로 전환했고 dry-run, backup, import, write, default-read, shadow preflight와 initial rollback window canary를 통과했다. Android release signing/AAB는 로컬 keystore 권한 보정, fresh AAB build, `smoke:android:release-aab` 검증 자동화까지 완료했다. Windows package/update path는 실제 Windows host에서 local feed, published channel, full GitHub updater install smoke까지 통과했다. Perf snapshot baseline은 runtime v2 default 전환 뒤 2026-05-05 02:21 KST에 재수집했고, 2026-05-07 packaged `0.4.8` snapshot에서는 worker failure/restart/error 0으로 추가 튜닝 대상이 발견되지 않았다. Approval queue 1차와 metadata slice는 notification panel에서 pending permission prompt를 직접 처리하고 command/file/permission/resume/conversation type, approval kind, risk badge를 표시하는 경로까지 구현했다. `vitest`, `smoke:permission`, `tsc`, `lint`, `build`와 실제 Codex CLI permission prompt live smoke를 통과했다.
-- P3 남음: Windows code signing certificate trust와 SmartScreen reputation evidence. Lifecycle control은 allowlisted action 1차와 rollback dry-run까지 완료했고, `corepack pnpm lifecycle:rollback-dry-run`은 현재 drop-in과 rollback 명령을 mutation 없이 JSON으로 출력한다. rollback flag mutation/systemd drop-in 편집은 별도 spec으로 남긴다. Timeline Phase 4 WebSocket default ownership, Status Phase 5 live bridge, Phase 6 default gate/code fallback default 전환은 smoke 기준 완료됐다.
+- P3 진행: storage `default` live mode로 전환했고 dry-run, backup, import, write, default-read, shadow preflight와 initial rollback window canary를 통과했다. Android release signing/AAB는 로컬 keystore 권한 보정, fresh AAB build, `smoke:android:release-aab` 검증 자동화까지 완료했다. Windows package/update path는 실제 Windows host에서 local feed, published channel, full GitHub updater install smoke까지 통과했고, `0.4.13` package gate도 재검증했다. Perf snapshot baseline은 runtime v2 default 전환 뒤 2026-05-05 02:21 KST에 재수집했고, 2026-05-07 packaged `0.4.8` snapshot에서는 worker failure/restart/error 0으로 추가 튜닝 대상이 발견되지 않았다. Approval queue 1차와 metadata slice는 notification panel에서 pending permission prompt를 직접 처리하고 command/file/permission/resume/conversation type, approval kind, risk badge를 표시하는 경로까지 구현했다. `vitest`, `smoke:permission`, `tsc`, `lint`, `build`와 실제 Codex CLI permission prompt live smoke를 통과했다.
+- P3 남음: Windows code signing certificate trust와 SmartScreen reputation evidence. 내부 `0.4.13` 파일럿은 가능하지만 unsigned caveat가 있으며 외부 공개 배포는 signed re-publish 전까지 차단한다. Lifecycle control은 allowlisted action 1차와 rollback dry-run까지 완료했고, `corepack pnpm lifecycle:rollback-dry-run`은 현재 drop-in과 rollback 명령을 mutation 없이 JSON으로 출력한다. 실제 운영 환경 mutation rollback drill과 rollback flag mutation/systemd drop-in 편집은 별도 spec으로 남긴다. Timeline Phase 4 WebSocket default ownership, Status Phase 5 live bridge, Phase 6 default gate/code fallback default 전환은 smoke 기준 완료됐다.
 
 1. 장시간 Codex smoke test: 새 tab 생성, prompt 실행, tool call과 reasoning summary 표시, 상태 전이 확인.
 2. permission/input prompt smoke test: `corepack pnpm smoke:permission`으로 pane capture 기반 option parsing, inline prompt 선택, stdin 전달, `needs-input` push와 ack 후 `busy` 복귀 확인. 실제 Codex CLI permission prompt는 live tab에서 `read-only` sandbox 실패 prompt를 띄워 notification panel `No` 선택, ack 후 `busy` 복귀, denied command 미실행까지 확인한다. Resume working directory prompt는 `/api/tmux/permission-options`가 `Use session directory`/`Use current directory` 선택지를 반환하고 notification panel이 `needs-input`으로 보여주는지 확인한다. JSONL marker 없는 `Conversation interrupted` prompt는 stale `busy`가 `idle`로 풀리는지 확인한다.
