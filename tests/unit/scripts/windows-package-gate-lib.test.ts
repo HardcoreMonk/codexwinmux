@@ -27,6 +27,10 @@ describe('Windows package gate helpers', () => {
         script: 'smoke:windows:packaged-launch',
       },
       {
+        id: 'windows-engine-lifecycle',
+        script: 'smoke:windows:engine-lifecycle',
+      },
+      {
         id: 'windows-packaged-runtime-v2',
         script: 'smoke:windows:packaged-runtime-v2',
       },
@@ -52,6 +56,7 @@ describe('Windows package gate helpers', () => {
         'smoke:windows:zip-artifact',
         'smoke:windows:update-metadata',
         'smoke:windows:updater-local-feed',
+        'smoke:windows:engine-lifecycle',
         'smoke:windows:packaged-runtime-v2',
         'smoke:windows:installer-runtime-v2',
       ],

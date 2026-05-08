@@ -28,6 +28,17 @@ const summarizeRuntimeV2Terminal = (runtimeV2Terminal) => {
   };
 };
 
+const summarizeEngineLifecycle = (engineLifecycleEvidence) => {
+  if (!engineLifecycleEvidence || typeof engineLifecycleEvidence !== 'object') return null;
+  return {
+    uiQuitRequested: engineLifecycleEvidence.uiQuitRequested === true,
+    uiExited: engineLifecycleEvidence.uiExited === true,
+    uiExitCode: Number.isFinite(engineLifecycleEvidence.uiExitCode) ? engineLifecycleEvidence.uiExitCode : null,
+    uiExitSignal: engineLifecycleEvidence.uiExitSignal ?? null,
+    healthAfterUiQuit: summarizeHealth(engineLifecycleEvidence.healthAfterUiQuit),
+  };
+};
+
 const summarizeCommandResult = (result) => {
   if (!result || typeof result !== 'object') return null;
   return {
@@ -45,12 +56,19 @@ export const buildWindowsPackagedLaunchArtifactPayload = (payload) => ({
   ...(payload?.runtimeV2TerminalRequested !== undefined
     ? { runtimeV2TerminalRequested: payload.runtimeV2TerminalRequested === true }
     : {}),
+  ...(payload?.engineLifecycleRequested !== undefined
+    ? { engineLifecycleRequested: payload.engineLifecycleRequested === true }
+    : {}),
+  ...(payload?.engineLifecycle !== undefined
+    ? { engineLifecycle: payload.engineLifecycle === true }
+    : {}),
   launchMode: payload?.launchMode ?? null,
   longRunHoldMs: Number.isFinite(payload?.longRunHoldMs) ? payload.longRunHoldMs : 0,
   checks: Array.isArray(payload?.checks) ? payload.checks : [],
   state: summarizeState(payload?.state),
   health: summarizeHealth(payload?.health),
   longRunHealth: summarizeHealth(payload?.longRunHealth),
+  engineLifecycleEvidence: summarizeEngineLifecycle(payload?.engineLifecycleEvidence),
   runtimeV2Terminal: summarizeRuntimeV2Terminal(payload?.runtimeV2Terminal),
   consoleEventCount: Number.isFinite(payload?.consoleEventCount) ? payload.consoleEventCount : null,
   blockingConsoleCount: Number.isFinite(payload?.blockingConsoleCount) ? payload.blockingConsoleCount : null,

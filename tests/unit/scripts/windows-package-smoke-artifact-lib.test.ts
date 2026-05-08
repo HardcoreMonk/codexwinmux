@@ -19,9 +19,9 @@ describe('Windows package smoke artifact helpers', () => {
       remoteDebuggingPort: 61234,
       checks: ['packaged-exe-present', 'runtime-v2-terminal-ws'],
       state: {
-        href: 'http://localhost:8122/login',
-        origin: 'http://localhost:8122',
-        title: '로그인 - codexmux',
+        href: 'http://localhost:8121/login',
+        origin: 'http://localhost:8121',
+        title: '로그인 - windows native codexmux',
         readyState: 'complete',
         hasElectronApi: true,
         electronApiKeys: ['platform'],
@@ -39,6 +39,20 @@ describe('Windows package smoke artifact helpers', () => {
         version: '0.4.2',
         commit: 'fa3e4978',
         buildTime: '2026-05-06T15:35:10.450Z',
+      },
+      engineLifecycle: true,
+      engineLifecycleEvidence: {
+        uiQuitRequested: true,
+        uiExited: true,
+        uiExitCode: 0,
+        uiExitSignal: null,
+        healthAfterUiQuit: {
+          app: 'codexmux',
+          version: '0.4.2',
+          commit: 'fa3e4978',
+          buildTime: '2026-05-06T15:35:10.450Z',
+        },
+        url: 'http://localhost:8121',
       },
       runtimeV2Terminal: {
         tabId: 'tab-secret',
@@ -58,7 +72,7 @@ describe('Windows package smoke artifact helpers', () => {
       longRunHoldMs: 120000,
       checks: ['packaged-exe-present', 'runtime-v2-terminal-ws'],
       state: {
-        title: '로그인 - codexmux',
+        title: '로그인 - windows native codexmux',
         readyState: 'complete',
         hasElectronApi: true,
         electronApiKeys: ['platform'],
@@ -76,6 +90,19 @@ describe('Windows package smoke artifact helpers', () => {
         version: '0.4.2',
         commit: 'fa3e4978',
         buildTime: '2026-05-06T15:35:10.450Z',
+      },
+      engineLifecycle: true,
+      engineLifecycleEvidence: {
+        uiQuitRequested: true,
+        uiExited: true,
+        uiExitCode: 0,
+        uiExitSignal: null,
+        healthAfterUiQuit: {
+          app: 'codexmux',
+          version: '0.4.2',
+          commit: 'fa3e4978',
+          buildTime: '2026-05-06T15:35:10.450Z',
+        },
       },
       runtimeV2Terminal: {
         verified: true,

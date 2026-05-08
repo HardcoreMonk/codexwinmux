@@ -39,9 +39,11 @@ const rootDir = process.cwd();
 const startedAt = new Date().toISOString();
 
 const resolveSmokeName = (payload) =>
-  payload?.runtimeV2Terminal || payload?.runtimeV2TerminalRequested
-    ? 'windows-packaged-runtime-v2'
-    : SMOKE_NAME;
+  payload?.engineLifecycle || payload?.engineLifecycleRequested
+    ? 'windows-engine-lifecycle'
+    : payload?.runtimeV2Terminal || payload?.runtimeV2TerminalRequested
+      ? 'windows-packaged-runtime-v2'
+      : SMOKE_NAME;
 
 const writeArtifact = async (status, payload) =>
   writeSmokeArtifact({
@@ -67,7 +69,7 @@ const fail = async (code, message, details = {}) => {
 const resolveAppPath = () =>
   path.resolve(process.env.CODEXMUX_WINDOWS_PACKAGED_APP_PATH || path.join(rootDir, 'release', 'win-unpacked', 'codexmux.exe'));
 
-const buildIsolatedEnv = (homeDir) => ({
+const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
   ...process.env,
   HOME: homeDir,
   USERPROFILE: homeDir,
@@ -80,6 +82,7 @@ const buildIsolatedEnv = (homeDir) => ({
   CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'new-tabs',
   CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
   CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+  CODEXMUX_RESERVED_PORTS: reservedPorts.filter(Number.isFinite).join(','),
 });
 
 const prepareIsolatedEnvDirs = async (homeDir) => {
@@ -252,6 +255,22 @@ const waitForChildExit = async (child, timeoutMs = 3_000) => {
   ]);
 };
 
+const waitForHelperExit = (child, timeoutMs = 10_000) =>
+  new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve();
+    }, timeoutMs);
+    child.once('close', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    child.once('error', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+
 const requestElectronBrowserClose = async (cdp) => {
   if (!cdp) return;
   try {
@@ -275,8 +294,7 @@ const listWindowsAppProcessIds = async (appPath) => {
     });
     let stdout = '';
     child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
-    child.once('close', () => resolve(stdout));
-    child.once('error', () => resolve(''));
+    waitForHelperExit(child, 30_000).then(() => resolve(stdout));
   });
 
   return parseWindowsProcessIds(output);
@@ -287,8 +305,7 @@ const stopWindowsAppProcesses = async (appPath, excludePids = []) => {
   const pids = (await listWindowsAppProcessIds(appPath)).filter((pid) => !exclude.has(pid));
   await Promise.all(pids.map((pid) => new Promise((resolve) => {
     const child = spawn('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' });
-    child.once('exit', resolve);
-    child.once('error', resolve);
+    waitForHelperExit(child).then(resolve);
   })));
 };
 
@@ -311,11 +328,14 @@ const main = async () => {
   const consoleEvents = [];
   const runRuntimeV2Terminal = process.argv.includes('--runtime-v2-terminal')
     || process.env.CODEXMUX_WINDOWS_PACKAGED_RUNTIME_V2 === '1';
+  const runEngineLifecycle = process.argv.includes('--engine-lifecycle')
+    || process.env.CODEXMUX_WINDOWS_ENGINE_LIFECYCLE === '1';
   let electron = null;
   let cdp = null;
   let launch = null;
   let output = '';
   let runtimeV2Terminal = null;
+  let engineLifecycle = null;
   const existingAppPids = await listWindowsAppProcessIds(appPath);
 
   try {
@@ -331,7 +351,7 @@ const main = async () => {
     });
     electron = spawn(launch.command, launch.args, {
       cwd: path.dirname(appPath),
-      env: buildIsolatedEnv(homeDir),
+      env: buildIsolatedEnv(homeDir, { reservedPorts: [remoteDebuggingPort] }),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     checks.push(`packaged-launch-${launch.mode}`);
@@ -407,9 +427,32 @@ const main = async () => {
       checks.push('long-run-health');
     }
 
+    if (runEngineLifecycle) {
+      await requestElectronBrowserClose(cdp);
+      if (cdp) cdp.close();
+      cdp = null;
+      await waitForChildExit(electron, 10_000);
+      if (electron?.exitCode === null) {
+        throw new Error('Electron UI did not exit after Browser.close');
+      }
+      const healthAfterUiQuit = await waitFor('engine health after UI quit', async () => {
+        const current = await fetchJson(new URL('/api/health', state.origin).toString()).catch(() => null);
+        return current?.app === 'codexmux' ? current : null;
+      }, 20_000);
+      engineLifecycle = {
+        uiQuitRequested: true,
+        uiExited: true,
+        uiExitCode: electron?.exitCode ?? null,
+        uiExitSignal: electron?.signalCode ?? null,
+        healthAfterUiQuit,
+      };
+      checks.push('ui-quit-engine-survival');
+    }
+
     const successPayload = {
       ok: true,
       mutatesSystem: false,
+      engineLifecycle: runEngineLifecycle,
       appPath,
       homeDir,
       launchMode: launch.mode,
@@ -419,6 +462,7 @@ const main = async () => {
       state,
       health,
       longRunHealth,
+      engineLifecycleEvidence: engineLifecycle,
       runtimeV2Terminal,
       consoleEventCount: consoleEvents.length,
       blockingConsoleCount: blockingConsole.length,
@@ -435,6 +479,7 @@ const main = async () => {
       runtimeV2TerminalRequested: runRuntimeV2Terminal,
       outputTail: output.slice(-2000),
       consoleEvents: consoleEvents.slice(-20),
+      engineLifecycleRequested: runEngineLifecycle,
     });
   } finally {
     await requestElectronBrowserClose(cdp);
@@ -445,4 +490,9 @@ const main = async () => {
   }
 };
 
-main();
+main().then(() => {
+  process.exit(0);
+}).catch((err) => {
+  console.error(err instanceof Error ? err.stack || err.message : String(err));
+  process.exit(1);
+});

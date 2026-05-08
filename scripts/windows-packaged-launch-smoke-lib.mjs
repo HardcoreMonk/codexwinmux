@@ -3,7 +3,7 @@ export const buildWindowsAppProcessIdScript = () => [
   'Get-CimInstance Win32_Process |',
   '  Where-Object { $_.ExecutablePath -eq $target } |',
   '  Select-Object -ExpandProperty ProcessId',
-].join(' ');
+].join('\n');
 
 export const parseWindowsProcessIds = (output) =>
   String(output || '')

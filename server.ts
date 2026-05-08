@@ -162,7 +162,15 @@ const proxyUpgrade = (req: IncomingMessage, socket: import('stream').Duplex, hea
   socket.on('error', () => proxySocket.destroy());
 };
 
-const getFreePort = (): Promise<number> =>
+const getReservedPorts = () =>
+  new Set(
+    (process.env.CODEXMUX_RESERVED_PORTS || '')
+      .split(/[,\s;]+/)
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value > 0 && value <= 65535),
+  );
+
+const findFreePort = (): Promise<number> =>
   new Promise((resolve, reject) => {
     const srv = createServer();
     srv.listen(0, '127.0.0.1', () => {
@@ -171,6 +179,15 @@ const getFreePort = (): Promise<number> =>
     });
     srv.on('error', reject);
   });
+
+const getFreePort = async (): Promise<number> => {
+  const reservedPorts = getReservedPorts();
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const port = await findFreePort();
+    if (!reservedPorts.has(port)) return port;
+  }
+  throw new Error('No free non-reserved port found');
+};
 
 const listenWithFallback = (server: import('http').Server, port: number, host: string): Promise<number> =>
   new Promise((resolve, reject) => {
@@ -357,7 +374,7 @@ const startProd = async (port: number, appDir: string, bindHost: string): Promis
   return { port: actualPort, shutdown };
 };
 
-export const DEFAULT_PORT = 8122;
+export const DEFAULT_PORT = 8121;
 
 
 

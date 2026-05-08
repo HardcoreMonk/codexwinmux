@@ -444,7 +444,7 @@ Resolved items:
   - `CODEXMUX_RUNTIME_TERMINAL_ADAPTER=windows`
   - `CODEXMUX_PROCESS_INSPECTOR_ADAPTER=windows`
   - default `HOST=127.0.0.1`
-  - default `PORT=8122`
+  - default `PORT=8121`
 - The plan records Windows data/log locations:
   - `%USERPROFILE%\.codexmux`
   - `%USERPROFILE%\.codex`
@@ -583,3 +583,35 @@ Validation:
 
 - `corepack pnpm test tests/unit/scripts/smoke-artifact-lib.test.ts tests/unit/scripts/windows-release-gate-lib.test.ts`: passed.
 - `CODEXMUX_SMOKE_ARTIFACT_DIR=<temp> corepack pnpm smoke:windows:release-gate`: passed and wrote a sanitized summary artifact.
+
+## Windows Engine Lifecycle Separation Follow-up
+
+The next transition slice separated Electron UI lifetime from the local
+Backend/Core Engine lifetime in tray-first mode.
+
+Resolved items:
+
+- Added `electron/engine-controller.ts` as the Shell Host boundary for probing
+  `127.0.0.1:8121/api/health`, attaching to existing healthy codexmux engines,
+  starting an owned engine process when missing, and refusing to stop unrelated
+  processes on the same port.
+- `electron/main.ts` now starts packaged local mode through the controller
+  instead of directly owning the server inside the UI process.
+- Added `CODEXMUX_ELECTRON_ENGINE_PROCESS=1` engine-only bootstrap so the same
+  packaged executable can run the Backend/Core Engine without opening a
+  BrowserWindow or taking the UI single-instance lock.
+- Window close hides to tray. The tray/menu surface exposes open window,
+  restart engine, stop engine, quit UI, and quit UI plus stop engine commands.
+- Added `smoke:windows:engine-lifecycle`, which verifies packaged UI quit leaves
+  `127.0.0.1:8121/api/health` alive before cleanup.
+- The packaged smoke reserves the DevTools port so the Backend Engine internal
+  Next.js port cannot race and bind it during startup.
+
+Validation:
+
+- `corepack pnpm test tests/unit/electron/engine-controller.test.ts tests/unit/electron/runtime-env.test.ts`: passed.
+- `corepack pnpm test tests/unit/scripts/windows-packaged-launch-smoke-lib.test.ts tests/unit/scripts/windows-package-smoke-artifact-lib.test.ts tests/unit/scripts/windows-package-gate-lib.test.ts`: passed.
+- `corepack pnpm pack:electron:dev`: passed.
+- `corepack pnpm smoke:windows:engine-lifecycle`: passed. Evidence included
+  `ui-quit-engine-survival`, `healthAfterUiQuit.app=codexmux`, and post-smoke
+  cleanup closing `127.0.0.1:8121`.

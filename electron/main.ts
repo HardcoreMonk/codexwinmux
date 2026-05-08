@@ -1,9 +1,11 @@
 import { capturePristineEnv } from './pristine-env';
 import { applyResolvedShellEnv } from './shell-env';
+import { buildEngineUrl, createEngineController, probeEngineHealth } from './engine-controller';
 import { applyElectronBootstrapEnv, buildFileImportSpecifier, buildPackagedNodePath } from './runtime-env';
 import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smoke';
-import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog } from 'electron';
+import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog, Tray, nativeImage } from 'electron';
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
+import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -12,6 +14,9 @@ import { initBrowserBridge } from './browser-bridge';
 
 const isDev = process.env.NODE_ENV === 'development';
 const devUrl = process.env.ELECTRON_DEV_URL;
+const APP_DISPLAY_NAME = 'windows native codexmux';
+const APP_PROCESS_NAME = 'codexmux';
+const isEngineProcess = process.env.CODEXMUX_ELECTRON_ENGINE_PROCESS === '1';
 
 const fixEnv = () => {
   applyElectronBootstrapEnv(process.env, process.platform);
@@ -133,7 +138,7 @@ button{padding:6px 16px;border-radius:6px;border:1px solid #27272a;font-size:13p
 .connect{background:#7c3aed;color:#fff;border-color:#7c3aed}.connect:hover{background:#6d28d9}
 </style></head><body>
 <label>${m.serverAddress}</label>
-<input id="url" value="${escaped}" placeholder="http://192.168.1.100:8122"/>
+<input id="url" value="${escaped}" placeholder="http://192.168.1.100:8121"/>
 <div class="buttons">
 <button class="cancel" id="cancelBtn">${m.cancel}</button>
 <button class="connect" id="connectBtn">${m.connect}</button>
@@ -190,11 +195,18 @@ interface IMenuMessages {
   upToDateMessage: string;
   upToDateDetail: string;
   updateErrorMessage: string;
+  openWindow: string;
+  restartEngine: string;
+  stopEngine: string;
+  quitUi: string;
+  quitUiAndStopEngine: string;
+  engineNotOwnedMessage: string;
+  engineStartErrorMessage: string;
 }
 
 const menuMessages: Record<string, IMenuMessages> = {
-  en: { server: 'Server', useLocalServer: 'Use Local Server', connectRemoteServer: 'Connect to Remote Server…', edit: 'Edit', view: 'View', window: 'Window', newWindow: 'New Window', serverConnection: 'Server Connection', serverAddress: 'Server Address', cancel: 'Cancel', connect: 'Connect', checkForUpdates: 'Check for Updates…', updateAvailableMessage: 'A new version ({version}) is available', updateAvailableDetail: 'Would you like to download it now?', download: 'Download', later: 'Later', updateReadyMessage: 'Version {version} is ready to install', updateReadyDetail: 'Restart codexmux to apply the update.', restartNow: 'Restart Now', upToDateMessage: "You're up to date", upToDateDetail: 'codexmux {version} is the latest version.', updateErrorMessage: 'Failed to check for updates' },
-  ko: { server: '서버', useLocalServer: '로컬 서버 사용', connectRemoteServer: '원격 서버 연결…', edit: '편집', view: '보기', window: '창', newWindow: '새 창', serverConnection: '서버 연결', serverAddress: '서버 주소', cancel: '취소', connect: '연결', checkForUpdates: '업데이트 확인…', updateAvailableMessage: '새 버전({version})이 있습니다', updateAvailableDetail: '지금 다운로드할까요?', download: '다운로드', later: '나중에', updateReadyMessage: '{version} 버전 설치 준비 완료', updateReadyDetail: 'codexmux를 재시작하면 업데이트가 적용됩니다.', restartNow: '지금 재시작', upToDateMessage: '최신 버전입니다', upToDateDetail: 'codexmux {version}을 사용 중입니다.', updateErrorMessage: '업데이트 확인에 실패했습니다' },
+  en: { server: 'Server', useLocalServer: 'Use Local Server', connectRemoteServer: 'Connect to Remote Server…', edit: 'Edit', view: 'View', window: 'Window', newWindow: 'New Window', serverConnection: 'Server Connection', serverAddress: 'Server Address', cancel: 'Cancel', connect: 'Connect', checkForUpdates: 'Check for Updates…', updateAvailableMessage: 'A new version ({version}) is available', updateAvailableDetail: 'Would you like to download it now?', download: 'Download', later: 'Later', updateReadyMessage: 'Version {version} is ready to install', updateReadyDetail: 'Restart codexmux to apply the update.', restartNow: 'Restart Now', upToDateMessage: "You're up to date", upToDateDetail: 'codexmux {version} is the latest version.', updateErrorMessage: 'Failed to check for updates', openWindow: 'Open Window', restartEngine: 'Restart Engine', stopEngine: 'Stop Engine', quitUi: 'Quit UI', quitUiAndStopEngine: 'Quit UI and Stop Engine', engineNotOwnedMessage: 'This UI did not start the current engine, so it will not stop an unrelated process.', engineStartErrorMessage: 'The local engine could not be started.' },
+  ko: { server: '서버', useLocalServer: '로컬 서버 사용', connectRemoteServer: '원격 서버 연결…', edit: '편집', view: '보기', window: '창', newWindow: '새 창', serverConnection: '서버 연결', serverAddress: '서버 주소', cancel: '취소', connect: '연결', checkForUpdates: '업데이트 확인…', updateAvailableMessage: '새 버전({version})이 있습니다', updateAvailableDetail: '지금 다운로드할까요?', download: '다운로드', later: '나중에', updateReadyMessage: '{version} 버전 설치 준비 완료', updateReadyDetail: 'codexmux를 재시작하면 업데이트가 적용됩니다.', restartNow: '지금 재시작', upToDateMessage: '최신 버전입니다', upToDateDetail: 'codexmux {version}을 사용 중입니다.', updateErrorMessage: '업데이트 확인에 실패했습니다', openWindow: '창 열기', restartEngine: '엔진 재시작', stopEngine: '엔진 중지', quitUi: 'UI 종료', quitUiAndStopEngine: 'UI와 엔진 종료', engineNotOwnedMessage: '현재 엔진은 이 UI가 시작한 프로세스가 아니므로 관련 없는 프로세스를 중지하지 않습니다.', engineStartErrorMessage: '로컬 엔진을 시작할 수 없습니다.' },
 };
 
 let currentLocale = 'en';
@@ -212,9 +224,12 @@ const windows = new Set<BrowserWindow>();
 let lastFocusedWindow: BrowserWindow | null = null;
 let serverShutdown: (() => Promise<void>) | null = null;
 let isQuitting = false;
+let stopEngineOnQuit = false;
 let serverConfig: IServerConfig = { mode: 'local' };
 let localPort: number | null = null;
 let cachedStart: ((opts: { port: number }) => Promise<{ port: number; shutdown: () => Promise<void> }>) | null = null;
+let tray: Tray | null = null;
+let engineController: ReturnType<typeof createEngineController> | null = null;
 
 const getPrimaryWindow = (): BrowserWindow | null => {
   if (lastFocusedWindow && !lastFocusedWindow.isDestroyed() && windows.has(lastFocusedWindow)) {
@@ -441,9 +456,10 @@ const stopUpdateCheckTimer = () => {
 
 // --- Local Server ---
 
-const DEFAULT_PORT = 8122;
+const DEFAULT_PORT = 8121;
+const ENGINE_URL = buildEngineUrl(DEFAULT_PORT);
 
-const startLocalServer = async (): Promise<number> => {
+const startLocalServer = async ({ allowPortFallback = true }: { allowPortFallback?: boolean } = {}): Promise<number> => {
   if (!cachedStart) {
     const appDir = process.env.__CMUX_APP_DIR!;
     const appDirUnpacked = process.env.__CMUX_APP_DIR_UNPACKED || appDir;
@@ -460,12 +476,13 @@ const startLocalServer = async (): Promise<number> => {
   let result;
   try {
     result = await cachedStart!({ port: DEFAULT_PORT });
-  } catch {
+  } catch (err) {
+    if (!allowPortFallback) throw err;
     result = await cachedStart!({ port: 0 });
   }
   serverShutdown = result.shutdown;
   localPort = result.port;
-  process.title = 'codexmux';
+  process.title = APP_PROCESS_NAME;
   return result.port;
 };
 
@@ -475,6 +492,97 @@ const stopLocalServer = async () => {
     serverShutdown = null;
     localPort = null;
   }
+};
+
+const showEngineError = async (message: string) => {
+  await showUpdateDialog({
+    type: 'error',
+    buttons: ['OK'],
+    message,
+  });
+};
+
+const buildEngineProcessArgs = () => (app.isPackaged ? [] : [app.getAppPath()]);
+
+const buildReservedPortsEnv = () => {
+  const ports = new Set(
+    (process.env.CODEXMUX_RESERVED_PORTS || '')
+      .split(/[,\s;]+/)
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value > 0 && value <= 65535)
+      .map(String),
+  );
+
+  for (const arg of process.argv) {
+    const match = /^--remote-debugging-port=(\d+)$/.exec(arg);
+    if (match) ports.add(match[1]);
+  }
+
+  return Array.from(ports).join(',');
+};
+
+const launchEngineProcess = () => {
+  const child = spawn(process.execPath, buildEngineProcessArgs(), {
+    cwd: process.cwd(),
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: {
+      ...process.env,
+      CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
+      CODEXMUX_RUNTIME_V2: process.env.CODEXMUX_RUNTIME_V2 || '1',
+      CODEXMUX_RUNTIME_TERMINAL_ADAPTER: process.env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER || 'windows',
+      CODEXMUX_PROCESS_INSPECTOR_ADAPTER: process.env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER || 'windows',
+      CODEXMUX_RESERVED_PORTS: buildReservedPortsEnv(),
+      HOST: '127.0.0.1',
+      PORT: String(DEFAULT_PORT),
+    },
+  });
+  return child;
+};
+
+const getEngineController = () => {
+  if (!engineController) {
+    engineController = createEngineController({
+      url: ENGINE_URL,
+      deps: {
+        probeHealth: (url) => probeEngineHealth(url),
+        launchEngine: launchEngineProcess,
+      },
+    });
+  }
+  return engineController;
+};
+
+const ensureEngineRunning = async (): Promise<number> => {
+  const result = await getEngineController().ensureRunning();
+  if (!result.ok) {
+    throw new Error(result.error || 'engine-start-failed');
+  }
+  localPort = DEFAULT_PORT;
+  updateMenu();
+  updateTrayMenu();
+  return DEFAULT_PORT;
+};
+
+const stopOwnedEngine = async () => {
+  const result = await getEngineController().stopOwnedEngine();
+  if (result.ok) {
+    localPort = null;
+    updateMenu();
+    updateTrayMenu();
+  }
+  return result;
+};
+
+const restartOwnedEngine = async () => {
+  const result = await getEngineController().restartOwnedEngine();
+  if (result.ok && 'url' in result) {
+    localPort = DEFAULT_PORT;
+    updateMenu();
+    updateTrayMenu();
+  }
+  return result;
 };
 
 // --- Menu ---
@@ -497,6 +605,65 @@ const normalizeServerUrl = (raw: string): string | null => {
   }
 };
 
+const quitUiOnly = () => {
+  stopEngineOnQuit = false;
+  isQuitting = true;
+  app.quit();
+};
+
+const quitUiAndStopEngine = () => {
+  stopEngineOnQuit = true;
+  isQuitting = true;
+  app.quit();
+};
+
+const handleStopEngine = async () => {
+  const result = await stopOwnedEngine();
+  if (!result.ok) {
+    await showEngineError(mt().engineNotOwnedMessage);
+  }
+};
+
+const handleRestartEngine = async () => {
+  const result = await restartOwnedEngine();
+  if (!result.ok) {
+    await showEngineError(result.error === 'engine-not-owned'
+      ? mt().engineNotOwnedMessage
+      : mt().engineStartErrorMessage);
+    return;
+  }
+
+  for (const w of windows) {
+    if (!w.isDestroyed()) w.loadURL(ENGINE_URL);
+  }
+};
+
+const updateTrayMenu = () => {
+  if (!tray) return;
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: mt().openWindow, click: showPrimaryWindow },
+    { type: 'separator' },
+    { label: `${mt().server}: ${getServerLabel()}`, enabled: false },
+    { label: mt().restartEngine, click: handleRestartEngine, enabled: serverConfig.mode === 'local' },
+    { label: mt().stopEngine, click: handleStopEngine, enabled: serverConfig.mode === 'local' },
+    { type: 'separator' },
+    { label: mt().quitUi, click: quitUiOnly },
+    { label: mt().quitUiAndStopEngine, click: quitUiAndStopEngine, enabled: serverConfig.mode === 'local' },
+  ]));
+};
+
+const ensureTray = () => {
+  if (tray) return;
+  try {
+    tray = new Tray(process.platform === 'win32' ? process.execPath : nativeImage.createEmpty());
+    tray.setToolTip(APP_DISPLAY_NAME);
+    tray.on('click', showPrimaryWindow);
+    updateTrayMenu();
+  } catch (err) {
+    console.error('[electron] Failed to create tray:', err);
+  }
+};
+
 const updateMenu = () => {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
@@ -509,13 +676,18 @@ const updateMenu = () => {
         { label: mt().useLocalServer, type: 'radio', checked: serverConfig.mode === 'local', click: handleSwitchToLocal },
         { label: mt().connectRemoteServer, type: 'radio', checked: serverConfig.mode === 'remote', click: handleSwitchToRemote },
         { type: 'separator' },
+        { label: mt().openWindow, click: showPrimaryWindow },
+        { label: mt().restartEngine, click: handleRestartEngine, enabled: serverConfig.mode === 'local' },
+        { label: mt().stopEngine, click: handleStopEngine, enabled: serverConfig.mode === 'local' },
+        { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
         { role: 'hide' },
         { role: 'hideOthers' },
         { role: 'unhide' },
         { type: 'separator' },
-        { role: 'quit' },
+        { label: mt().quitUi, click: quitUiOnly },
+        { label: mt().quitUiAndStopEngine, click: quitUiAndStopEngine, enabled: serverConfig.mode === 'local' },
       ],
     },
     {
@@ -551,6 +723,7 @@ const updateMenu = () => {
   ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  updateTrayMenu();
 };
 
 // --- Server Switching ---
@@ -562,11 +735,12 @@ const handleSwitchToLocal = async () => {
   writeServerConfig(serverConfig);
 
   try {
-    const port = await startLocalServer();
-    const url = `http://localhost:${port}`;
+    const port = await ensureEngineRunning();
+    const url = `http://127.0.0.1:${port}`;
     for (const w of windows) w.loadURL(url);
   } catch (err) {
-    console.error('[electron] Failed to start local server:', err);
+    console.error('[electron] Failed to start local engine:', err);
+    await showEngineError(mt().engineStartErrorMessage);
   }
   updateMenu();
 };
@@ -581,7 +755,6 @@ const handleSwitchToRemote = async () => {
     return;
   }
 
-  await stopLocalServer();
   serverConfig = { mode: 'remote', remoteUrl: url };
   writeServerConfig(serverConfig);
   for (const w of windows) w.loadURL(url);
@@ -619,6 +792,7 @@ const createWindow = (url: string): BrowserWindow => {
   const offset = isFirstWindow ? 0 : (windows.size * NEW_WINDOW_OFFSET) % 200;
 
   const win = new BrowserWindow({
+    title: APP_DISPLAY_NAME,
     width: saved.width,
     height: saved.height,
     x: pos.x != null ? pos.x + offset : undefined,
@@ -710,8 +884,7 @@ const createWindow = (url: string): BrowserWindow => {
       displayId: currentDisplay.id,
     });
 
-    // darwin: hide only when this is the last remaining window
-    if (process.platform === 'darwin' && !isQuitting && windows.size === 1 && windows.has(win)) {
+    if (!isQuitting && windows.has(win)) {
       e.preventDefault();
       win.hide();
     }
@@ -731,6 +904,17 @@ const openNewWindow = () => {
   createWindow(url);
 };
 
+const showPrimaryWindow = () => {
+  const primary = getPrimaryWindow();
+  if (primary) {
+    if (primary.isMinimized()) primary.restore();
+    primary.show();
+    primary.focus();
+    return;
+  }
+  openNewWindow();
+};
+
 // --- Splash (Loading) Screen ---
 
 const resolveIsDark = (): boolean => {
@@ -747,7 +931,7 @@ const buildSplashHTML = (isDark: boolean): string => {
   const escape = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const tags = pickTaglines(8).map(escape);
   const tagsJson = "['" + tags.join("','") + "']";
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${APP_DISPLAY_NAME}</title><style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:${bg};display:flex;align-items:center;justify-content:center;height:100vh;-webkit-app-region:drag;font-family:'SF Mono','Fira Code','JetBrains Mono',monospace}
 .container{text-align:center;user-select:none}
@@ -776,6 +960,28 @@ const loadSplash = (win: BrowserWindow) => {
 
 // --- Bootstrap ---
 
+const preparePackagedServerEnv = () => {
+  process.env.NODE_ENV = 'production';
+  process.env.__CMUX_ELECTRON = '1';
+  const appPath = app.getAppPath();
+  process.env.__CMUX_APP_DIR = isDev ? process.cwd() : appPath;
+  process.env.__CMUX_APP_DIR_UNPACKED = isDev ? process.cwd() : appPath.replace('app.asar', 'app.asar.unpacked');
+};
+
+const bootstrapEngineOnly = async () => {
+  fixEnv();
+  await applyResolvedShellEnv().then(capturePristineEnv);
+  preparePackagedServerEnv();
+  process.title = `${APP_PROCESS_NAME} engine`;
+
+  try {
+    await startLocalServer({ allowPortFallback: false });
+  } catch (err) {
+    console.error('[electron-engine] Failed to start engine:', err);
+    app.exit(1);
+  }
+};
+
 const bootstrap = async () => {
   // Finder/Dock 런치 시 launchd env가 빈약해 child shell이 초기화에 실패함.
   // shell resolve는 100~500ms 걸리므로 splash 렌더와 오버랩시키고,
@@ -790,14 +996,11 @@ const bootstrap = async () => {
     return;
   }
 
-  process.env.NODE_ENV = 'production';
-  process.env.__CMUX_ELECTRON = '1';
-  const appPath = app.getAppPath();
-  process.env.__CMUX_APP_DIR = isDev ? process.cwd() : appPath;
-  process.env.__CMUX_APP_DIR_UNPACKED = isDev ? process.cwd() : appPath.replace('app.asar', 'app.asar.unpacked');
+  preparePackagedServerEnv();
 
   serverConfig = readServerConfig();
   currentLocale = readLocaleFromConfig();
+  ensureTray();
 
   // macOS: nativeTheme을 앱 테마와 동기화해야 비활성 트래픽 라이트가 올바른 대비로 렌더링됨
   const appTheme = readAppConfig().appTheme || 'dark';
@@ -822,8 +1025,13 @@ const bootstrap = async () => {
     const win = createWindow('about:blank');
     loadSplash(win);
     await shellEnvReady;
-    const port = await startLocalServer();
-    win.loadURL(`http://localhost:${port}`);
+    try {
+      const port = await ensureEngineRunning();
+      win.loadURL(`http://127.0.0.1:${port}`);
+    } catch (err) {
+      console.error('[electron] Failed to start local engine:', err);
+      await showEngineError(mt().engineStartErrorMessage);
+    }
     clearSplashHistory(win);
   }
 
@@ -858,6 +1066,7 @@ ipcMain.handle('set-locale', (_event, locale: string) => {
   if (nextLocale !== currentLocale) {
     currentLocale = nextLocale;
     updateMenu();
+    updateTrayMenu();
   }
 });
 
@@ -904,7 +1113,7 @@ ipcMain.handle('get-system-resources', () => {
   };
 });
 
-app.on('ready', bootstrap);
+app.on('ready', isEngineProcess ? bootstrapEngineOnly : bootstrap);
 
 const flushDefaultSessionStorage = async (): Promise<void> => {
   try {
@@ -920,6 +1129,7 @@ const flushDefaultSessionStorage = async (): Promise<void> => {
 };
 
 app.on('activate', () => {
+  if (isEngineProcess) return;
   const primary = getPrimaryWindow();
   if (primary) {
     primary.show();
@@ -930,27 +1140,7 @@ app.on('activate', () => {
 });
 
 app.on('window-all-closed', async () => {
-  if (process.platform === 'darwin') return;
-
-  // 안전장치: 전체 종료가 3초 이내에 완료되지 않으면 강제 종료
-  const forceExit = setTimeout(() => app.exit(1), 3000);
-
-  stopUpdateCheckTimer();
-
-  // 1) PTY onExit 콜백이 완료될 때까지 대기 → native ThreadSafeFunction drain
-  if (serverShutdown) {
-    await serverShutdown();
-    serverShutdown = null;
-  }
-
-  // 2) 스토리지 flush (localStorage + 쿠키)
-  await flushDefaultSessionStorage();
-
-  // 3) 모든 cleanup 완료 후 종료.
-  //    app.exit()는 FreeEnvironment를 건너뛰어
-  //    node-pty ThreadSafeFunction release 시 abort() 방지.
-  clearTimeout(forceExit);
-  app.exit(0);
+  if (isEngineProcess || process.platform === 'darwin' || !isQuitting) return;
 });
 
 // Cmd+Q 등으로 will-quit이 먼저 도달하는 경우,
@@ -967,9 +1157,13 @@ app.on('will-quit', async (event) => {
 
   stopUpdateCheckTimer();
 
-  if (serverShutdown) {
+  if (isEngineProcess && serverShutdown) {
     await serverShutdown();
     serverShutdown = null;
+  }
+
+  if (!isEngineProcess && stopEngineOnQuit) {
+    await stopOwnedEngine();
   }
 
   await flushDefaultSessionStorage();
@@ -977,12 +1171,9 @@ app.on('will-quit', async (event) => {
   app.exit(0);
 });
 
-app.requestSingleInstanceLock();
-app.on('second-instance', () => {
-  const primary = getPrimaryWindow();
-  if (primary) {
-    if (primary.isMinimized()) primary.restore();
-    primary.show();
-    primary.focus();
-  }
-});
+if (!isEngineProcess) {
+  app.requestSingleInstanceLock();
+  app.on('second-instance', () => {
+    showPrimaryWindow();
+  });
+}

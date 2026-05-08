@@ -251,7 +251,10 @@ export const connectCdp = (webSocketDebuggerUrl) =>
           return () => listeners.get(method)?.delete(cb);
         },
         send,
-        close: () => ws.close(),
+        close: () => {
+          if (ws.readyState === WebSocket.CLOSED) return;
+          ws.terminate();
+        },
         get readyState() {
           return ws.readyState;
         },

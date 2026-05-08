@@ -17,6 +17,7 @@ corepack pnpm smoke:windows:update-metadata
 corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
 corepack pnpm smoke:windows:packaged-launch
+corepack pnpm smoke:windows:engine-lifecycle
 corepack pnpm smoke:windows:packaged-runtime-v2
 corepack pnpm smoke:windows:installer-install
 corepack pnpm smoke:windows:installer-runtime-v2
@@ -28,7 +29,7 @@ corepack pnpm pack:electron:mac
 ```
 
 - `dev:electron`: 필요하면 `corepack pnpm dev` 서버를 자동으로 띄운 뒤 Electron을 연결합니다.
-- `dev:electron:attach`: 이미 실행 중인 `http://localhost:8122` 서버에 Electron만 붙입니다.
+- `dev:electron:attach`: 이미 실행 중인 `http://localhost:8121` 서버에 Electron만 붙입니다.
 - `build:electron`: Next.js standalone, custom server, Electron main/preload를 빌드합니다.
 - `smoke:electron:attach`: Electron shell을 remote debugging port로 실행해 live server attach, preload bridge, page reload, blocking console 오류를 확인합니다.
 - `smoke:electron:runtime-v2`: temp HOME/DB runtime v2 서버와 Electron shell을 띄운 뒤 page context에서 existing session cookie로 `/api/v2/terminal` WebSocket attach, marker output, 기본 2회 page reload/reconnect를 확인합니다.
@@ -39,6 +40,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다.
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
+- `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
 - `smoke:windows:packaged-runtime-v2`: packaged app을 runtime v2 `new-tabs` mode로 실행해 workspace/tab 생성, `/api/v2/terminal` WebSocket attach, Windows marker command output을 확인합니다.
 - `smoke:windows:installer-install`: `release/codexmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
 - `smoke:windows:installer-runtime-v2`: silent install한 앱에 `smoke:windows:packaged-runtime-v2`와 같은 runtime v2 terminal 검증을 적용한 뒤 silent uninstall합니다.
@@ -46,6 +48,10 @@ corepack pnpm pack:electron:mac
 - `pack:electron:dev`: 로컬 Windows unpacked package 검증용입니다. Installer를 만들지 않습니다.
 - `pack:electron`: Windows 릴리스 패키징입니다.
 - `pack:electron:mac:dev`, `pack:electron:mac`: 기존 macOS 패키징 검증용 명령입니다. Windows-only 전환 중 legacy/manual path로만 유지합니다.
+
+Windows NSIS installer는 `build-resources/installer.nsh`를 include해 설치와 제거
+과정의 상세 로그 pane을 기본으로 표시한다. 설치 중 멈춤이나 파일 복사 실패를
+내부 배포자가 바로 확인할 수 있게 유지한다.
 
 ## Runtime
 
@@ -85,9 +91,12 @@ Linux smoke에서는 Electron SUID sandbox 설정이 없는 개발 checkout에�
 
 로컬 서버:
 
-- 앱 실행 시 내부 codexmux 서버를 시작합니다.
-- 기본 포트는 `8122`이고, 사용 중이면 임의 포트로 fallback합니다.
-- 앱 종료 시 server shutdown과 Electron storage flush를 수행합니다.
+- 앱 실행 시 기존 `127.0.0.1:8121` engine health를 먼저 확인합니다.
+- 기존 engine이 healthy codexmux이면 UI는 그대로 attach합니다.
+- healthy engine이 없으면 Shell Host가 같은 packaged executable을 engine process로 시작합니다.
+- engine host mode에서는 기본 포트 `8121`을 고정하고, 다른 process가 점유한 포트로 조용히 fallback하지 않습니다.
+- 창 닫기는 BrowserWindow를 tray로 숨기며 engine을 중지하지 않습니다.
+- UI 종료는 engine을 남겨 둡니다. `UI와 엔진 종료` 메뉴를 명시적으로 선택한 경우에만 이 UI가 시작한 owned engine을 중지합니다.
 - Windows에서는 Finder/Dock용 POSIX PATH 보정을 적용하지 않고 현재 Windows `PATH`를 유지합니다.
 - packaged local server의 `NODE_PATH`는 Windows에서 `;`, macOS/Linux에서 `:` 구분자를 사용합니다.
 

@@ -14,6 +14,7 @@ describe('Windows packaged launch smoke helpers', () => {
     expect(script).toContain('Win32_Process');
     expect(script).toContain('ExecutablePath -eq $target');
     expect(script).toContain('ProcessId');
+    expect(script).toContain('$target = $env:CODEXMUX_SMOKE_APP_PATH\nGet-CimInstance');
   });
 
   it('parses Windows process ids from command output', async () => {

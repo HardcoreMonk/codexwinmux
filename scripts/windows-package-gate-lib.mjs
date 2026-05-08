@@ -18,6 +18,10 @@ export const getWindowsPackageGateSteps = () => [
     script: 'smoke:windows:packaged-launch',
   },
   {
+    id: 'windows-engine-lifecycle',
+    script: 'smoke:windows:engine-lifecycle',
+  },
+  {
     id: 'windows-packaged-runtime-v2',
     script: 'smoke:windows:packaged-runtime-v2',
   },
