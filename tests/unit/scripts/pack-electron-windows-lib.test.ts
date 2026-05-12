@@ -42,6 +42,36 @@ describe('Windows Electron package wrapper helpers', () => {
       .toBe('C:\\tmp\\codexmux-bin;C:\\Windows');
   });
 
+  it('suppresses known upstream Node deprecation warnings during Windows packaging', async () => {
+    const { buildElectronBuilderEnv } = await loadLib();
+
+    const env = buildElectronBuilderEnv({
+      env: {
+        PATH: 'C:\\Windows',
+        NODE_OPTIONS: '--max-old-space-size=4096 --disable-warning=DEP0176',
+      },
+      shimDir: 'C:\\tmp\\codexwinmux-bin',
+    });
+
+    expect(env.NODE_OPTIONS).toContain('--max-old-space-size=4096');
+    expect(env.NODE_OPTIONS.match(/--disable-warning=DEP0176/g)).toHaveLength(1);
+    expect(env.NODE_OPTIONS).toContain('--disable-warning=DEP0190');
+  });
+
+  it('suppresses known upstream Node deprecation warnings during native prebuild install', async () => {
+    const { buildElectronNativePrebuildEnv } = await loadLib();
+
+    const env = buildElectronNativePrebuildEnv({
+      env: {
+        NODE_OPTIONS: '--trace-warnings',
+      },
+    });
+
+    expect(env.NODE_OPTIONS).toContain('--trace-warnings');
+    expect(env.NODE_OPTIONS).toContain('--disable-warning=DEP0176');
+    expect(env.NODE_OPTIONS).toContain('--disable-warning=DEP0190');
+  });
+
   it('builds Electron native prebuild install tasks for the standalone bundle', async () => {
     const { buildElectronNativePrebuildTasks } = await loadLib();
 

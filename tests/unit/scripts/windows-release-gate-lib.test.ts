@@ -35,6 +35,20 @@ describe('Windows release gate helpers', () => {
     expect(result.missingScriptIds).toContain('smoke:windows:electron-packaging');
   });
 
+  it('builds child package script env with known upstream deprecation warnings suppressed', async () => {
+    const { buildPackageScriptEnv } = await loadLib();
+
+    const env = buildPackageScriptEnv({
+      env: {
+        NODE_OPTIONS: '--trace-warnings --disable-warning=DEP0190',
+      },
+    });
+
+    expect(env.NODE_OPTIONS).toContain('--trace-warnings');
+    expect(env.NODE_OPTIONS).toContain('--disable-warning=DEP0176');
+    expect(env.NODE_OPTIONS.match(/--disable-warning=DEP0190/g)).toHaveLength(1);
+  });
+
   it('runs steps sequentially and stops on the first failure', async () => {
     const { runWindowsReleaseGate } = await loadLib();
     const calls: string[] = [];

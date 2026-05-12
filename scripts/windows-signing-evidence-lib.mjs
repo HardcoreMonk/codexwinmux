@@ -35,7 +35,11 @@ const sanitizeArtifactForPayload = (artifact) => ({
   timeStamperThumbprint: normalizeText(artifact.signature?.timeStamperThumbprint) || null,
 });
 
-export const evaluateWindowsSigningEvidence = ({ artifacts = [], smartScreenEvidence = null } = {}) => {
+export const evaluateWindowsSigningEvidence = ({
+  artifacts = [],
+  smartScreenEvidence = null,
+  publicRelease = false,
+} = {}) => {
   const checks = [];
   const blockers = [];
   let signedArtifactCount = 0;
@@ -115,8 +119,17 @@ export const evaluateWindowsSigningEvidence = ({ artifacts = [], smartScreenEvid
     );
   } else if (smartScreenStatus !== 'passed') {
     if (internalSmartScreenStatuses.has(smartScreenStatus)) {
-      smartScreenOk = true;
-      checks.push('windows-smartscreen-internal-scope-accepted');
+      if (publicRelease) {
+        blockers.push(
+          toBlocker(
+            'windows-smartscreen-public-evidence-required',
+            'Public Windows release requires SmartScreen evidence with status "passed"; internal-only scope is not sufficient.',
+          ),
+        );
+      } else {
+        smartScreenOk = true;
+        checks.push('windows-smartscreen-internal-scope-accepted');
+      }
     } else {
       blockers.push(
         toBlocker(
@@ -127,7 +140,7 @@ export const evaluateWindowsSigningEvidence = ({ artifacts = [], smartScreenEvid
     }
   } else {
     smartScreenOk = true;
-    checks.push('windows-smartscreen-evidence-passed');
+    checks.push(publicRelease ? 'windows-smartscreen-public-evidence-passed' : 'windows-smartscreen-evidence-passed');
   }
 
   return {
@@ -146,6 +159,7 @@ export const evaluateWindowsSigningEvidence = ({ artifacts = [], smartScreenEvid
     smartScreen: {
       ok: smartScreenOk,
       status: smartScreenEvidence ? smartScreenStatus || 'unknown' : 'missing',
+      publicRelease: publicRelease === true,
       checkedAt: smartScreenEvidence?.checkedAt || null,
       environment: smartScreenEvidence?.environment || null,
     },

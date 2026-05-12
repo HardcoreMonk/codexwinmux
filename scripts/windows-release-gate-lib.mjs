@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { buildNodeWarningPolicyEnv } from './node-warning-policy-lib.mjs';
 
 export const getWindowsReleaseGateSteps = () => [
   {
@@ -45,6 +46,9 @@ export const validateWindowsReleaseGatePackageScripts = ({ scripts }) => {
   };
 };
 
+export const buildPackageScriptEnv = ({ env = process.env } = {}) =>
+  buildNodeWarningPolicyEnv({ env });
+
 export const runPackageScriptStep = (
   step,
   {
@@ -65,7 +69,7 @@ export const runPackageScriptStep = (
     try {
       child = spawn(command, args, {
         cwd,
-        env,
+        env: buildPackageScriptEnv({ env }),
         stdio,
         windowsHide: true,
       });

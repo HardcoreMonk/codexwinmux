@@ -27,9 +27,7 @@
   "main": "dist-electron/main.js",
   "bin": {
     "codexwinmux": "./bin/codexmux.js",
-    "cwmux": "./bin/codexmux.js",
-    "codexmux": "./bin/codexmux.js",
-    "cmux": "./bin/codexmux.js"
+    "cwmux": "./bin/codexmux.js"
   },
   "files": [
     "bin/",

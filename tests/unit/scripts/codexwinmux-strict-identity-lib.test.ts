@@ -73,4 +73,68 @@ describe('codexwinmux strict identity helpers', () => {
       'strict-identity-legacy-env-present',
     );
   });
+
+  it('blocks legacy CLI aliases when legacy sunset mode is enabled', async () => {
+    const { evaluateCodexwinmuxStrictIdentity } = await loadLib();
+
+    const result = evaluateCodexwinmuxStrictIdentity({
+      packageJson: {
+        name: 'codexwinmux',
+        repository: { url: 'https://github.com/HardcoreMonk/codexwinmux.git' },
+        homepage: 'https://github.com/HardcoreMonk/codexwinmux',
+        bugs: { url: 'https://github.com/HardcoreMonk/codexwinmux/issues' },
+        bin: {
+          codexwinmux: './bin/codexmux.js',
+          cwmux: './bin/codexmux.js',
+          codexmux: './bin/codexmux.js',
+          cmux: './bin/codexmux.js',
+        },
+      },
+      builderConfig: {
+        appId: 'com.hardcoremonk.codexwinmux',
+        productName: 'codexwinmux',
+        nsis: { artifactName: '${productName}-Setup-${version}.${ext}' },
+        publish: { repo: 'codexwinmux' },
+      },
+      env: {
+        CODEXWINMUX_STRICT_IDENTITY: '1',
+        CODEXWINMUX_LEGACY_SUNSET: '1',
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toContain(
+      'strict-identity-legacy-cli-alias-present',
+    );
+  });
+
+  it('accepts legacy sunset mode when only preferred CLI aliases remain', async () => {
+    const { evaluateCodexwinmuxStrictIdentity } = await loadLib();
+
+    const result = evaluateCodexwinmuxStrictIdentity({
+      packageJson: {
+        name: 'codexwinmux',
+        repository: { url: 'https://github.com/HardcoreMonk/codexwinmux.git' },
+        homepage: 'https://github.com/HardcoreMonk/codexwinmux',
+        bugs: { url: 'https://github.com/HardcoreMonk/codexwinmux/issues' },
+        bin: {
+          codexwinmux: './bin/codexmux.js',
+          cwmux: './bin/codexmux.js',
+        },
+      },
+      builderConfig: {
+        appId: 'com.hardcoremonk.codexwinmux',
+        productName: 'codexwinmux',
+        nsis: { artifactName: '${productName}-Setup-${version}.${ext}' },
+        publish: { repo: 'codexwinmux' },
+      },
+      env: {
+        CODEXWINMUX_STRICT_IDENTITY: '1',
+        CODEXWINMUX_LEGACY_SUNSET: '1',
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.checks).toContain('strict-identity-legacy-cli-aliases-removed');
+  });
 });

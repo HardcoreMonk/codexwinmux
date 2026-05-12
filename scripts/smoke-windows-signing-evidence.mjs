@@ -146,6 +146,9 @@ const readSmartScreenEvidence = async () => {
   return null;
 };
 
+const readBooleanEnvAlias = (legacyKey) =>
+  readEnvAlias(process.env, legacyKey) === '1' || readEnvAlias(process.env, legacyKey) === 'true';
+
 const resolveArtifactPaths = async () => {
   const packageJson = await readJsonFile(path.join(rootDir, 'package.json'));
   const builderConfigPath = path.join(rootDir, 'electron-builder.yml');
@@ -188,7 +191,11 @@ const main = async () => {
     collectArtifact({ id: 'unpacked-exe', filePath: path.resolve(artifactPaths.unpackedExe) }),
   ]);
   const smartScreenEvidence = await readSmartScreenEvidence();
-  const result = evaluateWindowsSigningEvidence({ artifacts, smartScreenEvidence });
+  const result = evaluateWindowsSigningEvidence({
+    artifacts,
+    smartScreenEvidence,
+    publicRelease: readBooleanEnvAlias('CODEXMUX_SMARTSCREEN_PUBLIC_RELEASE'),
+  });
   const payload = buildWindowsSigningEvidenceArtifactPayload(result);
 
   await writeArtifact(result.ok ? 'passed' : 'failed', payload);

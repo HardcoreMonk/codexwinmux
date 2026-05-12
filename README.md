@@ -25,8 +25,10 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 
 현재 Windows 제품 identity는 `codexwinmux`입니다. Electron `productName`,
 `appId`, 설치 파일명, 실행 파일명, updater cache, 앱 데이터 디렉터리는
-`codexwinmux` 기준으로 분리합니다. `CODEXMUX_*` 환경 변수와 `cmux` CLI
-token/header는 기존 운영 호환 레이어로 유지합니다.
+`codexwinmux` 기준으로 분리합니다. CLI package alias는 `codexwinmux`와 `cwmux`만
+노출합니다. 내부 runtime env는 아직 `CODEXMUX_RUNTIME_*` 계열을 사용하지만, smoke와
+운영 입력 env는 `CODEXWINMUX_*`를 우선합니다. `CMUX_PORT`/`CMUX_TOKEN`과
+`x-cmux-token`은 API 호환 레이어로 유지합니다.
 
 ## 설치와 실행
 
@@ -229,6 +231,8 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
   범위가 아닙니다.
 - app id, data dir, executable/artifact name은 `codexwinmux` 기준으로 독립되어
   있습니다. 기존 `codexmux` 데이터는 자동 병합하지 않습니다.
+- npm/package CLI alias는 `codexwinmux`와 `cwmux`만 제공합니다. 기존 `codexmux`와
+  `cmux` alias는 legacy sunset gate 이후 제거했습니다.
 - Windows code signing과 timestamp 증거는 `0.4.14`부터 확보했습니다. 내부 전용
   배포에서는 trusted root distribution 범위의 SmartScreen 판정을 사용하며, 외부 공개
   배포를 시작할 때만 public SmartScreen reputation을 별도 gate로 둡니다.

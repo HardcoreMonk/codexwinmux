@@ -3,6 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { readEnvAlias } from './env-alias-lib.mjs';
+import { buildNodeWarningPolicyEnv } from './node-warning-policy-lib.mjs';
 
 export const buildElectronBuilderSigningArgs = ({ env = process.env } = {}) => {
   const certificateSha1 = readEnvAlias(env, 'CODEXMUX_WINDOWS_CERTIFICATE_SHA1');
@@ -29,9 +30,10 @@ export const buildElectronBuilderArgs = ({ dir = false, extraArgs = [], env = pr
 export const buildElectronBuilderEnv = ({ env = process.env, shimDir }) => {
   const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'PATH';
   const currentPath = env[pathKey];
+  const warningPolicyEnv = buildNodeWarningPolicyEnv({ env });
 
   return {
-    ...env,
+    ...warningPolicyEnv,
     [pathKey]: currentPath ? `${shimDir}${path.win32.delimiter}${currentPath}` : shimDir,
   };
 };
@@ -76,10 +78,14 @@ export const buildElectronNativePrebuildTasks = ({
   },
 ];
 
+export const buildElectronNativePrebuildEnv = ({ env = process.env } = {}) =>
+  buildNodeWarningPolicyEnv({ env });
+
 export const installElectronNativePrebuilds = async ({
   cwd = process.cwd(),
   electronVersion = readElectronVersion(cwd),
   arch = 'x64',
+  env = process.env,
   stdio = 'inherit',
 } = {}) => {
   const prebuildInstallCli = path.join(cwd, 'node_modules', 'prebuild-install', 'bin.js');
@@ -92,6 +98,7 @@ export const installElectronNativePrebuilds = async ({
     const result = await new Promise((resolve) => {
       const child = spawn(process.execPath, [prebuildInstallCli, ...task.args], {
         cwd: task.cwd,
+        env: buildElectronNativePrebuildEnv({ env }),
         stdio,
       });
       child.once('close', (exitCode, signal) => resolve({ exitCode, signal }));
@@ -112,7 +119,7 @@ export const runElectronBuilder = ({
   stdio = 'inherit',
 } = {}) => {
   const run = async () => {
-    await installElectronNativePrebuilds({ cwd, stdio });
+    await installElectronNativePrebuilds({ cwd, env, stdio });
     const shimDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codexmux-electron-builder-'));
     createPnpmShim(shimDir);
 

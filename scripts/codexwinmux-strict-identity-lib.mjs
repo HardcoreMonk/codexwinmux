@@ -9,6 +9,7 @@ const toBlocker = (ruleId, message, detail = undefined) => ({
 });
 
 const includesCodexwinmux = (value) => normalizeText(value).toLowerCase().includes('codexwinmux');
+const hasEnvFlag = (env, key) => env?.[key] === '1' || env?.[key] === 'true';
 
 export const evaluateCodexwinmuxStrictIdentity = ({
   packageJson = {},
@@ -36,6 +37,19 @@ export const evaluateCodexwinmuxStrictIdentity = ({
       'strict-identity-preferred-cli-aliases-missing',
       'package.json bin must expose codexwinmux and cwmux aliases.',
     ));
+  }
+
+  const legacyCliAliases = ['codexmux', 'cmux'].filter((alias) => Boolean(bin[alias]));
+  if (hasEnvFlag(env, 'CODEXWINMUX_LEGACY_SUNSET')) {
+    if (legacyCliAliases.length > 0) {
+      blockers.push(toBlocker(
+        'strict-identity-legacy-cli-alias-present',
+        'Legacy sunset mode must not expose codexmux or cmux CLI aliases.',
+        legacyCliAliases,
+      ));
+    } else {
+      checks.push('strict-identity-legacy-cli-aliases-removed');
+    }
   }
 
   const repositoryUrl = typeof packageJson.repository === 'object'

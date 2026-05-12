@@ -76,7 +76,9 @@ describe('Windows updater local feed smoke helpers', () => {
       CODEXMUX_ELECTRON_UPDATER_DISABLE_DIFFERENTIAL: '1',
       ELECTRON_DISABLE_SECURITY_WARNINGS: '1',
       ELECTRON_DISABLE_SANDBOX: '1',
+      NODE_NO_WARNINGS: '1',
     });
+    expect(env.NODE_OPTIONS).toBeUndefined();
   });
 
   it('summarizes updater status events into checks', async () => {

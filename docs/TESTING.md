@@ -390,7 +390,8 @@ Authenticode로 서명됐는지, timestamp가 있는지, 명시적인 SmartScree
 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, public 배포는 `passed`, 내부 전용 배포는
 signed/timestamped artifact를 전제로 `internal-not-required` 또는
 `internal-trusted-root`를 사용할 수 있다. 서명되지 않은 artifact는
-`windows-smartscreen-blocked-unsigned`로 실패한다.
+`windows-smartscreen-blocked-unsigned`로 실패한다. `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1`을
+설정하면 internal-only status를 허용하지 않고 `passed` evidence만 통과시킨다.
 `smoke:windows:updater-local-feed`는 현재 Windows 사용자 설치 상태를 임시로
 변경한다. 생성된 NSIS artifact를 silent install하고, patch version을 올린 synthetic
 local `latest.yml`을 만든 뒤 Electron updater download/install event와
@@ -428,6 +429,10 @@ terminal check를 적용한다.
 `smoke:windows:package-gate`는 package를 새로 만들지 않는다. 기존 `release/` artifact를
 대상으로 zip artifact, update metadata, updater local feed, packaged launch,
 packaged runtime v2, installer runtime v2 smoke를 순차 실행하고 첫 실패에서 중단한다.
+Windows packaging과 updater smoke는 현재 upstream package의 Node deprecation warning
+`DEP0176`, `DEP0190`를 제품 blocker로 보지 않는다. child Node process에는
+`NODE_OPTIONS`로 해당 warning suppression을 중복 없이 병합해 package gate output이
+제품 warning과 upstream deprecation warning을 섞지 않게 한다.
 
 macOS packaging smoke:
 

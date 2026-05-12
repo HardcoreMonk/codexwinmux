@@ -242,12 +242,14 @@ download/install evidence는 사용자가 설치한 버전보다 더 최신 publ
 출력합니다. 서명되지 않은 build는 실패가 정상이며, release blocker로 기록합니다.
 서명된 build에서 public SmartScreen 통과를 기록하려면 다음 중 하나를 함께 제공합니다.
 내부 전용 배포는 signed/timestamped artifact를 전제로 `internal-not-required` 또는
-`internal-trusted-root` 상태를 사용할 수 있습니다.
+`internal-trusted-root` 상태를 사용할 수 있습니다. `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1`
+모드에서는 internal-only 상태를 허용하지 않습니다.
 
 ```bash
 CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH=artifacts/smartscreen-v0.4.14.json corepack pnpm smoke:windows:signing-evidence
 CODEXWINMUX_SMARTSCREEN_STATUS=passed CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=clean-windows-11-vm corepack pnpm smoke:windows:signing-evidence
 CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=internal-trusted-root-distribution corepack pnpm smoke:windows:signing-evidence
+CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1 CODEXWINMUX_SMARTSCREEN_STATUS=passed CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=clean-windows-11-vm corepack pnpm smoke:windows:signing-evidence
 ```
 
 `smoke:windows:updater-github-feed`는 설치된 앱 전체를 대상으로 하는 updater
@@ -287,6 +289,13 @@ certificate로 Authenticode 서명됐고 DigiCert RFC3161 timestamp evidence를 
 내부 전용 배포에서는 `CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required`를
 trusted root distribution 범위의 SmartScreen evidence로 기록합니다. 외부 공개 배포를
 시작할 때만 public SmartScreen reputation을 별도 release blocker로 둡니다.
+`CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1` strict mode는 이 내부 판정을 거부하고
+`passed` evidence를 요구합니다.
+
+Windows packaging과 updater smoke child process에는 `NODE_OPTIONS`로 `DEP0176`,
+`DEP0190` warning suppression을 병합합니다. 두 warning은 현재 최신
+electron-builder/electron-updater dependency 경로에서 발생하는 Node deprecation warning이며
+제품 runtime warning으로 분류하지 않습니다.
 
 릴리스 패키징 전에 확인할 항목:
 
