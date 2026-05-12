@@ -231,7 +231,7 @@ const RUNTIME_MIGRATIONS: IRuntimeMigration[] = [
 
 const createSqliteUnavailableError = (cause: unknown): Error =>
   Object.assign(
-    new Error('Runtime v2 requires optional dependency better-sqlite3. Install dependencies with native build support before enabling CODEXMUX_RUNTIME_V2=1.'),
+    new Error('Runtime v2 requires optional dependency better-sqlite3. Install dependencies with native build support before enabling CODEXWINMUX_RUNTIME_V2=1.'),
     {
       code: 'runtime-v2-sqlite-unavailable',
       retryable: false,

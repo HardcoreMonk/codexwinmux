@@ -44,13 +44,13 @@ const healthyValue: ILifecycleViewModel = {
     {
       id: 'restart-service',
       label: 'Restart Service',
-      description: 'Restart the Linux user service with systemd.',
+      description: 'Restart the legacy Linux user service with systemd.',
       confirmationPhrase: 'restart codexmux.service',
     },
     {
       id: 'rollback-runtime-flags',
       label: 'Apply Rollback Flags',
-      description: 'Write explicit runtime rollback flags to the systemd user drop-in and restart the service.',
+      description: 'Write explicit CODEXWINMUX_RUNTIME rollback flags to the legacy systemd user drop-in and restart the service.',
       confirmationPhrase: 'rollback runtime v2',
     },
   ],
@@ -70,11 +70,11 @@ const healthyValue: ILifecycleViewModel = {
     'Runtime v2 rollback runbook:',
     '1. Run corepack pnpm lifecycle:rollback-dry-run.',
     '2. Run corepack pnpm lifecycle:rollback-apply or Lifecycle Action "Apply Rollback Flags".',
-    '3. Confirm CODEXMUX_RUNTIME_STORAGE_V2_MODE=write.',
-    '4. Confirm CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off.',
-    '5. Confirm CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off.',
-    '6. Confirm CODEXMUX_RUNTIME_STATUS_V2_MODE=off.',
-    '7. Confirm systemctl --user restart codexmux.service completed, then recheck lifecycle health and worker diagnostics.',
+    '3. Confirm CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write.',
+    '4. Confirm CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off.',
+    '5. Confirm CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off.',
+    '6. Confirm CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off.',
+    '7. Confirm legacy systemctl --user restart codexmux.service completed, then recheck lifecycle health and worker diagnostics.',
   ].join('\n'),
 };
 

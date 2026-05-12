@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import { getRuntimeTerminalV2Mode } from '@/lib/runtime/terminal-mode';
 import { getRuntimeStorageV2Mode } from '@/lib/runtime/storage-mode';
@@ -8,7 +9,7 @@ import { getRuntimeTimelineV2Mode } from '@/lib/runtime/timeline-mode';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  if (process.env.CODEXMUX_RUNTIME_V2 !== '1') {
+  if (!isRuntimeV2Enabled()) {
     return sendRuntimeDisabled(res);
   }
 

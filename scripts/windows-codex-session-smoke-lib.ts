@@ -22,6 +22,14 @@ const timestampForPath = (startedAt: string): string =>
     .replace(/\.\d{3}Z$/, '')
     .replace(/:/g, '-');
 
+const preferredCodexwinmuxEnvKey = (legacyKey: string): string =>
+  legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
+
+const buildEnvAlias = (legacyKey: string, value: string): Record<string, string> => ({
+  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+  [legacyKey]: value,
+});
+
 export const buildSyntheticCodexProcessArgs = (sessionId: string): string[] => [
   '-e',
   'setInterval(() => {}, 1000)',
@@ -77,5 +85,5 @@ export const createWindowsCodexSessionSmokeEnv = ({
   ...env,
   HOME: homeDir,
   USERPROFILE: homeDir,
-  CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+  ...buildEnvAlias('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
 });

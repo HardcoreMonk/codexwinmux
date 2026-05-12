@@ -32,12 +32,16 @@ describe('Windows runtime v2 terminal smoke helpers', () => {
       PATH: 'C:\\Windows\\System32',
       HOME: 'C:\\Temp\\codexmux-home',
       USERPROFILE: 'C:\\Temp\\codexmux-home',
+      CODEXWINMUX_RUNTIME_V2: '1',
       CODEXMUX_RUNTIME_V2: '1',
+      CODEXWINMUX_RUNTIME_DB: 'C:\\Temp\\codexmux-home\\runtime-v2\\state.db',
       CODEXMUX_RUNTIME_DB: 'C:\\Temp\\codexmux-home\\runtime-v2\\state.db',
+      CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
       CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
       CODEXMUX_WINDOWS_SHELL: 'C:\\Windows\\System32\\cmd.exe',
     });
     expect(JSON.parse(env.__CMUX_PRISTINE_ENV)).toMatchObject({
+      CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
       CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
     });
   });

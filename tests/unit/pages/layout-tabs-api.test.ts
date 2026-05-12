@@ -101,6 +101,11 @@ const createRequest = (body: unknown): NextApiRequest => ({
 
 describe('layout tab api runtime routing', () => {
   beforeEach(() => {
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
+    delete process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE;
     process.env.CODEXMUX_RUNTIME_V2 = '1';
     process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE = 'off';
     process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'off';

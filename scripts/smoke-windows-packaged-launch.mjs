@@ -31,6 +31,7 @@ import {
 } from './runtime-v2-phase2-smoke-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 import { buildWindowsPackagedLaunchArtifactPayload } from './windows-package-smoke-artifact-lib.mjs';
+import { preferredCodexwinmuxEnvKey, readEnvAlias } from './env-alias-lib.mjs';
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 const PASSWORD = 'windows-packaged-runtime-v2-smoke';
@@ -67,7 +68,12 @@ const fail = async (code, message, details = {}) => {
 };
 
 const resolveAppPath = () =>
-  path.resolve(process.env.CODEXMUX_WINDOWS_PACKAGED_APP_PATH || path.join(rootDir, 'release', 'win-unpacked', 'codexwinmux.exe'));
+  path.resolve(readEnvAlias(process.env, 'CODEXMUX_WINDOWS_PACKAGED_APP_PATH') || path.join(rootDir, 'release', 'win-unpacked', 'codexwinmux.exe'));
+
+const buildEnvAlias = (legacyKey, value) => ({
+  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+  [legacyKey]: value,
+});
 
 const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
   ...process.env,
@@ -78,10 +84,10 @@ const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
   ELECTRON_DISABLE_SECURITY_WARNINGS: '1',
   NEXT_TELEMETRY_DISABLED: '1',
   NO_AT_BRIDGE: '1',
-  CODEXMUX_RUNTIME_V2: '1',
-  CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'new-tabs',
-  CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
-  CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+  ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+  ...buildEnvAlias('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
   CODEXMUX_RESERVED_PORTS: reservedPorts.filter(Number.isFinite).join(','),
 });
 

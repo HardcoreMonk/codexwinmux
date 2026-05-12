@@ -36,12 +36,12 @@ const main = async (): Promise<void> => {
   }
   checks.push('dry-run-no-system-mutation');
 
-  if (plan.process.env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER !== 'windows') {
+  if (plan.process.env.CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER !== 'windows') {
     throw new Error(`Windows terminal adapter is not selected: ${JSON.stringify(plan.process.env)}`);
   }
   checks.push('windows-terminal-adapter');
 
-  if (plan.process.env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER !== 'windows') {
+  if (plan.process.env.CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER !== 'windows') {
     throw new Error(`Windows process inspector is not selected: ${JSON.stringify(plan.process.env)}`);
   }
   checks.push('windows-process-inspector-adapter');

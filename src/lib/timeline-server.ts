@@ -35,6 +35,7 @@ import {
   timelineConnections as connections,
 } from '@/lib/timeline-server-state';
 import { getPerfNow, recordPerfCounter, recordPerfDuration } from '@/lib/perf-metrics';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import {
   recordRuntimeTimelineLiveShadowAppend,
   startRuntimeTimelineLiveShadow,
@@ -64,7 +65,7 @@ const MAX_WATCHER_RETRIES = 3;
 const runtimeConnections = new Set<WebSocket>();
 
 const shouldUseRuntimeStatusLive = (): boolean =>
-  process.env.CODEXMUX_RUNTIME_V2 === '1' && getRuntimeStatusV2Mode() === 'default';
+  isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
 
 const notifyStatusLastUserMessage = (sessionName: string, message: string): void => {
   if (shouldUseRuntimeStatusLive()) {

@@ -2,10 +2,11 @@
 import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
+import { readEnvAlias } from './env-alias-lib.mjs';
 
 const root = process.cwd();
 const electronMode = process.argv.includes('--electron');
-const runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1';
+const runtimeV2Enabled = readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2') === '1';
 const standalone = path.join(root, '.next', 'standalone');
 const standaloneModules = path.join(standalone, 'node_modules');
 const standaloneTmuxConfig = path.join(standalone, 'src', 'config', 'tmux.conf');

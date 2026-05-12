@@ -4,10 +4,11 @@ import net from 'net';
 import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
+import { preferredCodexwinmuxEnvKey, readEnvAlias } from './env-alias-lib.mjs';
 
 const rootDir = process.cwd();
 const targetScript = path.join(rootDir, 'scripts', 'smoke-runtime-v2.mjs');
-const DEFAULT_TIMEOUT_MS = Number(process.env.CODEXMUX_RUNTIME_V2_SMOKE_TIMEOUT_MS || 30_000);
+const DEFAULT_TIMEOUT_MS = Number(readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_TIMEOUT_MS') || 30_000);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -43,6 +44,11 @@ const waitForCliToken = (homeDir) =>
     return raw.trim() || null;
   });
 
+const buildEnvAlias = (legacyKey, value) => ({
+  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+  [legacyKey]: value,
+});
+
 const runTargetSmoke = ({ baseUrl, homeDir, token }) =>
   new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [targetScript], {
@@ -50,7 +56,7 @@ const runTargetSmoke = ({ baseUrl, homeDir, token }) =>
       env: {
         ...process.env,
         HOME: homeDir || process.env.HOME || os.homedir(),
-        CODEXMUX_RUNTIME_V2_SMOKE_URL: baseUrl,
+        ...buildEnvAlias('CODEXMUX_RUNTIME_V2_SMOKE_URL', baseUrl),
         ...(token ? { CODEXMUX_TOKEN: token } : {}),
       },
       stdio: 'inherit',
@@ -72,12 +78,12 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     HOME: homeDir,
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
-    CODEXMUX_RUNTIME_V2: '1',
-    CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_STATUS_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_DB: dbPath,
+    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_STATUS_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;
@@ -127,17 +133,17 @@ const startServer = async ({ homeDir, dbPath, port }) => {
 };
 
 const main = async () => {
-  const targetUrl = process.env.CODEXMUX_RUNTIME_V2_SMOKE_URL?.trim();
+  const targetUrl = readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_URL')?.trim();
   if (targetUrl) {
     await runTargetSmoke({ baseUrl: targetUrl });
     return;
   }
 
-  const homeDir = process.env.CODEXMUX_RUNTIME_V2_SMOKE_HOME
+  const homeDir = readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_HOME')
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-runtime-v2-smoke-'));
-  const dbPath = process.env.CODEXMUX_RUNTIME_DB || path.join(homeDir, 'runtime-v2', 'state.db');
+  const dbPath = readEnvAlias(process.env, 'CODEXMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
-  const port = Number(process.env.CODEXMUX_RUNTIME_V2_SMOKE_PORT || await getFreePort());
+  const port = Number(readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_PORT') || await getFreePort());
   let server = null;
 
   try {

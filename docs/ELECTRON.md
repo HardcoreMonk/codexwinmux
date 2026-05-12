@@ -136,7 +136,7 @@ corepack pnpm smoke:runtime-v2:phase2
 2. Electron에서 붙을 서버를 runtime v2 new-tabs mode로 실행한다.
 
 ```bash
-CODEXMUX_RUNTIME_V2=1 CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs PORT=8132 corepack pnpm dev
+CODEXWINMUX_RUNTIME_V2=1 CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs PORT=8132 corepack pnpm dev
 ```
 
 3. low-level runtime terminal smoke도 통과시킨다.

@@ -1,6 +1,12 @@
 import os from 'os';
 import path from 'path';
 import { createLogger } from '@/lib/logger';
+import {
+  isRuntimeV2Enabled,
+  readRuntimeDbPathEnv,
+  readRuntimeEnvAlias,
+  readRuntimeStorageMirrorDataDirEnv,
+} from '@/lib/runtime/env';
 import { parseRuntimeStorageV2Mode } from '@/lib/runtime/storage-mode';
 import { createStorageRepository } from '@/lib/runtime/storage/repository';
 import { openRuntimeDatabase } from '@/lib/runtime/storage/schema';
@@ -15,16 +21,16 @@ export interface IRuntimeStorageReadOwnerOptions {
 const log = createLogger('runtime-storage');
 
 const getDefaultDataDir = (): string =>
-  process.env.CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR
+  readRuntimeStorageMirrorDataDirEnv()
   || path.join(os.homedir(), '.codexwinmux');
 
 const getDefaultDbPath = (dataDir = getDefaultDataDir()): string =>
-  process.env.CODEXMUX_RUNTIME_DB
+  readRuntimeDbPathEnv()
   || path.join(dataDir, 'runtime-v2', 'state.db');
 
 export const shouldReadRuntimeStorageV2 = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  storageMode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE,
+  runtimeV2Enabled = isRuntimeV2Enabled(),
+  storageMode = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE'),
 }: IRuntimeStorageReadOwnerOptions = {}): boolean =>
   runtimeV2Enabled && parseRuntimeStorageV2Mode(storageMode) === 'default';
 

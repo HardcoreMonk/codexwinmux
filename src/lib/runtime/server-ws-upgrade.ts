@@ -1,6 +1,7 @@
 import type { IncomingMessage } from 'http';
 import type { Duplex } from 'stream';
 import { verifyRuntimeV2WebSocketAuth } from '@/lib/runtime/api-auth';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { parseRuntimeSessionName } from '@/lib/runtime/session-name';
 
 const MAX_TERMINAL_COLS = 500;
@@ -117,7 +118,7 @@ export const routeWebSocketUpgrade = async ({
   fallbackUpgrade,
   verifyRuntimeAuth = verifyRuntimeV2WebSocketAuth,
   verifyGenericAuth,
-  runtimeEnabled = () => process.env.CODEXMUX_RUNTIME_V2 === '1',
+  runtimeEnabled = () => isRuntimeV2Enabled(),
 }: IRouteWebSocketUpgradeOptions): Promise<void> => {
   const rawUrl = typeof request.url === 'string' ? request.url : '';
   if (

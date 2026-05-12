@@ -61,6 +61,7 @@ import type {
   TRuntimeLayout,
 } from '@/lib/runtime/contracts';
 import { createRuntimeId, createRuntimeSessionName, parseRuntimeSessionName } from '@/lib/runtime/session-name';
+import { readRuntimeDbPathEnv, shouldResetRuntimeV2Env, writeRuntimeEnvAlias } from '@/lib/runtime/env';
 import { RuntimeWorkerClient } from '@/lib/runtime/worker-client';
 import { createRuntimeEvent, type IRuntimeEvent, type TRuntimeMessage } from '@/lib/runtime/ipc';
 
@@ -195,7 +196,7 @@ export interface ICreateRuntimeSupervisorForTestOptions {
 const g = globalThis as unknown as IRuntimeSupervisorGlobalState;
 
 const getDbPath = (): string =>
-  process.env.CODEXMUX_RUNTIME_DB || path.join(process.env.HOME || os.homedir(), '.codexwinmux', 'runtime-v2', 'state.db');
+  readRuntimeDbPathEnv() || path.join(process.env.HOME || os.homedir(), '.codexwinmux', 'runtime-v2', 'state.db');
 
 const runtimeDbFiles = (dbPath: string): string[] => [dbPath, `${dbPath}-wal`, `${dbPath}-shm`];
 
@@ -246,7 +247,7 @@ export const createRuntimeSupervisorForTest = (
     if (preparedDbPath) return preparedDbPath;
 
     const dbPath = options.dbPath ?? getDbPath();
-    const reset = options.runtimeReset ?? process.env.CODEXMUX_RUNTIME_V2_RESET === '1';
+    const reset = options.runtimeReset ?? shouldResetRuntimeV2Env();
     if (reset && hasRuntimeDbFiles(dbPath)) backupRuntimeDbFiles(dbPath);
     preparedDbPath = dbPath;
     if (options.useGlobal) g.__ptRuntimeSupervisorPreparedDbPath = dbPath;
@@ -558,7 +559,7 @@ export const createRuntimeSupervisorForTest = (
 
   const startInternal = async (): Promise<void> => {
     if (started) return;
-    process.env.CODEXMUX_RUNTIME_DB = prepareRuntimeDbPath();
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_DB', prepareRuntimeDbPath());
     const { storage, terminal, timeline, status } = getClients();
     try {
       storage.start();

@@ -53,7 +53,7 @@ export const collectStrictIdentityLegacyEnvKeys = (env) =>
   Object.keys(env || {})
     .filter((key) => (
       knownStrictIdentityLegacyEnvKeys.includes(key) ||
-      /^CODEXMUX_(SMOKE|SMARTSCREEN|WINDOWS|ELECTRON|OPS_SMOKE|POWERSHELL|LEGACY)_/.test(key)
+      /^CODEXMUX_(SMOKE|SMARTSCREEN|WINDOWS|ELECTRON|OPS_SMOKE|POWERSHELL|LEGACY|RUNTIME)_/.test(key)
     ))
     .filter((key) => hasEnvValue(env?.[key]))
     .sort();

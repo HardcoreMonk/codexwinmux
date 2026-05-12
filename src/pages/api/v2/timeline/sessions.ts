@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import { normalizePanelType } from '@/lib/panel-type';
 import type { TPanelType } from '@/types/terminal';
@@ -21,7 +22,7 @@ const parsePanelType = (value: string | string[] | undefined): TPanelType =>
   normalizePanelType(firstQueryValue(value)) ?? 'codex';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  if (process.env.CODEXMUX_RUNTIME_V2 !== '1') {
+  if (!isRuntimeV2Enabled()) {
     return sendRuntimeDisabled(res);
   }
 

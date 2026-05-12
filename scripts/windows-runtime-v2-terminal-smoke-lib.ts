@@ -16,6 +16,14 @@ export const normalizeWindowsRuntimeSmokeOutput = (output: string): string =>
 export const hasWindowsRuntimeSmokeMarker = (output: string, marker: string): boolean =>
   normalizeWindowsRuntimeSmokeOutput(output).includes(marker);
 
+const preferredCodexwinmuxEnvKey = (legacyKey: string): string =>
+  legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
+
+const buildEnvAlias = (legacyKey: string, value: string): Record<string, string> => ({
+  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+  [legacyKey]: value,
+});
+
 export const createWindowsRuntimeV2TerminalSmokeEnv = ({
   env = process.env,
   homeDir,
@@ -26,9 +34,9 @@ export const createWindowsRuntimeV2TerminalSmokeEnv = ({
     ...env,
     HOME: homeDir,
     USERPROFILE: homeDir,
-    CODEXMUX_RUNTIME_V2: '1',
-    CODEXMUX_RUNTIME_DB: dbPath,
-    CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
+    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
     CODEXMUX_WINDOWS_SHELL: shell,
   };
   nextEnv.__CMUX_PRISTINE_ENV = JSON.stringify(nextEnv);

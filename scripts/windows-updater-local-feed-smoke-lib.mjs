@@ -1,4 +1,5 @@
 import path from 'path';
+import { preferredCodexwinmuxEnvKey } from './env-alias-lib.mjs';
 
 const requiredInstallEvents = [
   {
@@ -57,6 +58,11 @@ export const buildWindowsUpdaterLocalFeedLatestMetadata = ({
   releaseDate,
 });
 
+const buildEnvAlias = (legacyKey, value) => ({
+  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+  [legacyKey]: value,
+});
+
 export const buildWindowsUpdaterSmokeEnv = ({
   env = process.env,
   feedUrl,
@@ -74,10 +80,10 @@ export const buildWindowsUpdaterSmokeEnv = ({
   NODE_NO_WARNINGS: '1',
   NEXT_TELEMETRY_DISABLED: '1',
   NO_AT_BRIDGE: '1',
-  CODEXMUX_RUNTIME_V2: '1',
-  CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'new-tabs',
-  CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
-  CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+  ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+  ...buildEnvAlias('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
   CODEXMUX_ELECTRON_UPDATER_FEED_URL: feedUrl,
   CODEXMUX_ELECTRON_UPDATER_SMOKE: '1',
   CODEXMUX_ELECTRON_UPDATER_SMOKE_STATUS_PATH: statusPath,

@@ -39,6 +39,7 @@ import {
   createWebSocketUpgradeHandler,
   type IRuntimeTerminalUpgradeContext,
 } from './src/lib/runtime/server-ws-upgrade';
+import { isRuntimeV2Enabled } from './src/lib/runtime/env';
 import { createLogger } from './src/lib/logger';
 import pkg from './package.json';
 
@@ -290,7 +291,7 @@ const startDev = async (port: number, appDir: string, bindHost: string): Promise
     releaseLock();
     await removePortFile();
     server.close();
-    if (process.env.CODEXMUX_RUNTIME_V2 === '1') {
+    if (isRuntimeV2Enabled()) {
       getRuntimeSupervisor().shutdown();
     }
     await shutdownWs();
@@ -357,7 +358,7 @@ const startProd = async (port: number, appDir: string, bindHost: string): Promis
     releaseLock();
     await removePortFile();
     server.close();
-    if (process.env.CODEXMUX_RUNTIME_V2 === '1') {
+    if (isRuntimeV2Enabled()) {
       getRuntimeSupervisor().shutdown();
     }
     await shutdownWs();
@@ -400,10 +401,10 @@ export const start = async (opts?: IStartOptions): Promise<IStartResult> => {
   if (shouldPrewarmSessionIndexOnStartup()) {
     await initSessionIndexService();
   }
-  if (process.env.CODEXMUX_RUNTIME_V2 === '1') {
+  if (isRuntimeV2Enabled()) {
     runRuntimeStartupDiagnostic(getRuntimeSupervisor(), log);
   }
-  if (process.env.CODEXMUX_RUNTIME_V2 === '1' && getRuntimeStatusV2Mode() === 'default') {
+  if (isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default') {
     try {
       await getRuntimeSupervisor().startStatusLive();
     } catch (err) {

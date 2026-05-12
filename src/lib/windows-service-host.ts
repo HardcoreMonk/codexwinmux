@@ -1,4 +1,5 @@
 import { resolveHostPaths, type THostPathsEnv } from '@/lib/host-paths';
+import { buildRuntimeEnvAliasRecord } from '@/lib/runtime/env';
 
 export type TWindowsServiceHostOwner = 'tray' | 'service' | 'installer-background';
 export type TWindowsServiceHostModel = 'tray-first-service-capable';
@@ -99,9 +100,9 @@ export const resolveWindowsServiceHostPlan = ({
       args: ['pnpm', 'start'],
       cwd: appDir,
       env: {
-        CODEXMUX_RUNTIME_V2: '1',
-        CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
-        CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+        ...buildRuntimeEnvAliasRecord('CODEXMUX_RUNTIME_V2', '1'),
+        ...buildRuntimeEnvAliasRecord('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+        ...buildRuntimeEnvAliasRecord('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
         HOST: host,
         PORT: port,
       },

@@ -6,6 +6,7 @@ import { getProviderByPanelType } from '@/lib/providers';
 import { sendKeys } from '@/lib/tmux';
 import { getStatusManager } from '@/lib/status-manager';
 import { createLogger } from '@/lib/logger';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 
@@ -14,7 +15,7 @@ const log = createLogger('workspace-api');
 const SHELL_READY_DELAY_MS = 500;
 
 const shouldUseRuntimeStatusLive = (): boolean =>
-  process.env.CODEXMUX_RUNTIME_V2 === '1' && getRuntimeStatusV2Mode() === 'default';
+  isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {

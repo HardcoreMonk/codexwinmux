@@ -65,6 +65,7 @@ describe('codexwinmux strict identity helpers', () => {
       env: {
         CODEXWINMUX_STRICT_IDENTITY: '1',
         CODEXMUX_SMOKE_ARTIFACT_DIR: 'C:\\tmp\\legacy',
+        CODEXMUX_RUNTIME_V2: '1',
       },
     });
 
@@ -72,6 +73,10 @@ describe('codexwinmux strict identity helpers', () => {
     expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toContain(
       'strict-identity-legacy-env-present',
     );
+    expect(result.blockers[0].detail).toEqual(expect.arrayContaining([
+      'CODEXMUX_RUNTIME_V2',
+      'CODEXMUX_SMOKE_ARTIFACT_DIR',
+    ]));
   });
 
   it('blocks legacy CLI aliases when legacy sunset mode is enabled', async () => {

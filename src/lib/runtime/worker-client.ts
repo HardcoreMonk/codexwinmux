@@ -10,6 +10,7 @@ import {
   runtimeEventRegistry,
   type TRuntimeMessage,
 } from '@/lib/runtime/ipc';
+import { buildRuntimeEnvAliasRecord, readRuntimeDbPathEnv } from '@/lib/runtime/env';
 import { recordRuntimeWorkerDiagnostic } from '@/lib/runtime/worker-diagnostics';
 import { resolveRuntimeWorkerScript, type TRuntimeWorkerName } from '@/lib/runtime/worker-paths';
 
@@ -230,12 +231,13 @@ export class RuntimeWorkerClient {
   private spawnDefault(): ChildProcess {
     const workerName = this.options.workerName ?? (`${this.options.name}-worker` as TRuntimeWorkerName);
     const resolved = resolveRuntimeWorkerScript(workerName);
+    const runtimeDbPath = readRuntimeDbPathEnv();
     return fork(resolved.scriptPath, [], {
       execArgv: resolved.execArgv,
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: {
         ...process.env,
-        ...(process.env.CODEXMUX_RUNTIME_DB ? { CODEXMUX_RUNTIME_DB: process.env.CODEXMUX_RUNTIME_DB } : {}),
+        ...(runtimeDbPath ? buildRuntimeEnvAliasRecord('CODEXMUX_RUNTIME_DB', runtimeDbPath) : {}),
       },
     });
   }

@@ -314,11 +314,11 @@ describe('runtime lifecycle control helpers', () => {
 
     expect(runbook).toContain('corepack pnpm lifecycle:rollback-dry-run');
     expect(runbook).toContain('corepack pnpm lifecycle:rollback-apply');
-    expect(runbook).toContain('CODEXMUX_RUNTIME_STORAGE_V2_MODE=write');
-    expect(runbook).toContain('CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off');
-    expect(runbook).toContain('CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off');
-    expect(runbook).toContain('CODEXMUX_RUNTIME_STATUS_V2_MODE=off');
-    expect(runbook).toContain('systemctl --user restart codexmux.service');
+    expect(runbook).toContain('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write');
+    expect(runbook).toContain('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off');
+    expect(runbook).toContain('CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off');
+    expect(runbook).toContain('CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off');
+    expect(runbook).toContain('legacy systemctl --user restart codexmux.service');
     expect(runbook).not.toContain('x-cmux-token');
     expect(runbook).not.toContain('~/.codexwinmux/cli-token');
   });

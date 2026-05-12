@@ -2,13 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { isAllowedJsonlPath } from '@/lib/path-validation';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 
 const firstQueryValue = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  if (process.env.CODEXMUX_RUNTIME_V2 !== '1') {
+  if (!isRuntimeV2Enabled()) {
     return sendRuntimeDisabled(res);
   }
 

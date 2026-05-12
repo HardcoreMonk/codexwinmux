@@ -1,9 +1,10 @@
 import os from 'os';
 import path from 'path';
+import { readRuntimeDbPathEnv } from '@/lib/runtime/env';
 import { createRuntimeReply, parseRuntimeMessage } from '@/lib/runtime/ipc';
 import { createStorageWorkerService } from '@/lib/runtime/storage/worker-service';
 
-const dbPath = process.env.CODEXMUX_RUNTIME_DB
+const dbPath = readRuntimeDbPathEnv()
   || path.join(process.env.HOME || os.homedir(), '.codexwinmux', 'runtime-v2', 'state.db');
 
 const service = createStorageWorkerService({ dbPath });

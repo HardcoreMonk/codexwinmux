@@ -20,6 +20,17 @@ const APP_DISPLAY_NAME = 'codexwinmux';
 const APP_PROCESS_NAME = 'codexwinmux';
 const isEngineProcess = process.env.CODEXMUX_ELECTRON_ENGINE_PROCESS === '1';
 
+const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
+  process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
+
+const buildCodexwinmuxAliasEnv = (legacyKey: string, fallback: string): Record<string, string> => {
+  const value = readCodexwinmuxAlias(legacyKey) || fallback;
+  return {
+    [legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')]: value,
+    [legacyKey]: value,
+  };
+};
+
 const fixEnv = () => {
   applyElectronBootstrapEnv(process.env, process.platform);
 };
@@ -531,9 +542,9 @@ const launchEngineProcess = () => {
     env: {
       ...process.env,
       CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
-      CODEXMUX_RUNTIME_V2: process.env.CODEXMUX_RUNTIME_V2 || '1',
-      CODEXMUX_RUNTIME_TERMINAL_ADAPTER: process.env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER || 'windows',
-      CODEXMUX_PROCESS_INSPECTOR_ADAPTER: process.env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER || 'windows',
+      ...buildCodexwinmuxAliasEnv('CODEXMUX_RUNTIME_V2', '1'),
+      ...buildCodexwinmuxAliasEnv('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+      ...buildCodexwinmuxAliasEnv('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
       CODEXMUX_RESERVED_PORTS: buildReservedPortsEnv(),
       HOST: '127.0.0.1',
       PORT: String(DEFAULT_PORT),

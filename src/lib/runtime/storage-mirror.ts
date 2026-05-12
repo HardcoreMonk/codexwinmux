@@ -1,6 +1,7 @@
 import os from 'os';
 import path from 'path';
 import { createLogger } from '@/lib/logger';
+import { readRuntimeDbPathEnv, readRuntimeStorageMirrorDataDirEnv } from '@/lib/runtime/env';
 import { shouldMirrorLegacyStorageToRuntimeV2 } from '@/lib/runtime/storage-mode';
 import { readLegacyStorageSnapshot } from '@/lib/runtime/storage-json-snapshot';
 import { importLegacyStorageSnapshot, type IImportLegacyStorageSnapshotResult } from '@/lib/runtime/storage-import';
@@ -42,11 +43,11 @@ const withMirrorLock = async <T>(fn: () => Promise<T>): Promise<T> => {
 };
 
 const getDefaultDataDir = (): string =>
-  process.env.CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR
+  readRuntimeStorageMirrorDataDirEnv()
   || path.join(os.homedir(), '.codexwinmux');
 
 const getDefaultDbPath = (dataDir: string): string =>
-  process.env.CODEXMUX_RUNTIME_DB
+  readRuntimeDbPathEnv()
   || path.join(dataDir, 'runtime-v2', 'state.db');
 
 export const mirrorLegacyStorageToRuntimeV2 = async ({

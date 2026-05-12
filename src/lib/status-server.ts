@@ -2,6 +2,7 @@ import { WebSocket } from 'ws';
 import { getStatusManager } from '@/lib/status-manager';
 import { getSessionHistory } from '@/lib/session-history';
 import { createLogger } from '@/lib/logger';
+import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import type { IRuntimeStatusLiveEvent } from '@/lib/runtime/contracts';
@@ -15,7 +16,7 @@ import type {
 const log = createLogger('status');
 
 const shouldUseRuntimeStatusLive = (): boolean =>
-  process.env.CODEXMUX_RUNTIME_V2 === '1' && getRuntimeStatusV2Mode() === 'default';
+  isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
 
 const sendJson = (ws: WebSocket, event: object): void => {
   if (ws.readyState === WebSocket.OPEN) {

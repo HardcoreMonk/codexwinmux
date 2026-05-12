@@ -4,15 +4,15 @@ import path from 'path';
 import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 
-const runtimeEnvRe = /^Environment=(CODEXMUX_RUNTIME_[A-Z0-9_]+)=(.*)$/;
+const runtimeEnvRe = /^Environment=((?:CODEXWINMUX|CODEXMUX)_RUNTIME_[A-Z0-9_]+)=(.*)$/;
 const execFile = promisify(execFileCb);
 
 export const rollbackRuntimeEnv = {
-  CODEXMUX_RUNTIME_V2: '1',
-  CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'write',
-  CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
-  CODEXMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
-  CODEXMUX_RUNTIME_STATUS_V2_MODE: 'off',
+  CODEXWINMUX_RUNTIME_V2: '1',
+  CODEXWINMUX_RUNTIME_STORAGE_V2_MODE: 'write',
+  CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
+  CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
+  CODEXWINMUX_RUNTIME_STATUS_V2_MODE: 'off',
 };
 
 export const getDefaultRuntimeDropInPath = (homeDir = os.homedir()) =>

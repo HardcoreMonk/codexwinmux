@@ -305,11 +305,11 @@ export const buildRollbackRunbook = (): string => [
   'Runtime v2 rollback runbook:',
   '1. Run corepack pnpm lifecycle:rollback-dry-run.',
   '2. Run corepack pnpm lifecycle:rollback-apply or Lifecycle Action "Apply Rollback Flags".',
-  '3. Confirm CODEXMUX_RUNTIME_STORAGE_V2_MODE=write.',
-  '4. Confirm CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off.',
-  '5. Confirm CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off.',
-  '6. Confirm CODEXMUX_RUNTIME_STATUS_V2_MODE=off.',
-  '7. Confirm systemctl --user restart codexmux.service completed, then recheck lifecycle health and worker diagnostics.',
+  '3. Confirm CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write.',
+  '4. Confirm CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off.',
+  '5. Confirm CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off.',
+  '6. Confirm CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off.',
+  '7. Confirm legacy systemctl --user restart codexmux.service completed, then recheck lifecycle health and worker diagnostics.',
 ].join('\n');
 
 const readLifecycleActions = (value: unknown): ILifecycleActionView[] => {

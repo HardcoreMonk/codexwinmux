@@ -33,8 +33,18 @@ describe('process inspector adapter factory', () => {
 
   it('resolves the Windows process inspector kind without claiming it is implemented', () => {
     expect(resolveProcessInspectorAdapterKind({
-      env: { CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows' },
+      env: { CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER: 'windows' },
       platform: 'win32',
+    })).toBe('windows');
+  });
+
+  it('prefers the CODEXWINMUX process inspector alias over the legacy CODEXMUX env', () => {
+    expect(resolveProcessInspectorAdapterKind({
+      env: {
+        CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+        CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'posix',
+      },
+      platform: 'linux',
     })).toBe('windows');
   });
 

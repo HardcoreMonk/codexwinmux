@@ -87,6 +87,11 @@ const createRequest = (input: {
 
 describe('runtime v2 api routes', () => {
   beforeEach(() => {
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
+    delete process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE;
     process.env.CODEXMUX_RUNTIME_V2 = '1';
     delete process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE;
     delete process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
@@ -118,6 +123,7 @@ describe('runtime v2 api routes', () => {
   });
 
   it('returns disabled before auth when runtime v2 flag is off', async () => {
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
     process.env.CODEXMUX_RUNTIME_V2 = '0';
     mocks.auth.mockResolvedValue(false);
     const cases = [

@@ -76,6 +76,7 @@ describe('windows codex session smoke helpers', () => {
       PATH: 'C:\\Windows\\System32',
       HOME: 'C:\\Temp\\cmux-smoke',
       USERPROFILE: 'C:\\Temp\\cmux-smoke',
+      CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
       CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
     });
   });

@@ -71,7 +71,7 @@ const definitions: ILifecycleActionDefinition[] = [
   {
     id: 'restart-service',
     label: 'Restart Service',
-    description: 'Restart the Linux user service with systemd.',
+    description: 'Restart the legacy Linux user service with systemd.',
     command: 'systemctl',
     args: ['--user', 'restart', 'codexmux.service'],
     confirmationPhrase: 'restart codexmux.service',
@@ -87,7 +87,7 @@ const definitions: ILifecycleActionDefinition[] = [
   {
     id: 'rollback-runtime-flags',
     label: 'Apply Rollback Flags',
-    description: 'Write explicit runtime rollback flags to the systemd user drop-in and restart the service.',
+    description: 'Write explicit CODEXWINMUX_RUNTIME rollback flags to the legacy systemd user drop-in and restart the service.',
     command: 'corepack',
     args: ['pnpm', 'lifecycle:rollback-apply'],
     confirmationPhrase: 'rollback runtime v2',

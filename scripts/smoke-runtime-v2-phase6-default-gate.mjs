@@ -6,10 +6,11 @@ import {
   runtimeV2Phase6ExpectedModes,
   validateRuntimeV2Phase6Gate,
 } from './runtime-v2-phase6-gate-lib.mjs';
+import { readEnvAlias } from './env-alias-lib.mjs';
 
 const baseUrl =
-  process.env.CODEXMUX_RUNTIME_V2_PHASE6_GATE_URL ||
-  process.env.CODEXMUX_RUNTIME_V2_SMOKE_URL ||
+  readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_PHASE6_GATE_URL') ||
+  readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_URL') ||
   'http://127.0.0.1:8121';
 
 const token =
@@ -20,7 +21,7 @@ const token =
 const requestJson = async (pathname) => {
   const res = await fetch(new URL(pathname, baseUrl), {
     headers: { 'x-cmux-token': token },
-    signal: AbortSignal.timeout(Number(process.env.CODEXMUX_RUNTIME_V2_PHASE6_GATE_TIMEOUT_MS || 10_000)),
+    signal: AbortSignal.timeout(Number(readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_PHASE6_GATE_TIMEOUT_MS') || 10_000)),
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;

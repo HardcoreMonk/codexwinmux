@@ -9,7 +9,11 @@ import {
 } from './windows-runtime-v2-terminal-smoke-lib';
 
 const rootDir = process.cwd();
-const DEFAULT_TIMEOUT_MS = Number(process.env.CODEXMUX_WINDOWS_TERMINAL_SMOKE_TIMEOUT_MS || 20_000);
+
+const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
+  process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
+
+const DEFAULT_TIMEOUT_MS = Number(readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_TIMEOUT_MS') || 20_000);
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,7 +39,7 @@ const assignProcessEnv = (env: NodeJS.ProcessEnv): void => {
 };
 
 const resolveWindowsShell = (): string =>
-  process.env.CODEXMUX_WINDOWS_TERMINAL_SMOKE_SHELL
+  readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_SHELL')
   || process.env.ComSpec
   || process.env.COMSPEC
   || 'cmd.exe';
@@ -50,9 +54,9 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  const homeDir = process.env.CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME
+  const homeDir = readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME')
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-windows-terminal-smoke-'));
-  const dbPath = process.env.CODEXMUX_RUNTIME_DB || path.join(homeDir, 'runtime-v2', 'state.db');
+  const dbPath = readCodexwinmuxAlias('CODEXMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
 
   const env = createWindowsRuntimeV2TerminalSmokeEnv({

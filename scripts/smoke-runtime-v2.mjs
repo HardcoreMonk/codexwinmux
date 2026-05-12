@@ -13,8 +13,9 @@ import {
   isRuntimeV2SmokeHeartbeatFrame,
   runtimeV2SmokeWsUrl,
 } from './runtime-v2-smoke-lib.mjs';
+import { readEnvAlias } from './env-alias-lib.mjs';
 
-const baseUrl = process.env.CODEXMUX_RUNTIME_V2_SMOKE_URL || 'http://127.0.0.1:8132';
+const baseUrl = readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_URL') || 'http://127.0.0.1:8132';
 const token = process.env.CODEXMUX_TOKEN
   || process.env.CMUX_TOKEN
   || await fs.readFile(path.join(os.homedir(), '.codexwinmux', 'cli-token'), 'utf-8').then((s) => s.trim());

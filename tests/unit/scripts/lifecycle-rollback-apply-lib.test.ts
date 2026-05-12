@@ -24,11 +24,11 @@ describe('lifecycle rollback mutation helpers', () => {
     await fs.mkdir(path.dirname(dropInPath), { recursive: true });
     await fs.writeFile(dropInPath, [
       '[Service]',
-      'Environment=CODEXMUX_RUNTIME_V2=1',
-      'Environment=CODEXMUX_RUNTIME_STORAGE_V2_MODE=default',
-      'Environment=CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs',
-      'Environment=CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default',
-      'Environment=CODEXMUX_RUNTIME_STATUS_V2_MODE=default',
+      'Environment=CODEXWINMUX_RUNTIME_V2=1',
+      'Environment=CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default',
+      'Environment=CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs',
+      'Environment=CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default',
+      'Environment=CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default',
       '',
     ].join('\n'));
 
@@ -55,11 +55,11 @@ describe('lifecycle rollback mutation helpers', () => {
     await fs.mkdir(path.dirname(dropInPath), { recursive: true });
     await fs.writeFile(dropInPath, [
       '[Service]',
-      'Environment=CODEXMUX_RUNTIME_V2=1',
-      'Environment=CODEXMUX_RUNTIME_STORAGE_V2_MODE=default',
-      'Environment=CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs',
-      'Environment=CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default',
-      'Environment=CODEXMUX_RUNTIME_STATUS_V2_MODE=default',
+      'Environment=CODEXWINMUX_RUNTIME_V2=1',
+      'Environment=CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default',
+      'Environment=CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs',
+      'Environment=CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default',
+      'Environment=CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default',
       'Environment=TOKEN=do-not-report',
       '',
     ].join('\n'));
@@ -95,6 +95,26 @@ describe('lifecycle rollback mutation helpers', () => {
       ],
     });
     expect(JSON.stringify(result)).not.toContain('do-not-report');
+  });
+
+  it('still parses legacy CODEXMUX runtime env lines during the staged migration', async () => {
+    const { buildLifecycleRollbackDryRun } = await loadLib();
+    const dropInPath = path.join(tempDir, 'codexmux.service.d', 'runtime-v2-shadow.conf');
+    await fs.mkdir(path.dirname(dropInPath), { recursive: true });
+    await fs.writeFile(dropInPath, [
+      '[Service]',
+      'Environment=CODEXMUX_RUNTIME_V2=1',
+      'Environment=CODEXMUX_RUNTIME_STORAGE_V2_MODE=default',
+      '',
+    ].join('\n'));
+
+    const result = await buildLifecycleRollbackDryRun({ dropInPath });
+
+    expect(result.runtimeEnv).toMatchObject({
+      CODEXMUX_RUNTIME_V2: '1',
+      CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'default',
+    });
+    expect(Object.keys(result.targetEnv)).toContain('CODEXWINMUX_RUNTIME_V2');
   });
 
   it('creates a missing runtime drop-in and reports a non-secret warning', async () => {

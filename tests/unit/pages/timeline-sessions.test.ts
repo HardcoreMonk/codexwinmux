@@ -25,8 +25,20 @@ import handler from '@/pages/api/timeline/sessions';
 
 const originalRuntimeV2 = process.env.CODEXMUX_RUNTIME_V2;
 const originalTimelineMode = process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE;
+const originalPreferredRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+const originalPreferredTimelineMode = process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
 
 const restoreEnv = () => {
+  if (originalPreferredRuntimeV2 === undefined) {
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
+  } else {
+    process.env.CODEXWINMUX_RUNTIME_V2 = originalPreferredRuntimeV2;
+  }
+  if (originalPreferredTimelineMode === undefined) {
+    delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
+  } else {
+    process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = originalPreferredTimelineMode;
+  }
   if (originalRuntimeV2 === undefined) {
     delete process.env.CODEXMUX_RUNTIME_V2;
   } else {
@@ -77,6 +89,10 @@ const createRequest = (query: Record<string, string>, method = 'GET'): NextApiRe
 describe('/api/timeline/sessions', () => {
   beforeEach(() => {
     restoreEnv();
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
+    delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
+    delete process.env.CODEXMUX_RUNTIME_V2;
+    delete process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE;
     mocks.hasSession.mockReset();
     mocks.listSessionPage.mockReset();
     mocks.supervisor.listTimelineSessions.mockReset();
@@ -139,6 +155,8 @@ describe('/api/timeline/sessions', () => {
   });
 
   it('uses runtime v2 read ownership in default mode', async () => {
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
+    delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
     process.env.CODEXMUX_RUNTIME_V2 = '1';
     process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE = 'default';
     const response = createResponse();

@@ -2,6 +2,7 @@ import { execFile as execFileCb } from 'child_process';
 import fs from 'fs/promises';
 import { promisify } from 'util';
 import { isLinux } from '@/lib/platform';
+import { readRuntimeEnvAlias } from '@/lib/runtime/env';
 import { createWindowsProcessInspector } from '@/lib/windows-process-inspector';
 
 const execFile = promisify(execFileCb);
@@ -33,6 +34,7 @@ export type TProcessInspectorAdapterKind = 'posix' | 'windows';
 
 export interface IProcessInspectorAdapterFactoryEnv {
   [key: string]: string | undefined;
+  CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER?: string;
   CODEXMUX_PROCESS_INSPECTOR_ADAPTER?: string;
 }
 
@@ -253,7 +255,7 @@ export const resolveProcessInspectorAdapterKind = ({
   env = process.env,
   platform = process.platform,
 }: IResolveProcessInspectorAdapterKindOptions = {}): TProcessInspectorAdapterKind => {
-  const value = env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER?.trim().toLowerCase();
+  const value = readRuntimeEnvAlias(env, 'CODEXMUX_PROCESS_INSPECTOR_ADAPTER')?.trim().toLowerCase();
   if (!value) return platform === 'win32' ? 'windows' : 'posix';
   if (value === 'posix') return 'posix';
   if (value === 'windows') return 'windows';
