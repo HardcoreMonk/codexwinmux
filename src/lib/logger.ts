@@ -38,7 +38,7 @@ if (!g.__ptRootLogger) {
           target: 'pino-roll',
           level: rootLevel,
           options: {
-            file: path.join(LOG_DIR, 'codexmux'),
+            file: path.join(LOG_DIR, 'codexwinmux'),
             frequency: 'daily',
             dateFormat: 'yyyy-MM-dd',
             limit: { count: 7 },

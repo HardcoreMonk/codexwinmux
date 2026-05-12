@@ -114,6 +114,13 @@ Rust + Tauri 도입은 `docs/TAURI-EVALUATION.md` 기준으로 보류한다. Tau
 - Runtime v2 shadow runtime은 이 counters를 보고 readiness 실패, restart loop, command timeout, failed reply를 확인한 뒤에만 surface별 default 전환을 검토한다.
 - `CODEXMUX_RUNTIME_V2=1` server startup은 legacy startup을 막지 않고 runtime v2 health diagnostic을 실행한다. 이 호출은 worker별 `healthChecks`, `healthFailures`, `lastHealthAt`에 남는다.
 
+### 2026-05-08 10차 구현 상태
+
+- Timeline grouped item list에 windowed render를 적용했다. 짧은 timeline은 그대로 전체 렌더링하고, 긴 timeline은 estimated row height 기준으로 visible range와 overscan만 렌더링한다.
+- Window 밖 row는 before/after spacer로 scroll height를 보존한다. 기존 `content-visibility` row 최적화는 렌더링된 window 안에서 계속 유지한다.
+- 초기 진입과 bottom-follow 상태에서는 최신 tail window를 렌더링하고, scroll 위치가 바뀌면 middle window로 이동한다. 마지막 user message anchor가 설정된 경우 해당 row가 window 안에 남도록 window 계산에서 anchor index를 우선한다.
+- `tests/unit/lib/timeline-window.test.ts`와 `tests/unit/components/timeline-view.test.ts`가 short timeline full render, long timeline tail window, middle window, anchor 포함을 고정한다.
+
 ### 2026-05-05 runtime v2 new-tabs/default baseline
 
 `CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`와
@@ -239,6 +246,12 @@ Windows packaged `0.4.8` 앱을 isolated HOME으로 띄우고 runtime v2 Phase 6
 
 긴 Codex timeline은 DOM node와 markdown/code 렌더 비용이 커질 수 있다.
 
+현재 상태:
+
+- 2026-05-01에는 `content-visibility`를 먼저 적용해 offscreen paint/layout 비용을 줄였다.
+- 2026-05-08에는 실제 windowed render를 추가해 긴 timeline에서 DOM row 수를 제한한다.
+- Windowing은 grouped item 단위로 수행하므로 tool call/result group, agent group, stable entry id, append dedupe contract는 유지한다.
+
 검토 기준:
 
 - visible range만 렌더링한다.
@@ -345,7 +358,7 @@ Git diff와 usage stats는 큰 repo에서 비용이 크다.
 
 다음 단계는 `/api/debug/perf` snapshot으로 실제 병목을 확인한 뒤 진행한다. 수치 없이 full virtualization, adaptive polling, terminal protocol 변경을 먼저 키우지 않는다.
 
-2차 작업은 full virtualization 대신 저위험 render memo/cache를 먼저 적용했다. 3차 작업은 같은 원칙으로 `content-visibility`를 먼저 검증했다. 다음 단계 후보는 snapshot과 수동 smoke에서 긴 timeline 문제가 계속 확인될 때 작은 windowed render를 별도 feature로 검증하는 것이다.
+2차 작업은 full virtualization 대신 저위험 render memo/cache를 먼저 적용했다. 3차 작업은 같은 원칙으로 `content-visibility`를 먼저 검증했다. 2026-05-08에는 작은 windowed render를 별도 feature로 적용했다. 다음 단계는 긴 실제 JSONL에서 scroll 상단/중간/하단, load-more, permission prompt, mobile foreground reconnect를 smoke로 확인하며 estimated row height 조정 필요성을 판단한다.
 
 4차 작업은 terminal protocol 자체를 바꾸지 않고 server stdout flush만 짧게 coalescing했다. 다음 단계에서 terminal 관련 병목을 판단할 때는 raw chunk 대비 sent message 감소율, max-buffer flush 빈도, browser 입력 지연 smoke를 같이 본다.
 

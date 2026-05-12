@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { collectAgentJsonlFiles } from '@/lib/stats/agent-jsonl-files';
 
-const CACHE_PATH = path.join(os.homedir(), '.codexmux', 'stats', 'cache.json');
+const CACHE_PATH = path.join(os.homedir(), '.codexwinmux', 'stats', 'cache.json');
 
 const countJsonlFiles = async (): Promise<number> => {
   const files = await collectAgentJsonlFiles();

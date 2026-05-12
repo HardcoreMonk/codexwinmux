@@ -28,11 +28,11 @@ describe('Windows updater published channel smoke helpers', () => {
       currentVersion: '0.4.2',
       latestMetadata: {
         version: '0.4.3',
-        path: 'codexmux-Setup-0.4.3.exe',
+        path: 'codexwinmux-Setup-0.4.3.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.3.exe',
+            url: 'codexwinmux-Setup-0.4.3.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -51,14 +51,14 @@ describe('Windows updater published channel smoke helpers', () => {
               browser_download_url: 'https://github.com/HardcoreMonk/codexmux/releases/download/v0.4.3/latest.yml',
             },
             {
-              name: 'codexmux-Setup-0.4.3.exe',
+              name: 'codexwinmux-Setup-0.4.3.exe',
               size: 123,
-              browser_download_url: 'https://github.com/HardcoreMonk/codexmux/releases/download/v0.4.3/codexmux-Setup-0.4.3.exe',
+              browser_download_url: 'https://github.com/HardcoreMonk/codexmux/releases/download/v0.4.3/codexwinmux-Setup-0.4.3.exe',
             },
             {
-              name: 'codexmux-Setup-0.4.3.exe.blockmap',
+              name: 'codexwinmux-Setup-0.4.3.exe.blockmap',
               size: 456,
-              browser_download_url: 'https://github.com/HardcoreMonk/codexmux/releases/download/v0.4.3/codexmux-Setup-0.4.3.exe.blockmap',
+              browser_download_url: 'https://github.com/HardcoreMonk/codexmux/releases/download/v0.4.3/codexwinmux-Setup-0.4.3.exe.blockmap',
             },
           ],
         },
@@ -70,7 +70,7 @@ describe('Windows updater published channel smoke helpers', () => {
       currentVersion: '0.4.2',
       latestVersion: '0.4.3',
       latestReleaseTag: 'v0.4.3',
-      referencedInstallerName: 'codexmux-Setup-0.4.3.exe',
+      referencedInstallerName: 'codexwinmux-Setup-0.4.3.exe',
       blockers: [],
     });
     expect(result.checks).toEqual([
@@ -93,11 +93,11 @@ describe('Windows updater published channel smoke helpers', () => {
       currentVersion: '0.4.2',
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -110,8 +110,8 @@ describe('Windows updater published channel smoke helpers', () => {
           prerelease: false,
           assets: [
             { name: 'latest.yml', size: 345, browser_download_url: 'https://example.test/latest.yml' },
-            { name: 'codexmux-Setup-0.4.2.exe', size: 123, browser_download_url: 'https://example.test/installer.exe' },
-            { name: 'codexmux-Setup-0.4.2.exe.blockmap', size: 456, browser_download_url: 'https://example.test/blockmap' },
+            { name: 'codexwinmux-Setup-0.4.2.exe', size: 123, browser_download_url: 'https://example.test/installer.exe' },
+            { name: 'codexwinmux-Setup-0.4.2.exe.blockmap', size: 456, browser_download_url: 'https://example.test/blockmap' },
           ],
         },
       ],

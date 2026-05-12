@@ -27,7 +27,7 @@ describe('runtime storage v2 write ownership mirror', () => {
 
   it('imports a legacy layout write into SQLite when storage mode is write', async () => {
     homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-write-'));
-    const dataDir = path.join(homeDir, '.codexmux');
+    const dataDir = path.join(homeDir, '.codexwinmux');
     const layoutDir = path.join(dataDir, 'workspaces', 'ws-a');
     const layoutPath = path.join(layoutDir, 'layout.json');
     const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');

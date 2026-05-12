@@ -7,7 +7,7 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('lock');
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const LOCK_FILE = path.join(BASE_DIR, 'cmux.lock');
 
 interface ILockData {
@@ -54,7 +54,7 @@ const checkHealth = (port: number): Promise<boolean> =>
       res.on('end', () => {
         try {
           const data = JSON.parse(body);
-          resolve(data.app === 'codexmux');
+          resolve(data.app === 'codexwinmux');
         } catch {
           resolve(false);
         }
@@ -121,7 +121,7 @@ export const acquireLock = async (port: number): Promise<void> => {
 
   const healthy = await checkHealth(existing.port);
   if (healthy) {
-    console.error(`\x1b[31mcodexmux is already running (pid=${existing.pid}, port=${existing.port})\x1b[0m`);
+    console.error(`\x1b[31mcodexwinmux is already running (pid=${existing.pid}, port=${existing.port})\x1b[0m`);
     process.exit(1);
   }
 

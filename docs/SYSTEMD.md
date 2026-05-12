@@ -52,7 +52,7 @@ TimeoutStopSec=20
 WantedBy=default.target
 ```
 
-Runtime v2 mode는 base unit을 직접 수정하지 않고 drop-in으로 적용한다. 전체 runtime v2 rollback은 drop-in 삭제와 daemon reload/restart로 처리한다.
+Runtime v2 mode는 base unit을 직접 수정하지 않고 drop-in으로 적용한다. 전체 runtime v2 surface rollback은 drop-in에 명시적인 rollback flag를 쓰고 daemon reload/restart로 처리한다.
 
 ```text
 ~/.config/systemd/user/codexmux.service.d/runtime-v2-shadow.conf
@@ -70,12 +70,25 @@ Environment=CODEXMUX_RUNTIME_STATUS_V2_MODE=default
 Phase 6 code fallback 이후에는 `CODEXMUX_RUNTIME_V2=1`만 남겨도 unset surface mode가
 terminal `new-tabs`, storage/timeline/status `default`로 해석된다. 운영 중 의도를 명확히
 보이게 하려면 위처럼 명시 값을 유지한다. Surface rollback만 필요하면 해당 mode를 `off`로
-설정한 뒤 daemon reload/restart를 수행한다. 전체 runtime v2 rollback:
+설정한 뒤 daemon reload/restart를 수행한다. 표준 runtime v2 surface rollback은 worker를
+켜 둔 채 production surface만 legacy/rollback-safe mode로 되돌린다.
 
 ```bash
-rm ~/.config/systemd/user/codexmux.service.d/runtime-v2-shadow.conf
-systemctl --user daemon-reload
-systemctl --user restart codexmux.service
+corepack pnpm lifecycle:rollback-dry-run
+corepack pnpm lifecycle:rollback-apply
+```
+
+`lifecycle:rollback-apply`는 기존 drop-in이 있으면 같은 directory에 timestamp `.bak`으로
+복사한 뒤 다음 내용으로 교체하고 `systemctl --user daemon-reload`,
+`systemctl --user restart codexmux.service`를 실행한다.
+
+```ini
+[Service]
+Environment=CODEXMUX_RUNTIME_V2=1
+Environment=CODEXMUX_RUNTIME_STORAGE_V2_MODE=write
+Environment=CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off
+Environment=CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off
+Environment=CODEXMUX_RUNTIME_STATUS_V2_MODE=off
 ```
 
 `KillSignal=SIGINT`는 terminal/WebSocket shutdown을 정리할 시간을 주기 위한 설정이다. Node 계열 프로세스는 SIGINT 종료를 exit code 130으로 남길 수 있으므로 `SuccessExitStatus=130`을 같이 둬서 `systemctl --user restart codexmux.service`가 의도된 중지인데도 journal에 실패처럼 남지 않게 한다.
@@ -140,20 +153,24 @@ curl -fsS http://127.0.0.1:8121/api/health
 
 ## Lifecycle Control actions
 
-`/experimental/runtime`의 Lifecycle Control panel은 임의 shell 입력을 받지 않고 서버 allowlist action만 실행한다. 현재 action은 `phase6-gate`, `restart-service`, `deploy-local`이다.
+`/experimental/runtime`의 Lifecycle Control panel은 임의 shell 입력을 받지 않고 서버 allowlist action만 실행한다. 현재 action은 `phase6-gate`, `restart-service`, `deploy-local`, `rollback-runtime-flags`이다.
 
 | Action | 실행 | 확인 |
 | --- | --- | --- |
 | `phase6-gate` | `corepack pnpm smoke:runtime-v2:phase6-default-gate` | 없음 |
 | `restart-service` | `systemctl --user restart codexmux.service` | `restart codexmux.service` |
 | `deploy-local` | `corepack pnpm deploy:local` | `deploy local` |
+| `rollback-runtime-flags` | `corepack pnpm lifecycle:rollback-apply` | `rollback runtime v2` |
 
 한 번에 하나의 action만 실행된다. `restart-service`와 `deploy-local`은 요청 중인 서버 process를 재시작할 수 있으므로 브라우저 요청이 중간에 끊길 수 있다. 이 경우 `/api/health` 새로고침 또는 페이지 reload로 배포 commit과 service 상태를 다시 확인한다. 실행 기록은 `~/.codexmux/lifecycle-actions.jsonl`에 action id, status, timestamp, duration, exit code, sanitized failure label만 남기며 stdout/stderr, env, cwd, token, session name, prompt, terminal output은 저장하지 않는다.
 
 `corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime v2 drop-in의 `CODEXMUX_RUNTIME_*`
-환경값과 rollback 시 필요한 명령을 JSON으로 출력한다. 이 명령은 파일 삭제, daemon reload,
-service restart를 실행하지 않으며 `"mutates": false`를 포함한다. 실행형 UI 범위는 여전히
-`phase6-gate`, `restart-service`, `deploy-local`로 제한된다.
+환경값, 적용할 rollback target flag, daemon reload/restart 계획을 JSON으로 출력한다.
+이 명령은 drop-in 쓰기, backup, daemon reload, service restart를 실행하지 않으며
+`"mutates": false`를 포함한다. `corepack pnpm lifecycle:rollback-apply`와
+`rollback-runtime-flags` action은 같은 target flag를 실제 drop-in에 쓰고 기존 파일을
+backup한 뒤 service를 재시작한다. apply 결과와 lifecycle action audit은 원래 drop-in 본문,
+stdout/stderr, env, cwd, token, session name, prompt, terminal output을 저장하지 않는다.
 
 성능 변경 배포 후에는 인증된 session cookie 또는 `x-cmux-token`으로 `/api/debug/perf`를 확인한다. 이 endpoint는 public health check가 아니며 process memory, event loop, WebSocket, watcher, status poll, diff/stats cache 숫자만 반환한다.
 

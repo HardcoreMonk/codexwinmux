@@ -1,4 +1,4 @@
-package com.hardcoremonk.codexmux;
+package com.hardcoremonk.codexwinmux;
 
 final class CodexmuxLifecycleScript {
     private CodexmuxLifecycleScript() {}

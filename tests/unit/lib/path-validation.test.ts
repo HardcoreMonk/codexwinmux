@@ -30,7 +30,7 @@ describe('isAllowedJsonlPath', () => {
     const { isAllowedJsonlPath } = await import('@/lib/path-validation');
 
     expect(isAllowedJsonlPath(
-      path.join(home, '.codexmux', 'remote', 'codex', 'win11', 'session.jsonl'),
+      path.join(home, '.codexwinmux', 'remote', 'codex', 'win11', 'session.jsonl'),
       { homeDir: home },
     )).toBe(false);
   });
@@ -57,7 +57,7 @@ describe('isAllowedJsonlPath', () => {
     const { isAllowedJsonlPath } = await import('@/lib/path-validation');
 
     expect(isAllowedJsonlPath(
-      'C:\\Users\\yohan\\.codexmux\\remote\\codex\\win11\\session.jsonl',
+      'C:\\Users\\yohan\\.codexwinmux\\remote\\codex\\win11\\session.jsonl',
       { homeDir: 'C:\\Users\\yohan' },
     )).toBe(false);
   });

@@ -10,7 +10,7 @@ import { normalizeLocale } from '@/lib/locales';
 import { collectJsonlFiles } from './stats-cache';
 import type { IDailyReportDay } from '@/types/stats';
 
-const CACHE_DIR = path.join(os.homedir(), '.codexmux', 'stats', 'daily-reports');
+const CACHE_DIR = path.join(os.homedir(), '.codexwinmux', 'stats', 'daily-reports');
 
 // --- Cache read/write ---
 

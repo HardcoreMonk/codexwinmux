@@ -20,7 +20,7 @@ const readGit = (args) => {
 };
 
 const info = {
-  app: 'codexmux',
+  app: 'codexwinmux',
   version: pkg.version,
   commit: process.env.NEXT_PUBLIC_COMMIT_HASH || process.env.COMMIT_HASH || readGit(['rev-parse', '--short', 'HEAD']),
   buildTime: process.env.NEXT_PUBLIC_BUILD_TIME || process.env.BUILD_TIME || new Date().toISOString(),

@@ -38,7 +38,7 @@ export interface IConfigData {
   updatedAt: string;
 }
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const CONFIG_FILE = path.join(BASE_DIR, 'config.json');
 
 const g = globalThis as unknown as {

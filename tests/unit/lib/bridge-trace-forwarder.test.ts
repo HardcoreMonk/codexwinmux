@@ -22,7 +22,7 @@ const statusUpdate = (overrides: Partial<IStatusUpdateMessage> = {}): IStatusUpd
 const workspaceState = {
   workspaces: [{
     id: 'workspace-1',
-    name: 'codexmux',
+    name: 'codexwinmux',
     directories: ['/data/projects/codex-zone/codexmux'],
   }],
   groups: [],
@@ -37,7 +37,7 @@ describe('bridge trace forwarder', () => {
     expect(payload).not.toBeNull();
     if (!payload) throw new Error('payload should not be null');
     expect(payload).toMatchObject({
-      source: 'codexmux',
+      source: 'codexwinmux',
       event_type: 'status',
       project_dir: '/data/projects/codex-zone/codexmux',
       workspace_id: 'workspace-1',

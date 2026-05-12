@@ -132,7 +132,7 @@ const ensureLoggedIn = async (baseUrl) => {
 
 const killTmuxSession = (sessionName) =>
   new Promise((resolve, reject) => {
-    const child = spawn('tmux', ['-L', 'codexmux', 'kill-session', '-t', sessionName], {
+    const child = spawn('tmux', ['-L', 'codexwinmux', 'kill-session', '-t', sessionName], {
       cwd: rootDir,
       stdio: ['ignore', 'pipe', 'pipe'],
     });

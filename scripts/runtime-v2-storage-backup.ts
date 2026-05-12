@@ -5,7 +5,7 @@ import { createRuntimeStorageBackup } from '@/lib/runtime/storage-backup';
 
 const main = async (): Promise<void> => {
   const dataDir = process.env.CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_DATA_DIR
-    || path.join(os.homedir(), '.codexmux');
+    || path.join(os.homedir(), '.codexwinmux');
   const outputRoot = process.env.CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_OUTPUT_DIR
     || path.join(dataDir, 'backups');
   const timestamp = process.env.CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_TIMESTAMP;

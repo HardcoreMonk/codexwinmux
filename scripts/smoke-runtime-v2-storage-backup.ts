@@ -15,7 +15,7 @@ const writeFile = async (filePath: string, content: string): Promise<void> => {
 
 const main = async (): Promise<void> => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-runtime-v2-storage-backup-'));
-  const dataDir = path.join(root, '.codexmux');
+  const dataDir = path.join(root, '.codexwinmux');
   const outputRoot = path.join(root, 'backup-output');
 
   try {

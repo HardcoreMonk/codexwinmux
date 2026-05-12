@@ -67,7 +67,7 @@ const fail = async (code, message, details = {}) => {
 };
 
 const resolveAppPath = () =>
-  path.resolve(process.env.CODEXMUX_WINDOWS_PACKAGED_APP_PATH || path.join(rootDir, 'release', 'win-unpacked', 'codexmux.exe'));
+  path.resolve(process.env.CODEXMUX_WINDOWS_PACKAGED_APP_PATH || path.join(rootDir, 'release', 'win-unpacked', 'codexwinmux.exe'));
 
 const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
   ...process.env,
@@ -385,7 +385,7 @@ const main = async () => {
     checks.push('preload-bridge');
 
     const health = await fetchJson(new URL('/api/health', state.origin).toString());
-    if (health?.app !== 'codexmux') throw new Error(`packaged local server health failed: ${JSON.stringify(health)}`);
+    if (health?.app !== 'codexwinmux') throw new Error(`packaged local server health failed: ${JSON.stringify(health)}`);
     checks.push('local-server-health');
 
     if (runRuntimeV2Terminal) {
@@ -421,7 +421,7 @@ const main = async () => {
       await sleep(longRunHoldMs);
       checks.push('long-run-hold');
       longRunHealth = await fetchJson(new URL('/api/health', state.origin).toString());
-      if (longRunHealth?.app !== 'codexmux') {
+      if (longRunHealth?.app !== 'codexwinmux') {
         throw new Error(`long-running packaged local server health failed: ${JSON.stringify(longRunHealth)}`);
       }
       checks.push('long-run-health');
@@ -437,7 +437,7 @@ const main = async () => {
       }
       const healthAfterUiQuit = await waitFor('engine health after UI quit', async () => {
         const current = await fetchJson(new URL('/api/health', state.origin).toString()).catch(() => null);
-        return current?.app === 'codexmux' ? current : null;
+        return current?.app === 'codexwinmux' ? current : null;
       }, 20_000);
       engineLifecycle = {
         uiQuitRequested: true,

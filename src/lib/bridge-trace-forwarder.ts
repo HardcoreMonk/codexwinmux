@@ -5,7 +5,7 @@ import type { IWorkspace, IWorkspaceGroup } from '@/types/terminal';
 const MAX_FIELD_LENGTH = 700;
 
 export interface IBridgeTracePayload {
-  source: 'codexmux';
+  source: 'codexwinmux';
   event_id: string;
   event_type: 'status';
   project_dir: string;
@@ -83,7 +83,7 @@ export const buildBridgeTracePayload = (
   ].join(':');
 
   return {
-    source: 'codexmux',
+    source: 'codexwinmux',
     event_id: identity,
     event_type: 'status',
     project_dir: projectDir,

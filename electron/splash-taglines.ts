@@ -30,7 +30,7 @@ const TAGLINES: string[] = [
   "A terminal so nice you'll forget it's a terminal.",
   "Ctrl+C your old workflow. Ctrl+V into something better.",
   "Where every pixel earns its keep.",
-  "You had me at 'codexmux'.",
+  "You had me at 'codexwinmux'.",
   "All your sessions in one place. Finally.",
   // vibe coding
   "Vibe coding: where the cursor moves and the code just happens.",

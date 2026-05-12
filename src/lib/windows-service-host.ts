@@ -50,7 +50,7 @@ export interface IWindowsServiceHostPlan {
 
 const defaultPort = '8121';
 const defaultHost = '127.0.0.1';
-const defaultServiceName = 'codexmux';
+const defaultServiceName = 'codexwinmux';
 
 export const resolveWindowsServiceHostOwner = (
   env: TWindowsServiceHostEnv,

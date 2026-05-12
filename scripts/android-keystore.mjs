@@ -23,7 +23,7 @@ if (existsSync(keystorePath) || existsSync(propertiesPath)) {
 }
 
 const password = randomBytes(24).toString('base64url');
-const alias = 'codexmux';
+const alias = 'codexwinmux';
 
 mkdirSync(androidDir, { recursive: true });
 

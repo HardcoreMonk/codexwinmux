@@ -41,16 +41,16 @@ describe('Electron updater smoke helpers', () => {
   });
 
   it('keeps updater status events path-light', () => {
-    expect(sanitizeUpdaterDownloadedFileName('C:\\Users\\me\\AppData\\Local\\codexmux-updater\\pending\\codexmux.exe'))
-      .toBe('codexmux.exe');
+    expect(sanitizeUpdaterDownloadedFileName('C:\\Users\\me\\AppData\\Local\\codexwinmux-updater\\pending\\codexwinmux.exe'))
+      .toBe('codexwinmux.exe');
 
     expect(buildUpdaterSmokeStatusEvent('update-downloaded', {
       version: '0.4.3',
-      downloadedFile: 'C:\\Users\\me\\AppData\\Local\\codexmux-updater\\pending\\codexmux.exe',
+      downloadedFile: 'C:\\Users\\me\\AppData\\Local\\codexwinmux-updater\\pending\\codexwinmux.exe',
     })).toMatchObject({
       event: 'update-downloaded',
       version: '0.4.3',
-      downloadedFileName: 'codexmux.exe',
+      downloadedFileName: 'codexwinmux.exe',
     });
   });
 });

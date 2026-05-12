@@ -25,8 +25,8 @@ describe('Windows service host baseline', () => {
       hostModel: 'tray-first-service-capable',
       mutatesSystem: false,
       service: {
-        name: 'codexmux',
-        displayName: 'codexmux',
+        name: 'codexwinmux',
+        displayName: 'codexwinmux',
       },
       process: {
         command: 'corepack',
@@ -45,8 +45,8 @@ describe('Windows service host baseline', () => {
         maxRestarts: 3,
       },
     });
-    expect(plan.paths.dataDir).toBe(path.win32.join('C:\\Users\\cmux', '.codexmux'));
-    expect(plan.paths.logDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexmux', 'logs'));
+    expect(plan.paths.dataDir).toBe(path.win32.join('C:\\Users\\cmux', '.codexwinmux'));
+    expect(plan.paths.logDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexwinmux', 'logs'));
   });
 
   it('marks Windows service ownership as elevation-required but still dry-run', () => {

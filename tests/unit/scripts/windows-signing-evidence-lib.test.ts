@@ -8,8 +8,8 @@ const loadLib = async () =>
 const unsignedArtifacts = [
   {
     id: 'installer',
-    fileName: 'codexmux-Setup-0.4.13.exe',
-    path: 'D:/sensitive/release/codexmux-Setup-0.4.13.exe',
+    fileName: 'codexwinmux-Setup-0.4.13.exe',
+    path: 'D:/sensitive/release/codexwinmux-Setup-0.4.13.exe',
     exists: true,
     sha256: 'abc123',
     signature: {
@@ -24,8 +24,8 @@ const unsignedArtifacts = [
   },
   {
     id: 'unpacked-exe',
-    fileName: 'codexmux.exe',
-    path: 'D:/sensitive/release/win-unpacked/codexmux.exe',
+    fileName: 'codexwinmux.exe',
+    path: 'D:/sensitive/release/win-unpacked/codexwinmux.exe',
     exists: true,
     sha256: 'def456',
     signature: {
@@ -66,7 +66,7 @@ describe('Windows signing evidence helpers', () => {
     expect(JSON.stringify(payload)).not.toContain('D:/sensitive');
     expect(payload.artifacts[0]).toMatchObject({
       id: 'installer',
-      fileName: 'codexmux-Setup-0.4.13.exe',
+      fileName: 'codexwinmux-Setup-0.4.13.exe',
       signatureStatus: 'NotSigned',
       sha256: 'abc123',
     });

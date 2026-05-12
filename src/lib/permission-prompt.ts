@@ -97,7 +97,7 @@ const sanitizeSensitiveText = (value: string): string => value
   .replace(/\btoken(?:\s*:\s*|\s+)(?:\\?["'][^"']*\\?["']|[^"'\s)]+)/gi, 'token [redacted]')
   .replace(/\btoken=([^&\s"')]+)/gi, 'token=[redacted]')
   .replace(/(["']?token["']?\s*:\s*["'])[^"']+(["'])/gi, '$1[redacted]$2')
-  .replace(/~\/\.codexmux\/cli-token\b/g, '[redacted-token-file]')
+  .replace(/~\/\.codexwinmux\/cli-token\b/g, '[redacted-token-file]')
   .replace(/\b(cwd|sessionName|prompt|assistantText|terminalOutput)\s*[:=]\s*("[^"]*"|'[^']*'|[^\s,)]+)/g, '$1=[redacted]')
   .replace(/\b[A-Za-z]:\\[^\s"'`),]+/g, '[path]')
   .replace(/(^|[\s('"=])\/(?!\/)[^\s"'`),]+/g, '$1[path]')

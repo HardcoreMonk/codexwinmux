@@ -1,4 +1,4 @@
-package com.hardcoremonk.codexmux;
+package com.hardcoremonk.codexwinmux;
 
 import static org.junit.Assert.*;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.hardcoremonk.codexmux", appContext.getPackageName());
+        assertEquals("com.hardcoremonk.codexwinmux", appContext.getPackageName());
     }
 }

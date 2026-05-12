@@ -8,7 +8,7 @@ import { collectAgentJsonlFiles, extractSessionIdFromAgentJsonlPath } from '@/li
 
 const log = createLogger('session-stats');
 
-const SESSION_STATS_DIR = path.join(os.homedir(), '.codexmux', 'session-stats');
+const SESSION_STATS_DIR = path.join(os.homedir(), '.codexwinmux', 'session-stats');
 
 const SESSION_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

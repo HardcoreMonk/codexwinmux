@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">codexmux</string>
-    <string name="title_activity_main">codexmux</string>
-    <string name="package_name">com.hardcoremonk.codexmux</string>
-    <string name="custom_url_scheme">com.hardcoremonk.codexmux</string>
+    <string name="app_name">codexwinmux</string>
+    <string name="title_activity_main">codexwinmux</string>
+    <string name="package_name">com.hardcoremonk.codexwinmux</string>
+    <string name="custom_url_scheme">com.hardcoremonk.codexwinmux</string>
 </resources>

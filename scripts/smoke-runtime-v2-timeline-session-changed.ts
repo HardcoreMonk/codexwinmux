@@ -8,7 +8,7 @@ import { WebSocket } from 'ws';
 
 const PASSWORD = 'runtime-v2-timeline-session-changed-smoke';
 const DEFAULT_TIMEOUT_MS = Number(process.env.CODEXMUX_RUNTIME_V2_TIMELINE_SESSION_CHANGED_TIMEOUT_MS || 30_000);
-const TMUX_SOCKET = 'codexmux';
+const TMUX_SOCKET = 'codexwinmux';
 const SESSION_ID = '33333333-3333-4333-8333-333333333333';
 const rootDir = process.cwd();
 

@@ -22,12 +22,12 @@ describe('Windows updater local feed smoke helpers', () => {
         version: '0.4.2',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
         ],
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         releaseDate: '2026-05-06T17:00:33.564Z',
       },
@@ -39,12 +39,12 @@ describe('Windows updater local feed smoke helpers', () => {
       version: '0.4.3',
       files: [
         {
-          url: 'codexmux-Setup-0.4.2.exe',
+          url: 'codexwinmux-Setup-0.4.2.exe',
           sha512: 'installer-sha',
           size: 123,
         },
       ],
-      path: 'codexmux-Setup-0.4.2.exe',
+      path: 'codexwinmux-Setup-0.4.2.exe',
       sha512: 'installer-sha',
       releaseDate: '2026-05-07T00:00:00.000Z',
     });
@@ -88,14 +88,14 @@ describe('Windows updater local feed smoke helpers', () => {
       { event: 'update-available', version: '0.4.3' },
       { event: 'download-started', version: '0.4.3' },
       { event: 'download-progress', percent: 100 },
-      { event: 'update-downloaded', version: '0.4.3', downloadedFileName: 'codexmux-Setup-0.4.2.exe' },
+      { event: 'update-downloaded', version: '0.4.3', downloadedFileName: 'codexwinmux-Setup-0.4.2.exe' },
       { event: 'quit-and-install-started', version: '0.4.3' },
     ]);
 
     expect(summary).toEqual({
       ok: true,
       latestVersion: '0.4.3',
-      downloadedFileName: 'codexmux-Setup-0.4.2.exe',
+      downloadedFileName: 'codexwinmux-Setup-0.4.2.exe',
       checks: [
         'updater-local-feed-configured',
         'updater-check-started',

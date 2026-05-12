@@ -95,7 +95,7 @@ export const resolveWindowsHostDiagnostics = ({
     env,
   });
   const supportBundleDir = platform === 'win32' && hostPaths.localAppData
-    ? path.win32.join(hostPaths.localAppData, 'codexmux', 'support')
+    ? path.win32.join(hostPaths.localAppData, 'codexwinmux', 'support')
     : path.posix.join(hostPaths.dataDir, 'support');
   const healthBinding = resolveHealthBaseUrl(serviceHostPlan, baseUrl);
   const healthBaseUrl = trimTrailingSlashes(healthBinding.baseUrl);

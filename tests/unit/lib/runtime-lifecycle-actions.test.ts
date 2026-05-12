@@ -82,6 +82,37 @@ describe('runtime lifecycle actions', () => {
     });
   });
 
+  it('runs rollback flag mutation through the allowlist only after confirmation', async () => {
+    const executed: Array<{ command: string; args: string[] }> = [];
+    const { createLifecycleActionService } = await import('@/lib/runtime/lifecycle-actions');
+    const service = createLifecycleActionService({
+      execute: async (command, args) => {
+        executed.push({ command, args });
+        return { exitCode: 0 };
+      },
+    });
+
+    const rejected = await service.runAction({ actionId: 'rollback-runtime-flags', confirmation: 'rollback' });
+    const accepted = await service.runAction({
+      actionId: 'rollback-runtime-flags',
+      confirmation: 'rollback runtime v2',
+    });
+
+    expect(rejected.ok).toBe(false);
+    expect(rejected.event).toMatchObject({
+      actionId: 'rollback-runtime-flags',
+      status: 'rejected',
+      error: 'confirmation-required',
+    });
+    expect(accepted.ok).toBe(true);
+    expect(executed).toEqual([
+      {
+        command: 'corepack',
+        args: ['pnpm', 'lifecycle:rollback-apply'],
+      },
+    ]);
+  });
+
   it('blocks concurrent actions and records the rejected request', async () => {
     let release!: () => void;
     const blocker = new Promise<void>((resolve) => { release = resolve; });
@@ -115,7 +146,7 @@ describe('runtime lifecycle actions', () => {
     });
 
     const result = await service.runAction({ actionId: 'phase6-gate' });
-    const raw = await fs.readFile(path.join(tempHome, '.codexmux', 'lifecycle-actions.jsonl'), 'utf-8');
+    const raw = await fs.readFile(path.join(tempHome, '.codexwinmux', 'lifecycle-actions.jsonl'), 'utf-8');
 
     expect(result.ok).toBe(false);
     expect(result.event.error).toBe('action-execution-failed');
@@ -140,7 +171,7 @@ describe('runtime lifecycle actions', () => {
     });
 
     const result = await service.runAction({ actionId: 'deploy-local', confirmation: 'deploy local' });
-    const raw = await fs.readFile(path.join(tempHome, '.codexmux', 'lifecycle-actions.jsonl'), 'utf-8');
+    const raw = await fs.readFile(path.join(tempHome, '.codexwinmux', 'lifecycle-actions.jsonl'), 'utf-8');
 
     expect(result.ok).toBe(false);
     expect(result.event.error).toBe('exit-code-1');

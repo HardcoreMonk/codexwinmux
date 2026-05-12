@@ -1,11 +1,11 @@
-# `~/.codexmux/` 데이터 디렉터리
+# `~/.codexwinmux/` 데이터 디렉터리
 
-codexmux의 영속 상태는 `~/.codexmux/`에 저장된다. Windows-only host 전환에서는 같은 앱 상태가 `%USERPROFILE%\.codexmux\`에 남고, 서버 로그는 Windows 운영 경로인 `%LOCALAPPDATA%\codexmux\logs\`에 기록된다. Codex CLI의 원본 세션 기록은 `~/.codex/sessions/` 또는 Windows의 `%USERPROFILE%\.codex\sessions\`에 있으며 codexmux는 이 파일을 읽기 전용으로만 사용한다.
+codexwinmux의 영속 상태는 `~/.codexwinmux/`에 저장된다. Windows-only host 전환에서는 같은 앱 상태가 `%USERPROFILE%\.codexwinmux\`에 남고, 서버 로그는 Windows 운영 경로인 `%LOCALAPPDATA%\codexwinmux\logs\`에 기록된다. Codex CLI의 원본 세션 기록은 `~/.codex/sessions/` 또는 Windows의 `%USERPROFILE%\.codex\sessions\`에 있으며 codexwinmux는 이 파일을 읽기 전용으로만 사용한다.
 
 ## 구조
 
 ```text
-~/.codexmux/
+~/.codexwinmux/
 ├── config.json
 ├── workspaces.json
 ├── workspaces/{wsId}/layout.json
@@ -35,17 +35,17 @@ codexmux의 영속 상태는 `~/.codexmux/`에 저장된다. Windows-only host �
 └── stats/
 ```
 
-`hooks.json`, `status-hook.sh`, `statusline.sh`는 local hook/statusline bridge가 서버로 상태를 POST할 때 쓰는 생성 파일이다. Codex tab 실행 명령은 `-c 'hooks={path="~/.codexmux/hooks.json"}'`를 포함해 이 앱 소유 hook 설정을 명시적으로 로드한다. Codex CLI `0.128.0` 기준 permission request 전용 hook은 없으므로, live permission/input prompt는 StatusManager의 pane capture recovery가 `notification(permission_prompt)`처럼 복구해 notification panel의 `needs-input` queue와 연결한다. Resume directory 선택과 interrupted prompt 보정, approval queue prompt type/risk metadata는 pane snapshot에서 계산한다. 사용자가 approval queue에서 선택하거나 선택지 조회/전송 fallback이 발생하면 `approval-audit.jsonl`에 enum, 선택 index, option count, fallback reason만 durable append하고 command, cwd, session name, JSONL path, prompt body, terminal output은 저장하지 않는다.
+`hooks.json`, `status-hook.sh`, `statusline.sh`는 local hook/statusline bridge가 서버로 상태를 POST할 때 쓰는 생성 파일이다. Codex tab 실행 명령은 `-c 'hooks={path="~/.codexwinmux/hooks.json"}'`를 포함해 이 앱 소유 hook 설정을 명시적으로 로드한다. Codex CLI `0.128.0` 기준 permission request 전용 hook은 없으므로, live permission/input prompt는 StatusManager의 pane capture recovery가 `notification(permission_prompt)`처럼 복구해 notification panel의 `needs-input` queue와 연결한다. Resume directory 선택과 interrupted prompt 보정, approval queue prompt type/risk metadata는 pane snapshot에서 계산한다. 사용자가 approval queue에서 선택하거나 선택지 조회/전송 fallback이 발생하면 `approval-audit.jsonl`에 enum, 선택 index, option count, fallback reason만 durable append하고 command, cwd, session name, JSONL path, prompt body, terminal output은 저장하지 않는다.
 
 `/experimental/runtime`의 Lifecycle Control actions는 `lifecycle-actions.jsonl`에 append-only audit event를 남긴다. 저장 필드는 action id, status, timestamp, duration, exit code, sanitized failure label뿐이며 stdout/stderr, env, cwd, token, session name, JSONL path, prompt body, terminal output은 저장하지 않는다.
 
-Electron remote/local server mode는 같은 `~/.codexmux/config.json`을 사용한다. Android 런처의 최근 서버와 마지막 서버 URL은 Android WebView `localStorage`에 저장되며 `~/.codexmux/`에는 기록되지 않는다. Android 앱 정보와 앱 재시작은 native package metadata와 현재 Activity를 사용하므로 codexmux 데이터 디렉터리에 별도 파일을 만들지 않는다.
+Electron remote/local server mode는 같은 `~/.codexwinmux/config.json`을 사용한다. Android 런처의 최근 서버와 마지막 서버 URL은 Android WebView `localStorage`에 저장되며 `~/.codexwinmux/`에는 기록되지 않는다. Android 앱 정보와 앱 재시작은 native package metadata와 현재 Activity를 사용하므로 codexwinmux 데이터 디렉터리에 별도 파일을 만들지 않는다.
 
-이전 빌드에서 만든 `remote/codex/` 아래 파일은 현재 앱에서 읽지 않는다. 필요 없으면 수동으로 삭제할 수 있으며, 로컬 `~/.codex/sessions/` 원본과 codexmux workspace 상태에는 영향을 주지 않는다.
+이전 빌드에서 만든 `remote/codex/` 아래 파일은 현재 앱에서 읽지 않는다. 필요 없으면 수동으로 삭제할 수 있으며, 로컬 `~/.codex/sessions/` 원본과 codexwinmux workspace 상태에는 영향을 주지 않는다.
 
 `session-index.json`은 로컬 `~/.codex/sessions`의 session list metadata cache다. Codex JSONL 원본을 대체하지 않으며, 삭제해도 서버가 다음 refresh에서 다시 만든다.
 
-Linux `systemd --user` 등록 파일은 `~/.config/systemd/user/codexmux.service`에 둔다. 서비스 파일은 실행 방식과 `HOST`/`PORT`를 고정하는 운영 설정이며, codexmux 앱 상태인 `~/.codexmux/`에는 포함되지 않는다.
+Linux `systemd --user` 등록 파일은 legacy 운영 경로인 `~/.config/systemd/user/codexmux.service`에 둔다. 서비스 파일은 실행 방식과 `HOST`/`PORT`를 고정하는 운영 설정이며, codexwinmux 앱 상태인 `~/.codexwinmux/`에는 포함되지 않는다.
 
 ## 주요 파일
 
@@ -71,7 +71,7 @@ Linux `systemd --user` 등록 파일은 `~/.config/systemd/user/codexmux.service
 | `vapid-keys.json` | Web Push VAPID key pair |
 | `push-subscriptions.json` | Web Push subscription |
 | `uploads/` | 임시 첨부 파일 |
-| `logs/` | 비-Windows 호환 경로의 서버 로그. Windows host에서는 `%LOCALAPPDATA%\codexmux\logs\`를 사용 |
+| `logs/` | 비-Windows 호환 경로의 서버 로그. Windows host에서는 `%LOCALAPPDATA%\codexwinmux\logs\`를 사용 |
 | `runtime-v2/state.db` | Experimental runtime v2 SQLite app state for workspace, pane, tab, message history, status projection, and durable event logs |
 | `backups/runtime-v2-storage-{timestamp}/` | `runtime-v2:storage-backup`이 만든 storage cutover용 JSON/SQLite snapshot |
 | `stats/cache.json` | Codex JSONL에서 계산한 usage cache. 런타임 build는 in-flight promise로 중복 계산을 피함 |
@@ -82,7 +82,7 @@ Linux `systemd --user` 등록 파일은 `~/.config/systemd/user/codexmux.service
 ## Runtime v2 SQLite 초기화
 
 `CODEXMUX_RUNTIME_V2=1`은 실험용 runtime v2를 켜고, 기본 DB 경로로
-`~/.codexmux/runtime-v2/state.db`를 사용한다. `CODEXMUX_RUNTIME_DB`가 있으면 smoke나
+`~/.codexwinmux/runtime-v2/state.db`를 사용한다. `CODEXMUX_RUNTIME_DB`가 있으면 smoke나
 개발 검증용으로 다른 DB 파일을 지정할 수 있다.
 
 Runtime schema v2는 `tabs.runtime_version`과 `workspaces.active_pane_id`를 포함한다.
@@ -110,7 +110,7 @@ Storage Worker는 삭제된 terminal tab의 session cleanup intent를 반환하�
 key cascade로 함께 제거된다.
 
 Storage cutover 전 백업은 `corepack pnpm runtime-v2:storage-backup`으로 만든다. 기본 출력은
-`~/.codexmux/backups/runtime-v2-storage-{timestamp}/`이며 `workspaces.json`,
+`~/.codexwinmux/backups/runtime-v2-storage-{timestamp}/`이며 `workspaces.json`,
 `workspaces/**.json`, `runtime-v2/state.db`, `runtime-v2/state.db-wal`,
 `runtime-v2/state.db-shm`를 복사한다. `CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_DATA_DIR`,
 `CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_OUTPUT_DIR`,
@@ -151,7 +151,7 @@ API는 기존 `session-index.json`과 `~/.codex/sessions/**/*.jsonl`을 읽기 �
 | 이전 빌드의 원격 Codex 복사본 | `remote/codex/` |
 | push subscription | `push-subscriptions.json` |
 | stale lock | process가 없음을 확인한 뒤 `cmux.lock` |
-| 전체 앱 상태 | `~/.codexmux/` |
+| 전체 앱 상태 | `~/.codexwinmux/` |
 
 비밀번호는 평문이 아니라 scrypt 해시로 저장된다. 잊어버린 비밀번호는 복구하지 않고 `authPassword`와 `authSecret`을 제거한 뒤 onboarding에서 새로 설정한다. `config.json` 전체를 삭제하면 network/theme/Codex option도 같이 초기화된다.
 

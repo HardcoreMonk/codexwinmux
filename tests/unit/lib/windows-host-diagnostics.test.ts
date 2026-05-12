@@ -17,9 +17,9 @@ describe('Windows host diagnostics', () => {
       env,
     });
 
-    expect(paths.dataDir).toBe(path.win32.join('C:\\Users\\cmux', '.codexmux'));
+    expect(paths.dataDir).toBe(path.win32.join('C:\\Users\\cmux', '.codexwinmux'));
     expect(paths.codexDir).toBe(path.win32.join('C:\\Users\\cmux', '.codex'));
-    expect(paths.logDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexmux', 'logs'));
+    expect(paths.logDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexwinmux', 'logs'));
   });
 
   it('keeps non-Windows log paths compatible with the existing data directory', () => {
@@ -30,9 +30,9 @@ describe('Windows host diagnostics', () => {
       },
     });
 
-    expect(paths.dataDir).toBe('/home/cmux/.codexmux');
+    expect(paths.dataDir).toBe('/home/cmux/.codexwinmux');
     expect(paths.codexDir).toBe('/home/cmux/.codex');
-    expect(paths.logDir).toBe('/home/cmux/.codexmux/logs');
+    expect(paths.logDir).toBe('/home/cmux/.codexwinmux/logs');
   });
 
   it('reports Windows logs and health probes without mutating the host', () => {
@@ -58,8 +58,8 @@ describe('Windows host diagnostics', () => {
         hostModel: 'tray-first-service-capable',
       },
     });
-    expect(diagnostics.paths.logDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexmux', 'logs'));
-    expect(diagnostics.paths.supportBundleDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexmux', 'support'));
+    expect(diagnostics.paths.logDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexwinmux', 'logs'));
+    expect(diagnostics.paths.supportBundleDir).toBe(path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexwinmux', 'support'));
   });
 
   it('returns a skipped dry-run result outside win32', () => {

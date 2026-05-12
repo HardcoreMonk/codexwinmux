@@ -5,7 +5,7 @@ import type { IFacetEntry, TPeriod } from '@/types/stats';
 import { isWithinPeriod } from './period-filter';
 
 const FACETS_DIRS = [
-  path.join(os.homedir(), '.codexmux', 'usage-data', 'facets'),
+  path.join(os.homedir(), '.codexwinmux', 'usage-data', 'facets'),
 ];
 
 const parseSingleFacet = (raw: Record<string, unknown>, sessionId: string): IFacetEntry => ({

@@ -9,7 +9,7 @@ export interface IKeybindingsFile {
   overrides: Record<string, TKeybindingOverride>;
 }
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const FILE_PATH = path.join(BASE_DIR, 'keybindings.json');
 
 const EMPTY: IKeybindingsFile = { overrides: {} };

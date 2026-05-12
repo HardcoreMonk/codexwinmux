@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // codexmux CLI — workspace-scoped HTTP API wrapper
-// Falls back to ~/.codexmux/{port,cli-token} when env vars absent.
+// Falls back to ~/.codexwinmux/{port,cli-token} when env vars absent.
 
 'use strict';
 
@@ -16,8 +16,8 @@ const readFileOrNull = (file) => {
   }
 };
 
-const PORT = process.env.CMUX_PORT || readFileOrNull(path.join(os.homedir(), '.codexmux', 'port'));
-const TOKEN = process.env.CMUX_TOKEN || readFileOrNull(path.join(os.homedir(), '.codexmux', 'cli-token'));
+const PORT = process.env.CMUX_PORT || readFileOrNull(path.join(os.homedir(), '.codexwinmux', 'port'));
+const TOKEN = process.env.CMUX_TOKEN || readFileOrNull(path.join(os.homedir(), '.codexwinmux', 'cli-token'));
 const BASE = `http://localhost:${PORT}`;
 
 const die = (msg) => {
@@ -26,8 +26,8 @@ const die = (msg) => {
 };
 
 const requireEnv = () => {
-  if (!PORT) die('CMUX_PORT not set and ~/.codexmux/port missing (is the server running?)');
-  if (!TOKEN) die('CMUX_TOKEN not set and ~/.codexmux/cli-token missing (is the server running?)');
+  if (!PORT) die('CMUX_PORT not set and ~/.codexwinmux/port missing (is the server running?)');
+  if (!TOKEN) die('CMUX_TOKEN not set and ~/.codexwinmux/cli-token missing (is the server running?)');
 };
 
 const out = (body) => {

@@ -53,7 +53,7 @@ const main = async (): Promise<void> => {
   }
   checks.push('dry-run-no-system-mutation');
 
-  if (!diagnostics.paths.dataDir.endsWith('.codexmux')) {
+  if (!diagnostics.paths.dataDir.endsWith('.codexwinmux')) {
     throw new Error(`unexpected Windows data directory: ${diagnostics.paths.dataDir}`);
   }
   if (!diagnostics.paths.codexDir.endsWith('.codex')) {

@@ -1,4 +1,4 @@
-# windows native codexmux
+# codexwinmux
 
 Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 기존
 `codexmux` 기반을 Windows 설치형 제품으로 전환하는 `codexwinmux` 제품
@@ -13,9 +13,9 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 | 항목 | 값 |
 | --- | --- |
 | 저장소 | <https://github.com/HardcoreMonk/codexwinmux> |
-| 제품 표시명 | `windows native codexmux` |
-| 실행 파일/패키지명 | `codexmux` |
-| 현재 버전 | `0.4.13` |
+| 제품 표시명 | `codexwinmux` |
+| 실행 파일/패키지명 | `codexwinmux` |
+| 현재 버전 | `0.4.14` |
 | 대상 플랫폼 | Windows 전용 |
 | 기본 URL | `http://127.0.0.1:8121` |
 | UI 기본 언어 | 한국어 |
@@ -23,16 +23,17 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 | 패키지 매니저 | pnpm |
 | 런타임 | Next.js Pages Router, custom Node server, Electron, Runtime v2 Windows adapter |
 
-제품명은 `windows native codexmux`로 표시하지만, 현재 설치 파일명과 내부
-프로세스명은 호환성을 위해 `codexmux`를 유지합니다. `codexwinmux`로 app id,
-data dir, artifact name까지 바꾸는 결정은 별도 전환 결정으로 다룹니다.
+현재 Windows 제품 identity는 `codexwinmux`입니다. Electron `productName`,
+`appId`, 설치 파일명, 실행 파일명, updater cache, 앱 데이터 디렉터리는
+`codexwinmux` 기준으로 분리합니다. `CODEXMUX_*` 환경 변수와 `cmux` CLI
+token/header는 기존 운영 호환 레이어로 유지합니다.
 
 ## 설치와 실행
 
 내부 배포용 GitHub Release에서 Windows 설치 파일을 내려받아 실행합니다.
 
 ```text
-codexmux-Setup-<version>.exe
+codexwinmux-Setup-<version>.exe
 ```
 
 설치 프로그램은 설치 진행 과정을 볼 수 있는 상세 로그 pane을 표시합니다. 설치
@@ -102,9 +103,9 @@ corepack pnpm pack:electron
 
 | 산출물 | 용도 |
 | --- | --- |
-| `release/win-unpacked/codexmux.exe` | 설치 전 launch/runtime smoke |
-| `release/codexmux-Setup-<version>.exe` | 내부 배포용 Windows installer |
-| `release/codexmux-Setup-<version>.exe.blockmap` | auto update differential metadata |
+| `release/win-unpacked/codexwinmux.exe` | 설치 전 launch/runtime smoke |
+| `release/codexwinmux-Setup-<version>.exe` | 내부 배포용 Windows installer |
+| `release/codexwinmux-Setup-<version>.exe.blockmap` | auto update differential metadata |
 | `release/latest.yml` | electron-updater release feed metadata |
 | `release/*-win.zip` | zip package artifact |
 
@@ -135,8 +136,8 @@ corepack pnpm smoke:windows:package-gate
 GitHub Release 기반 updater channel은 다음 asset이 모두 있을 때 유효합니다.
 
 - `latest.yml`
-- `codexmux-Setup-<version>.exe`
-- `codexmux-Setup-<version>.exe.blockmap`
+- `codexwinmux-Setup-<version>.exe`
+- `codexwinmux-Setup-<version>.exe.blockmap`
 
 로컬 feed와 published channel은 각각 다음 smoke로 확인합니다.
 
@@ -181,10 +182,10 @@ Frontend Engine
 
 ## 데이터 위치
 
-현재 앱 상태는 기존 호환성을 위해 사용자 홈의 `.codexmux` 디렉터리에 저장합니다.
+현재 앱 상태는 사용자 홈의 `.codexwinmux` 디렉터리에 저장합니다.
 
 ```text
-%USERPROFILE%\.codexmux\
+%USERPROFILE%\.codexwinmux\
 ```
 
 Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합니다.
@@ -209,7 +210,7 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
 
 - Windows 설치형 Electron 앱
 - 기본 포트 `8121` 고정
-- `windows native codexmux` 로고와 타이틀
+- `codexwinmux` 로고와 타이틀
 - tray-first lifecycle
 - UI 종료와 Backend/Core Engine 수명 분리
 - workspace, session, terminal, Codex, diff 화면
@@ -226,8 +227,8 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
 - 비-Windows 배포 흐름은 현재 제품 목표가 아닙니다.
 - 프론트엔드 프레임워크 교체, 백엔드 프레임워크 교체, Vercel 전환은 이번 전환
   범위가 아닙니다.
-- `codexwinmux`로 app id, data dir, executable/artifact name까지 변경할지는 별도
-  hard-to-reverse 결정으로 다룹니다.
+- app id, data dir, executable/artifact name은 `codexwinmux` 기준으로 독립되어
+  있습니다. 기존 `codexmux` 데이터는 자동 병합하지 않습니다.
 - code signing 인증서 신뢰와 SmartScreen reputation은 내부 전체 배포 전 확인해야
   합니다.
 
@@ -265,7 +266,7 @@ corepack pnpm smoke:windows:installer-runtime-v2
 | [docs/RUNTIME-V2-CUTOVER.md](docs/RUNTIME-V2-CUTOVER.md) | Runtime v2 전환 단계 |
 | [docs/RUNTIME-V2-PARITY.md](docs/RUNTIME-V2-PARITY.md) | Runtime v2 parity matrix |
 | [docs/WINDOWS-ONLY-GAP-AUDIT.md](docs/WINDOWS-ONLY-GAP-AUDIT.md) | Windows-only gap audit |
-| [docs/DATA-DIR.md](docs/DATA-DIR.md) | `.codexmux` 데이터 디렉터리 |
+| [docs/DATA-DIR.md](docs/DATA-DIR.md) | `.codexwinmux` 데이터 디렉터리 |
 | [docs/operations/](docs/operations/) | 릴리스와 운영 handoff |
 
 ## 라이선스

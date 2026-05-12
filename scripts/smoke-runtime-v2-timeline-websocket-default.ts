@@ -8,7 +8,7 @@ import { WebSocket } from 'ws';
 
 const PASSWORD = 'runtime-v2-timeline-websocket-default-smoke';
 const DEFAULT_TIMEOUT_MS = Number(process.env.CODEXMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_TIMEOUT_MS || 30_000);
-const TMUX_SOCKET = 'codexmux';
+const TMUX_SOCKET = 'codexwinmux';
 const SESSION_ID = '44444444-4444-4444-8444-444444444444';
 const INITIAL_ENTRY_COUNT = 2;
 const APPEND_ENTRY_COUNT = 1;

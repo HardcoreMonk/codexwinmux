@@ -1,13 +1,13 @@
 import path from 'path';
 import os from 'os';
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 export const STATUSLINE_SCRIPT_PATH = path.join(BASE_DIR, 'statusline.sh');
 export const RATE_LIMITS_FILE = path.join(BASE_DIR, 'rate-limits.json');
 
 export const STATUSLINE_SCRIPT_CONTENT = `#!/bin/sh
-PORT_FILE="$HOME/.codexmux/port"
-TOKEN_FILE="$HOME/.codexmux/cli-token"
+PORT_FILE="$HOME/.codexwinmux/port"
+TOKEN_FILE="$HOME/.codexwinmux/cli-token"
 [ -f "$PORT_FILE" ] || exit 0
 [ -f "$TOKEN_FILE" ] || exit 0
 PORT=$(cat "$PORT_FILE")

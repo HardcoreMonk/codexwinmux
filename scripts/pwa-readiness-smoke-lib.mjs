@@ -39,8 +39,8 @@ export const validatePwaManifest = (manifest, targetUrl) => {
     startUrlOrigin = '';
   }
 
-  addCheck(result, manifest?.name === 'codexmux', 'manifest-name', 'manifest.name must be codexmux');
-  addCheck(result, manifest?.short_name === 'codexmux', 'manifest-short-name', 'manifest.short_name must be codexmux');
+  addCheck(result, manifest?.name === 'codexwinmux', 'manifest-name', 'manifest.name must be codexwinmux');
+  addCheck(result, manifest?.short_name === 'codexwinmux', 'manifest-short-name', 'manifest.short_name must be codexwinmux');
   addCheck(result, manifest?.display === 'standalone', 'manifest-display-standalone', 'manifest.display must be standalone');
   addCheck(result, !!manifest?.start_url && startUrlOrigin === targetOrigin, 'manifest-start-url-origin', 'manifest.start_url must match target origin');
   addCheck(result, !!manifest?.theme_color, 'manifest-theme-color', 'manifest.theme_color is required');

@@ -56,7 +56,7 @@ const readLayouts = async (
 
 const main = async (): Promise<void> => {
   const dataDir = process.env.CODEXMUX_RUNTIME_V2_STORAGE_DRY_RUN_DATA_DIR
-    || path.join(os.homedir(), '.codexmux');
+    || path.join(os.homedir(), '.codexwinmux');
   const workspacesData = await readWorkspacesData(dataDir);
   const layoutsByWorkspaceId = await readLayouts(dataDir, workspacesData);
   const report = analyzeRuntimeStorageDryRun({ workspacesData, layoutsByWorkspaceId });

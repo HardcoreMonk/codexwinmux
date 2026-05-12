@@ -10,11 +10,11 @@ const loadLib = async () =>
 describe('Windows zip smoke helpers', () => {
   it('selects the newest Windows zip artifact', async () => {
     const { findWindowsZipArtifact } = await loadLib();
-    const releaseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-windows-zip-test-'));
-    const older = path.join(releaseDir, 'codexmux-0.4.1-win.zip');
-    const newer = path.join(releaseDir, 'codexmux-0.4.2-win.zip');
+    const releaseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexwinmux-windows-zip-test-'));
+    const older = path.join(releaseDir, 'codexwinmux-0.4.1-win.zip');
+    const newer = path.join(releaseDir, 'codexwinmux-0.4.2-win.zip');
     await fs.writeFile(older, '');
-    await fs.writeFile(path.join(releaseDir, 'codexmux Setup 0.4.2.exe.blockmap'), '');
+    await fs.writeFile(path.join(releaseDir, 'codexwinmux Setup 0.4.2.exe.blockmap'), '');
     await new Promise((resolve) => setTimeout(resolve, 20));
     await fs.writeFile(newer, '');
 
@@ -25,7 +25,7 @@ describe('Windows zip smoke helpers', () => {
     const { evaluateWindowsZipEntries } = await loadLib();
 
     const result = evaluateWindowsZipEntries([
-      { fullName: 'codexmux.exe', length: 100 },
+      { fullName: 'codexwinmux.exe', length: 100 },
       { fullName: 'resources/app.asar', length: 100 },
       { fullName: 'resources/app-update.yml', length: 100 },
       { fullName: 'resources/app.asar.unpacked/dist/workers/terminal-worker.js', length: 100 },
@@ -56,7 +56,7 @@ describe('Windows zip smoke helpers', () => {
     const { evaluateWindowsZipEntries } = await loadLib();
 
     const result = evaluateWindowsZipEntries([
-      { fullName: 'codexmux.exe', length: 100 },
+      { fullName: 'codexwinmux.exe', length: 100 },
       { fullName: 'resources/app.asar', length: 100 },
     ]);
 

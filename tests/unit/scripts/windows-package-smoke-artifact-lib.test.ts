@@ -12,7 +12,7 @@ describe('Windows package smoke artifact helpers', () => {
     const payload = buildWindowsPackagedLaunchArtifactPayload({
       ok: true,
       mutatesSystem: false,
-      appPath: 'D:\\data\\projects\\codexmux\\release\\win-unpacked\\codexmux.exe',
+      appPath: 'D:\\data\\projects\\codexmux\\release\\win-unpacked\\codexwinmux.exe',
       homeDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp\\codexmux-windows-packaged-launch-secret',
       launchMode: 'windows-exe',
       longRunHoldMs: 120000,
@@ -21,7 +21,7 @@ describe('Windows package smoke artifact helpers', () => {
       state: {
         href: 'http://localhost:8121/login',
         origin: 'http://localhost:8121',
-        title: '로그인 - windows native codexmux',
+        title: '로그인 - codexwinmux',
         readyState: 'complete',
         hasElectronApi: true,
         electronApiKeys: ['platform'],
@@ -29,13 +29,13 @@ describe('Windows package smoke artifact helpers', () => {
         userAgent: 'codexmux/0.4.2 Electron/41.1.1',
       },
       health: {
-        app: 'codexmux',
+        app: 'codexwinmux',
         version: '0.4.2',
         commit: 'fa3e4978',
         buildTime: '2026-05-06T15:35:10.450Z',
       },
       longRunHealth: {
-        app: 'codexmux',
+        app: 'codexwinmux',
         version: '0.4.2',
         commit: 'fa3e4978',
         buildTime: '2026-05-06T15:35:10.450Z',
@@ -47,7 +47,7 @@ describe('Windows package smoke artifact helpers', () => {
         uiExitCode: 0,
         uiExitSignal: null,
         healthAfterUiQuit: {
-          app: 'codexmux',
+          app: 'codexwinmux',
           version: '0.4.2',
           commit: 'fa3e4978',
           buildTime: '2026-05-06T15:35:10.450Z',
@@ -72,7 +72,7 @@ describe('Windows package smoke artifact helpers', () => {
       longRunHoldMs: 120000,
       checks: ['packaged-exe-present', 'runtime-v2-terminal-ws'],
       state: {
-        title: '로그인 - windows native codexmux',
+        title: '로그인 - codexwinmux',
         readyState: 'complete',
         hasElectronApi: true,
         electronApiKeys: ['platform'],
@@ -80,13 +80,13 @@ describe('Windows package smoke artifact helpers', () => {
         userAgent: 'codexmux/0.4.2 Electron/41.1.1',
       },
       health: {
-        app: 'codexmux',
+        app: 'codexwinmux',
         version: '0.4.2',
         commit: 'fa3e4978',
         buildTime: '2026-05-06T15:35:10.450Z',
       },
       longRunHealth: {
-        app: 'codexmux',
+        app: 'codexwinmux',
         version: '0.4.2',
         commit: 'fa3e4978',
         buildTime: '2026-05-06T15:35:10.450Z',
@@ -98,7 +98,7 @@ describe('Windows package smoke artifact helpers', () => {
         uiExitCode: 0,
         uiExitSignal: null,
         healthAfterUiQuit: {
-          app: 'codexmux',
+          app: 'codexwinmux',
           version: '0.4.2',
           commit: 'fa3e4978',
           buildTime: '2026-05-06T15:35:10.450Z',
@@ -123,7 +123,7 @@ describe('Windows package smoke artifact helpers', () => {
     const payload = buildWindowsInstallerArtifactPayload({
       ok: true,
       mutatesSystem: true,
-      installerPath: 'D:\\data\\projects\\codexmux\\release\\codexmux Setup 0.4.2.exe',
+      installerPath: 'D:\\data\\projects\\codexmux\\release\\codexwinmux Setup 0.4.2.exe',
       installDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp\\codexmux-installer-smoke-secret\\app',
       checks: ['installer-present', 'installed-app-launch-smoke', 'silent-uninstall'],
       runtimeV2Terminal: true,

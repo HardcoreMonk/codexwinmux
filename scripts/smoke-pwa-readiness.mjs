@@ -132,7 +132,7 @@ const main = async () => {
 
   try {
     const health = await fetchJson(new URL('/api/health', baseUrl), timeoutMs).catch(() => null);
-    if (health?.data?.app === 'codexmux') checks.push('health');
+    if (health?.data?.app === 'codexwinmux') checks.push('health');
 
     const { data: manifest } = await fetchJson(new URL('/api/manifest', baseUrl), timeoutMs);
     checks.push(...assertNoValidationErrors('manifest', validatePwaManifest(manifest, baseUrl)));

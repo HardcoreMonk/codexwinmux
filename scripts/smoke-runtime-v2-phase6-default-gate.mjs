@@ -15,7 +15,7 @@ const baseUrl =
 const token =
   process.env.CODEXMUX_TOKEN ||
   process.env.CMUX_TOKEN ||
-  await fs.readFile(path.join(os.homedir(), '.codexmux', 'cli-token'), 'utf-8').then((s) => s.trim());
+  await fs.readFile(path.join(os.homedir(), '.codexwinmux', 'cli-token'), 'utf-8').then((s) => s.trim());
 
 const requestJson = async (pathname) => {
   const res = await fetch(new URL(pathname, baseUrl), {

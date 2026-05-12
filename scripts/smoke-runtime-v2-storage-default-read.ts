@@ -20,7 +20,7 @@ const main = async (): Promise<void> => {
   };
 
   try {
-    const dataDir = path.join(homeDir, '.codexmux');
+    const dataDir = path.join(homeDir, '.codexwinmux');
     const layoutDir = path.join(dataDir, 'workspaces', 'ws-default');
     const layoutPath = path.join(layoutDir, 'layout.json');
     const messageHistoryPath = path.join(layoutDir, 'message-history.json');

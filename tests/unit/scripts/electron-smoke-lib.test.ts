@@ -74,7 +74,7 @@ describe('Electron smoke helpers', () => {
     const { buildElectronSmokeLaunchCommand } = await loadLib();
     const appDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-smoke-app-'));
     const bundlePath = path.join(appDir, 'codexmux.app');
-    const executablePath = path.join(bundlePath, 'Contents', 'MacOS', 'codexmux');
+    const executablePath = path.join(bundlePath, 'Contents', 'MacOS', 'codexwinmux');
     await fs.mkdir(path.dirname(executablePath), { recursive: true });
     await fs.writeFile(executablePath, '#!/bin/sh\n');
     await fs.chmod(executablePath, 0o755);
@@ -109,10 +109,10 @@ describe('Electron smoke helpers', () => {
 
     expect(buildElectronSmokeLaunchCommand({
       remoteDebuggingPort: 9222,
-      appPath: 'D:\\apps\\codexmux\\codexmux.exe',
+      appPath: 'D:\\apps\\codexmux\\codexwinmux.exe',
       platform: 'win32',
     })).toEqual({
-      command: 'D:\\apps\\codexmux\\codexmux.exe',
+      command: 'D:\\apps\\codexmux\\codexwinmux.exe',
       args: [
         '--remote-debugging-port=9222',
         '--disable-gpu',

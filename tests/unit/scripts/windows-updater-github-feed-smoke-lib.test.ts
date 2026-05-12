@@ -35,7 +35,7 @@ describe('Windows updater GitHub feed smoke helpers', () => {
       checks: ['base-installer-present', 'github-feed-url', 'silent-install'],
       statusSummary: {
         latestVersion: '0.4.8',
-        downloadedFileName: 'codexmux-Setup-0.4.8.exe',
+        downloadedFileName: 'codexwinmux-Setup-0.4.8.exe',
         blockers: [],
       },
       installResult: { exitCode: 0, signal: null, timedOut: false, stdout: 'drop me' },
@@ -50,7 +50,7 @@ describe('Windows updater GitHub feed smoke helpers', () => {
       checks: ['base-installer-present', 'github-feed-url', 'silent-install'],
       blockers: [],
       latestVersion: '0.4.8',
-      downloadedFileName: 'codexmux-Setup-0.4.8.exe',
+      downloadedFileName: 'codexwinmux-Setup-0.4.8.exe',
       installResult: { exitCode: 0, signal: null, timedOut: false },
       updateLaunchResult: { exitCode: 0, signal: null, timedOut: false },
       postInstallLaunchResult: { exitCode: 0, signal: null, timedOut: false },

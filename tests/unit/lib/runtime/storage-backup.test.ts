@@ -21,7 +21,7 @@ describe('runtime v2 storage backup', () => {
   });
 
   it('copies legacy JSON stores and runtime sqlite files into a timestamped backup directory', async () => {
-    const dataDir = path.join(tempDir, '.codexmux');
+    const dataDir = path.join(tempDir, '.codexwinmux');
     const outputRoot = path.join(tempDir, 'backups');
     await writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify({
       workspaces: [{ id: 'ws-a', name: 'Secret Workspace', directories: ['/secret/project'] }],
@@ -64,7 +64,7 @@ describe('runtime v2 storage backup', () => {
   });
 
   it('returns an empty manifest when no storage files exist', async () => {
-    const dataDir = path.join(tempDir, '.codexmux');
+    const dataDir = path.join(tempDir, '.codexwinmux');
     const outputRoot = path.join(tempDir, 'backups');
 
     const result = await createRuntimeStorageBackup({

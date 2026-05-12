@@ -13,7 +13,7 @@ const log = createLogger('terminal');
 
 const execFile = promisify(execFileCb);
 
-const TMUX_SOCKET = 'codexmux';
+const TMUX_SOCKET = 'codexwinmux';
 const TMUX_CONFIG_PATH = path.join(process.env.__CMUX_APP_DIR_UNPACKED || process.env.__CMUX_APP_DIR || process.cwd(), 'src', 'config', 'tmux.conf');
 const CMD_TIMEOUT = 5000;
 

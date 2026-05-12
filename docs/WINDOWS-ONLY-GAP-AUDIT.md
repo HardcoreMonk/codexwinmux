@@ -453,9 +453,9 @@ Resolved items:
   - default `HOST=127.0.0.1`
   - default `PORT=8121`
 - The plan records Windows data/log locations:
-  - `%USERPROFILE%\.codexmux`
+  - `%USERPROFILE%\.codexwinmux`
   - `%USERPROFILE%\.codex`
-  - `%LOCALAPPDATA%\codexmux\logs`
+  - `%LOCALAPPDATA%\codexwinmux\logs`
 - The smoke asserts `mutatesSystem=false`; no service registration, restart,
   firewall rule, scheduled task, installer action, or external host tool is run.
 
@@ -474,7 +474,7 @@ Resolved items:
 - Added `src/lib/host-paths.ts` so Windows app data, Codex data, and server log
   paths are resolved from one helper.
 - `createLogger()` now writes Windows server logs under
-  `%LOCALAPPDATA%\codexmux\logs`, matching the Windows service host plan.
+  `%LOCALAPPDATA%\codexwinmux\logs`, matching the Windows service host plan.
 - Added `src/lib/windows-host-diagnostics.ts` to report the Windows host paths,
   local health probe URLs, and service host ownership without exposing token,
   session, prompt, or command output data.

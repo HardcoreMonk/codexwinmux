@@ -7,7 +7,7 @@ import { openRuntimeDatabase } from '@/lib/runtime/storage/schema';
 
 const main = async (): Promise<void> => {
   const dataDir = process.env.CODEXMUX_RUNTIME_V2_STORAGE_IMPORT_DATA_DIR
-    || path.join(os.homedir(), '.codexmux');
+    || path.join(os.homedir(), '.codexwinmux');
   const dbPath = process.env.CODEXMUX_RUNTIME_V2_STORAGE_IMPORT_DB
     || path.join(dataDir, 'runtime-v2', 'state.db');
   const snapshot = await readLegacyStorageSnapshot(dataDir);

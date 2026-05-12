@@ -44,13 +44,13 @@ export const resolveHostPaths = ({
       platform,
       homeDir,
       localAppData,
-      dataDir: path.win32.join(homeDir, '.codexmux'),
+      dataDir: path.win32.join(homeDir, '.codexwinmux'),
       codexDir: path.win32.join(homeDir, '.codex'),
-      logDir: path.win32.join(localAppData, 'codexmux', 'logs'),
+      logDir: path.win32.join(localAppData, 'codexwinmux', 'logs'),
     };
   }
 
-  const dataDir = path.posix.join(homeDir, '.codexmux');
+  const dataDir = path.posix.join(homeDir, '.codexwinmux');
 
   return {
     platform,

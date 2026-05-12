@@ -141,7 +141,7 @@ const writeCodexSessionForDatePath = async ({
 };
 
 const writeStatsCacheFile = async (): Promise<void> => {
-  const dir = path.join(tempHome, '.codexmux', 'stats');
+  const dir = path.join(tempHome, '.codexwinmux', 'stats');
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(
     path.join(dir, 'cache.json'),

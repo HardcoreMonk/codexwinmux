@@ -3,7 +3,7 @@ const THREAD_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const shellQuote = (value: string): string =>
   `'${value.replace(/'/g, `'\\''`)}'`;
 
-export const CODEXMUX_CODEX_HOOKS_CONFIG = 'hooks={path="~/.codexmux/hooks.json"}';
+export const CODEXMUX_CODEX_HOOKS_CONFIG = 'hooks={path="~/.codexwinmux/hooks.json"}';
 
 export const isValidCodexThreadId = (id: unknown): id is string =>
   typeof id === 'string' && THREAD_ID_RE.test(id);

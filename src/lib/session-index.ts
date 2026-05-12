@@ -85,7 +85,7 @@ const getCodexSessionsDir = (): string =>
   path.join(getHomeDir(), '.codex', 'sessions');
 
 const getIndexFilePath = (): string =>
-  path.join(getHomeDir(), '.codexmux', 'session-index.json');
+  path.join(getHomeDir(), '.codexwinmux', 'session-index.json');
 
 const getRootKey = (): string => getCodexSessionsDir();
 

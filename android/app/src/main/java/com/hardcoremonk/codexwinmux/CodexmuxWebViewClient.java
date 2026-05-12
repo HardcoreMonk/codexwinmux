@@ -1,4 +1,4 @@
-package com.hardcoremonk.codexmux;
+package com.hardcoremonk.codexwinmux;
 
 import android.net.Uri;
 import android.net.http.SslError;

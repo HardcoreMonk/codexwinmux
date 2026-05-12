@@ -5,7 +5,7 @@ import { spawn } from 'child_process';
 const requiredEntryGroups = [
   {
     check: 'zip-entry-app-exe',
-    patterns: ['codexmux.exe'],
+    patterns: ['codexwinmux.exe'],
   },
   {
     check: 'zip-entry-app-asar',
@@ -46,7 +46,7 @@ export const findWindowsZipArtifact = (releaseDir) => {
     ? fs.readdirSync(releaseDir, { withFileTypes: true })
     : [];
   const zips = entries
-    .filter((entry) => entry.isFile() && /^codexmux-.+-win\.zip$/i.test(entry.name))
+    .filter((entry) => entry.isFile() && /^codexwinmux-.+-win\.zip$/i.test(entry.name))
     .map((entry) => path.join(releaseDir, entry.name))
     .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
 

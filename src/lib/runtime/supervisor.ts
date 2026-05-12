@@ -195,7 +195,7 @@ export interface ICreateRuntimeSupervisorForTestOptions {
 const g = globalThis as unknown as IRuntimeSupervisorGlobalState;
 
 const getDbPath = (): string =>
-  process.env.CODEXMUX_RUNTIME_DB || path.join(process.env.HOME || os.homedir(), '.codexmux', 'runtime-v2', 'state.db');
+  process.env.CODEXMUX_RUNTIME_DB || path.join(process.env.HOME || os.homedir(), '.codexwinmux', 'runtime-v2', 'state.db');
 
 const runtimeDbFiles = (dbPath: string): string[] => [dbPath, `${dbPath}-wal`, `${dbPath}-shm`];
 

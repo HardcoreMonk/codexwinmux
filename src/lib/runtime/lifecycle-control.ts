@@ -194,7 +194,7 @@ export const sanitizeLifecycleDiagnosticText = (value: string): string =>
     .replace(/Authorization:\s*Bearer\s+\S+/gi, '[secret]')
     .replace(/x-cmux-token(?::\s*|=\s*|\s+)\S+/gi, '[secret]')
     .replace(/\btoken\s*[:=]\s*\S+/gi, '[secret]')
-    .replace(/~\/\.codexmux\/cli-token/g, '[secret]')
+    .replace(/~\/\.codexwinmux\/cli-token/g, '[secret]')
     .replace(/"cwd"\s*:\s*"[^"]*"/g, '[path]')
     .replace(/"sessionName"\s*:\s*"[^"]*"/g, '[runtime-session]')
     .replace(/"jsonlPath"\s*:\s*"[^"]*"/g, '[path]')
@@ -302,11 +302,14 @@ export const selectTopPerfTimings = (
 };
 
 export const buildRollbackRunbook = (): string => [
-  'Runtime v2 rollback runbook (copy-only):',
-  '1. Set CODEXMUX_RUNTIME_STORAGE_V2_MODE=write.',
-  '2. Set CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off.',
-  '3. Run systemctl --user restart codexmux.service.',
-  '4. Recheck lifecycle health and worker diagnostics.',
+  'Runtime v2 rollback runbook:',
+  '1. Run corepack pnpm lifecycle:rollback-dry-run.',
+  '2. Run corepack pnpm lifecycle:rollback-apply or Lifecycle Action "Apply Rollback Flags".',
+  '3. Confirm CODEXMUX_RUNTIME_STORAGE_V2_MODE=write.',
+  '4. Confirm CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off.',
+  '5. Confirm CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off.',
+  '6. Confirm CODEXMUX_RUNTIME_STATUS_V2_MODE=off.',
+  '7. Confirm systemctl --user restart codexmux.service completed, then recheck lifecycle health and worker diagnostics.',
 ].join('\n');
 
 const readLifecycleActions = (value: unknown): ILifecycleActionView[] => {

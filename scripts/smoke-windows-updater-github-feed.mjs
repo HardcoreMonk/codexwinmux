@@ -288,10 +288,10 @@ const main = async () => {
   const baseInstallerPath = path.resolve(
     process.env.CODEXMUX_WINDOWS_UPDATER_BASE_INSTALLER_PATH
     || process.env.CODEXMUX_WINDOWS_INSTALLER_PATH
-    || path.join(rootDir, 'release', 'codexmux-Setup-0.4.2.exe'),
+    || path.join(rootDir, 'release', 'codexwinmux-Setup-0.4.2.exe'),
   );
   const smokeRoot = process.env.CODEXMUX_WINDOWS_UPDATER_GITHUB_FEED_SMOKE_ROOT
-    || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-updater-github-feed-smoke-'));
+    || await fs.mkdtemp(path.join(os.tmpdir(), 'codexwinmux-updater-github-feed-smoke-'));
   const installDir = process.env.CODEXMUX_WINDOWS_UPDATER_GITHUB_FEED_INSTALL_DIR
     || path.join(smokeRoot, 'app');
   const checks = [];

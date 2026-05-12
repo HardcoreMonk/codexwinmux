@@ -21,7 +21,7 @@ interface IQuickPromptsData {
   order: string[];
 }
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const FILE_PATH = path.join(BASE_DIR, 'quick-prompts.json');
 
 const BUILTIN_PROMPTS: IQuickPrompt[] = [

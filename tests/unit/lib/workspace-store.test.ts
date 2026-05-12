@@ -22,7 +22,7 @@ describe('workspace store', () => {
 
   beforeEach(async () => {
     homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-workspace-store-'));
-    dataDir = path.join(homeDir, '.codexmux');
+    dataDir = path.join(homeDir, '.codexwinmux');
     await fs.mkdir(dataDir, { recursive: true });
     process.env.HOME = homeDir;
     process.env.USERPROFILE = homeDir;

@@ -17,7 +17,7 @@ import {
 const baseUrl = process.env.CODEXMUX_RUNTIME_V2_SMOKE_URL || 'http://127.0.0.1:8132';
 const token = process.env.CODEXMUX_TOKEN
   || process.env.CMUX_TOKEN
-  || await fs.readFile(path.join(os.homedir(), '.codexmux', 'cli-token'), 'utf-8').then((s) => s.trim());
+  || await fs.readFile(path.join(os.homedir(), '.codexwinmux', 'cli-token'), 'utf-8').then((s) => s.trim());
 const headers = { 'x-cmux-token': token };
 const DEFAULT_TIMEOUT_MS = 10_000;
 

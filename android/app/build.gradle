@@ -18,10 +18,10 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.hardcoremonk.codexmux"
+    namespace = "com.hardcoremonk.codexwinmux"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.hardcoremonk.codexmux"
+        applicationId "com.hardcoremonk.codexwinmux"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode

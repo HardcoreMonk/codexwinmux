@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import type { NextApiRequest } from 'next';
 
-const TOKEN_FILE = path.join(os.homedir(), '.codexmux', 'cli-token');
+const TOKEN_FILE = path.join(os.homedir(), '.codexwinmux', 'cli-token');
 
 const g = globalThis as unknown as { __ptCliToken?: string };
 

@@ -1,4 +1,4 @@
-package com.hardcoremonk.codexmux;
+package com.hardcoremonk.codexwinmux;
 
 import android.os.Bundle;
 import android.os.Looper;

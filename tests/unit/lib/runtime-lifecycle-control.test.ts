@@ -65,7 +65,7 @@ describe('runtime lifecycle control helpers', () => {
   it('builds a lifecycle view model without leaking sensitive fields', () => {
     const viewModel = buildLifecycleViewModel({
       health: {
-        app: 'codexmux',
+        app: 'codexwinmux',
         version: '1.2.3',
         commit: 'abc123',
         buildTime: '2026-05-01T00:00:00.000Z',
@@ -193,7 +193,7 @@ describe('runtime lifecycle control helpers', () => {
 
     expect(viewModel).toMatchObject({
       release: {
-        app: 'codexmux',
+        app: 'codexwinmux',
         version: '1.2.3',
         commit: 'abc123',
         buildTime: '2026-05-01T00:00:00.000Z',
@@ -281,7 +281,7 @@ describe('runtime lifecycle control helpers', () => {
     expect(json).not.toContain('token:');
     expect(json).not.toContain('x-cmux-token:');
     expect(json).not.toContain('"token"');
-    expect(json).not.toContain('~/.codexmux/cli-token');
+    expect(json).not.toContain('~/.codexwinmux/cli-token');
     expect(json).not.toContain('"cwd"');
     expect(json).not.toContain('sessionName');
     expect(json).not.toContain('"jsonlPath"');
@@ -309,13 +309,17 @@ describe('runtime lifecycle control helpers', () => {
     expect(json).not.toContain('colon terminal');
   });
 
-  it('builds a copy-only rollback runbook without secrets', () => {
+  it('builds an automation-first rollback runbook without secrets', () => {
     const runbook = buildRollbackRunbook();
 
+    expect(runbook).toContain('corepack pnpm lifecycle:rollback-dry-run');
+    expect(runbook).toContain('corepack pnpm lifecycle:rollback-apply');
     expect(runbook).toContain('CODEXMUX_RUNTIME_STORAGE_V2_MODE=write');
     expect(runbook).toContain('CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off');
+    expect(runbook).toContain('CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off');
+    expect(runbook).toContain('CODEXMUX_RUNTIME_STATUS_V2_MODE=off');
     expect(runbook).toContain('systemctl --user restart codexmux.service');
     expect(runbook).not.toContain('x-cmux-token');
-    expect(runbook).not.toContain('~/.codexmux/cli-token');
+    expect(runbook).not.toContain('~/.codexwinmux/cli-token');
   });
 });

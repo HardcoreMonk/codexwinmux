@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 
-export const DEFAULT_ANDROID_APP_ID = 'com.hardcoremonk.codexmux';
+export const DEFAULT_ANDROID_APP_ID = 'com.hardcoremonk.codexwinmux';
 export const DEFAULT_ANDROID_ACTIVITY = `${DEFAULT_ANDROID_APP_ID}/.MainActivity`;
 export const DEFAULT_ANDROID_SMOKE_URL = 'https://gti12.tail73c4be.ts.net';
 

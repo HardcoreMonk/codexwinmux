@@ -39,7 +39,7 @@ const waitFor = async (label, fn, timeoutMs = DEFAULT_TIMEOUT_MS) => {
 
 const waitForCliToken = (homeDir) =>
   waitFor('runtime v2 smoke cli token', async () => {
-    const raw = await fs.readFile(path.join(homeDir, '.codexmux', 'cli-token'), 'utf-8').catch(() => '');
+    const raw = await fs.readFile(path.join(homeDir, '.codexwinmux', 'cli-token'), 'utf-8').catch(() => '');
     return raw.trim() || null;
   });
 

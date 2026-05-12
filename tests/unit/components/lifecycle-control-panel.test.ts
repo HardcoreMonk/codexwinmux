@@ -6,7 +6,7 @@ import type { ILifecycleViewModel } from '@/lib/runtime/lifecycle-control';
 
 const healthyValue: ILifecycleViewModel = {
   release: {
-    app: 'codexmux',
+    app: 'codexwinmux',
     version: '1.2.3',
     commit: 'abc1234',
     buildTime: '2026-05-01T00:00:00.000Z',
@@ -47,6 +47,12 @@ const healthyValue: ILifecycleViewModel = {
       description: 'Restart the Linux user service with systemd.',
       confirmationPhrase: 'restart codexmux.service',
     },
+    {
+      id: 'rollback-runtime-flags',
+      label: 'Apply Rollback Flags',
+      description: 'Write explicit runtime rollback flags to the systemd user drop-in and restart the service.',
+      confirmationPhrase: 'rollback runtime v2',
+    },
   ],
   actionEvents: [
     {
@@ -61,11 +67,14 @@ const healthyValue: ILifecycleViewModel = {
     },
   ],
   rollbackRunbook: [
-    'Runtime v2 rollback runbook (copy-only):',
-    '1. Set CODEXMUX_RUNTIME_STORAGE_V2_MODE=write.',
-    '2. Set CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off.',
-    '3. Run systemctl --user restart codexmux.service.',
-    '4. Recheck lifecycle health and worker diagnostics.',
+    'Runtime v2 rollback runbook:',
+    '1. Run corepack pnpm lifecycle:rollback-dry-run.',
+    '2. Run corepack pnpm lifecycle:rollback-apply or Lifecycle Action "Apply Rollback Flags".',
+    '3. Confirm CODEXMUX_RUNTIME_STORAGE_V2_MODE=write.',
+    '4. Confirm CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off.',
+    '5. Confirm CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off.',
+    '6. Confirm CODEXMUX_RUNTIME_STATUS_V2_MODE=off.',
+    '7. Confirm systemctl --user restart codexmux.service completed, then recheck lifecycle health and worker diagnostics.',
   ].join('\n'),
 };
 
@@ -131,8 +140,11 @@ describe('LifecycleControlPanel', () => {
     expect(markup).toContain('Lifecycle Actions');
     expect(markup).toContain('Run Phase 6 Gate');
     expect(markup).toContain('Restart Service');
+    expect(markup).toContain('Apply Rollback Flags');
+    expect(markup).toContain('rollback runtime v2');
     expect(markup).toContain('restart codexmux.service');
     expect(markup).toContain('succeeded');
-    expect(markup).not.toContain('corepack pnpm');
+    expect(markup).not.toContain('smoke:runtime-v2:phase6-default-gate');
+    expect(markup).not.toContain('deploy:local');
   });
 });

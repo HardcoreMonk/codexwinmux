@@ -14,15 +14,15 @@ import { initBrowserBridge } from './browser-bridge';
 
 const isDev = process.env.NODE_ENV === 'development';
 const devUrl = process.env.ELECTRON_DEV_URL;
-const APP_DISPLAY_NAME = 'windows native codexmux';
-const APP_PROCESS_NAME = 'codexmux';
+const APP_DISPLAY_NAME = 'codexwinmux';
+const APP_PROCESS_NAME = 'codexwinmux';
 const isEngineProcess = process.env.CODEXMUX_ELECTRON_ENGINE_PROCESS === '1';
 
 const fixEnv = () => {
   applyElectronBootstrapEnv(process.env, process.platform);
 };
 
-// --- Server Config (~/.codexmux/config.json) ---
+// --- Server Config (~/.codexwinmux/config.json) ---
 
 interface IServerConfig {
   mode: 'local' | 'remote';
@@ -45,7 +45,7 @@ interface IAppConfig {
   appTheme?: string;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), '.codexmux');
+const CONFIG_DIR = path.join(os.homedir(), '.codexwinmux');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 const readAppConfig = (): IAppConfig => {
@@ -205,8 +205,8 @@ interface IMenuMessages {
 }
 
 const menuMessages: Record<string, IMenuMessages> = {
-  en: { server: 'Server', useLocalServer: 'Use Local Server', connectRemoteServer: 'Connect to Remote Server…', edit: 'Edit', view: 'View', window: 'Window', newWindow: 'New Window', serverConnection: 'Server Connection', serverAddress: 'Server Address', cancel: 'Cancel', connect: 'Connect', checkForUpdates: 'Check for Updates…', updateAvailableMessage: 'A new version ({version}) is available', updateAvailableDetail: 'Would you like to download it now?', download: 'Download', later: 'Later', updateReadyMessage: 'Version {version} is ready to install', updateReadyDetail: 'Restart codexmux to apply the update.', restartNow: 'Restart Now', upToDateMessage: "You're up to date", upToDateDetail: 'codexmux {version} is the latest version.', updateErrorMessage: 'Failed to check for updates', openWindow: 'Open Window', restartEngine: 'Restart Engine', stopEngine: 'Stop Engine', quitUi: 'Quit UI', quitUiAndStopEngine: 'Quit UI and Stop Engine', engineNotOwnedMessage: 'This UI did not start the current engine, so it will not stop an unrelated process.', engineStartErrorMessage: 'The local engine could not be started.' },
-  ko: { server: '서버', useLocalServer: '로컬 서버 사용', connectRemoteServer: '원격 서버 연결…', edit: '편집', view: '보기', window: '창', newWindow: '새 창', serverConnection: '서버 연결', serverAddress: '서버 주소', cancel: '취소', connect: '연결', checkForUpdates: '업데이트 확인…', updateAvailableMessage: '새 버전({version})이 있습니다', updateAvailableDetail: '지금 다운로드할까요?', download: '다운로드', later: '나중에', updateReadyMessage: '{version} 버전 설치 준비 완료', updateReadyDetail: 'codexmux를 재시작하면 업데이트가 적용됩니다.', restartNow: '지금 재시작', upToDateMessage: '최신 버전입니다', upToDateDetail: 'codexmux {version}을 사용 중입니다.', updateErrorMessage: '업데이트 확인에 실패했습니다', openWindow: '창 열기', restartEngine: '엔진 재시작', stopEngine: '엔진 중지', quitUi: 'UI 종료', quitUiAndStopEngine: 'UI와 엔진 종료', engineNotOwnedMessage: '현재 엔진은 이 UI가 시작한 프로세스가 아니므로 관련 없는 프로세스를 중지하지 않습니다.', engineStartErrorMessage: '로컬 엔진을 시작할 수 없습니다.' },
+  en: { server: 'Server', useLocalServer: 'Use Local Server', connectRemoteServer: 'Connect to Remote Server…', edit: 'Edit', view: 'View', window: 'Window', newWindow: 'New Window', serverConnection: 'Server Connection', serverAddress: 'Server Address', cancel: 'Cancel', connect: 'Connect', checkForUpdates: 'Check for Updates…', updateAvailableMessage: 'A new version ({version}) is available', updateAvailableDetail: 'Would you like to download it now?', download: 'Download', later: 'Later', updateReadyMessage: 'Version {version} is ready to install', updateReadyDetail: 'Restart codexwinmux to apply the update.', restartNow: 'Restart Now', upToDateMessage: "You're up to date", upToDateDetail: 'codexwinmux {version} is the latest version.', updateErrorMessage: 'Failed to check for updates', openWindow: 'Open Window', restartEngine: 'Restart Engine', stopEngine: 'Stop Engine', quitUi: 'Quit UI', quitUiAndStopEngine: 'Quit UI and Stop Engine', engineNotOwnedMessage: 'This UI did not start the current engine, so it will not stop an unrelated process.', engineStartErrorMessage: 'The local engine could not be started.' },
+  ko: { server: '서버', useLocalServer: '로컬 서버 사용', connectRemoteServer: '원격 서버 연결…', edit: '편집', view: '보기', window: '창', newWindow: '새 창', serverConnection: '서버 연결', serverAddress: '서버 주소', cancel: '취소', connect: '연결', checkForUpdates: '업데이트 확인…', updateAvailableMessage: '새 버전({version})이 있습니다', updateAvailableDetail: '지금 다운로드할까요?', download: '다운로드', later: '나중에', updateReadyMessage: '{version} 버전 설치 준비 완료', updateReadyDetail: 'codexwinmux를 재시작하면 업데이트가 적용됩니다.', restartNow: '지금 재시작', upToDateMessage: '최신 버전입니다', upToDateDetail: 'codexwinmux {version}을 사용 중입니다.', updateErrorMessage: '업데이트 확인에 실패했습니다', openWindow: '창 열기', restartEngine: '엔진 재시작', stopEngine: '엔진 중지', quitUi: 'UI 종료', quitUiAndStopEngine: 'UI와 엔진 종료', engineNotOwnedMessage: '현재 엔진은 이 UI가 시작한 프로세스가 아니므로 관련 없는 프로세스를 중지하지 않습니다.', engineStartErrorMessage: '로컬 엔진을 시작할 수 없습니다.' },
 };
 
 let currentLocale = 'en';

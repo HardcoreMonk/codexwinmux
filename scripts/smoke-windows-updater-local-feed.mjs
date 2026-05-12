@@ -357,7 +357,7 @@ const main = async () => {
     || '',
   );
   const smokeRoot = process.env.CODEXMUX_WINDOWS_UPDATER_LOCAL_FEED_SMOKE_ROOT
-    || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-updater-local-feed-smoke-'));
+    || await fs.mkdtemp(path.join(os.tmpdir(), 'codexwinmux-updater-local-feed-smoke-'));
   const feedDir = path.join(smokeRoot, 'feed');
   const installDir = process.env.CODEXMUX_WINDOWS_UPDATER_LOCAL_FEED_INSTALL_DIR
     || path.join(smokeRoot, 'app');

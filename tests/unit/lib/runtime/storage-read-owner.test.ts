@@ -37,7 +37,7 @@ describe('runtime storage v2 default read ownership', () => {
 
   it('reads workspace and layout projection from SQLite when storage mode is default', async () => {
     homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-read-'));
-    const dataDir = path.join(homeDir, '.codexmux');
+    const dataDir = path.join(homeDir, '.codexwinmux');
     const wsDir = path.join(dataDir, 'workspaces', 'ws-sqlite');
     const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');
     const staleWorkspaces: IWorkspacesData = {
@@ -132,7 +132,7 @@ describe('runtime storage v2 default read ownership', () => {
 
   it('does not replace an existing SQLite snapshot with empty JSON during default-mode initialization', async () => {
     homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-init-'));
-    const dataDir = path.join(homeDir, '.codexmux');
+    const dataDir = path.join(homeDir, '.codexwinmux');
     const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');
     const workspacesData: IWorkspacesData = {
       workspaces: [{ id: 'ws-sqlite', name: 'SQLite Only', directories: [homeDir] }],
@@ -188,7 +188,7 @@ describe('runtime storage v2 default read ownership', () => {
 
   it('keeps an empty SQLite snapshot authoritative over stale JSON workspaces', async () => {
     homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-empty-authority-'));
-    const dataDir = path.join(homeDir, '.codexmux');
+    const dataDir = path.join(homeDir, '.codexwinmux');
     const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');
     await fs.mkdir(dataDir, { recursive: true });
     await fs.writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify({

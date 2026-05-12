@@ -81,7 +81,7 @@ describe('session-index', () => {
   });
 
   it('drops legacy persisted remote rows from the session index', async () => {
-    const indexDir = path.join(tempHome, '.codexmux');
+    const indexDir = path.join(tempHome, '.codexwinmux');
     await fs.mkdir(indexDir, { recursive: true });
     await fs.writeFile(
       path.join(indexDir, 'session-index.json'),

@@ -7,7 +7,7 @@ import type { ISessionHistoryEntry, ISessionHistoryData } from '@/types/session-
 const log = createLogger('session-history');
 
 const MAX_ENTRIES = 200;
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const SESSION_HISTORY_FILE = path.join(BASE_DIR, 'session-history.json');
 
 const g = globalThis as unknown as {

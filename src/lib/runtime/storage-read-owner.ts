@@ -16,7 +16,7 @@ const log = createLogger('runtime-storage');
 
 const getDefaultDataDir = (): string =>
   process.env.CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR
-  || path.join(os.homedir(), '.codexmux');
+  || path.join(os.homedir(), '.codexwinmux');
 
 const getDefaultDbPath = (dataDir = getDefaultDataDir()): string =>
   process.env.CODEXMUX_RUNTIME_DB

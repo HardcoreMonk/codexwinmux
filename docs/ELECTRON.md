@@ -44,10 +44,10 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. `CODEXMUX_SMARTSCREEN_EVIDENCE_PATH` JSON 또는 `CODEXMUX_SMARTSCREEN_STATUS=passed`가 없으면 SmartScreen gate는 통과하지 않습니다.
 - `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다.
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
-- `smoke:windows:packaged-launch`: `release/win-unpacked/codexmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
+- `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
 - `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
 - `smoke:windows:packaged-runtime-v2`: packaged app을 runtime v2 `new-tabs` mode로 실행해 workspace/tab 생성, `/api/v2/terminal` WebSocket attach, Windows marker command output을 확인합니다.
-- `smoke:windows:installer-install`: `release/codexmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
+- `smoke:windows:installer-install`: `release/codexwinmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
 - `smoke:windows:installer-runtime-v2`: silent install한 앱에 `smoke:windows:packaged-runtime-v2`와 같은 runtime v2 terminal 검증을 적용한 뒤 silent uninstall합니다.
 - `smoke:windows:package-gate`: 이미 생성된 Windows `release/` 산출물에 대해 zip artifact, update metadata, updater local feed, packaged launch, packaged runtime v2, installer runtime v2 smoke를 순차 실행합니다.
 - `pack:electron:dev`: 로컬 Windows unpacked package 검증용입니다. Installer를 만들지 않습니다.
@@ -72,7 +72,7 @@ Windows NSIS installer는 `build-resources/installer.nsh`를 include해 설치�
 | `scripts/dev-electron.mjs` | dev server 자동 실행 + Electron attach |
 | `electron-builder.yml` | Windows NSIS/zip 기본 패키징 설정과 legacy macOS 패키징 설정 |
 
-앱 설정은 `~/.codexmux/config.json`에 저장합니다. Electron 전용 설정도 같은 파일을 사용하며, 서버 모드는 `server.mode`과 `server.remoteUrl`로 관리합니다.
+앱 설정은 `~/.codexwinmux/config.json`에 저장합니다. Electron 전용 설정도 같은 파일을 사용하며, 서버 모드는 `server.mode`과 `server.remoteUrl`로 관리합니다.
 
 Electron renderer는 웹 UI와 같은 terminal input 정책을 사용합니다. 터미널이나
 Codex 입력창에 포커스가 있으면 `Ctrl+D`는 앱 단축키가 아니라 Codex CLI/shell
@@ -96,14 +96,14 @@ EOF(`0x04`)로 전달됩니다.
 
 - 작업 완료 상태는 foreground toast와 Electron native notification으로 표시할 수 있습니다.
 - `soundOnCompleteEnabled=false`이면 completion sound를 재생하지 않고 native notification도 silent로 요청합니다.
-- notification 설정은 웹/PWA와 같은 `~/.codexmux/config.json` 값을 공유합니다.
+- notification 설정은 웹/PWA와 같은 `~/.codexwinmux/config.json` 값을 공유합니다.
 
 ## 서버 모드
 
 로컬 서버:
 
 - 앱 실행 시 기존 `127.0.0.1:8121` engine health를 먼저 확인합니다.
-- 기존 engine이 healthy codexmux이면 UI는 그대로 attach합니다.
+- 기존 engine이 healthy codexwinmux이면 UI는 그대로 attach합니다.
 - healthy engine이 없으면 Shell Host가 같은 packaged executable을 engine process로 시작합니다.
 - engine host mode에서는 기본 포트 `8121`을 고정하고, 다른 process가 점유한 포트로 조용히 fallback하지 않습니다.
 - 창 닫기는 BrowserWindow를 tray로 숨기며 engine을 중지하지 않습니다.
@@ -113,7 +113,7 @@ EOF(`0x04`)로 전달됩니다.
 
 원격 서버:
 
-- 메뉴에서 원격 서버 URL을 입력하면 `~/.codexmux/config.json`에 저장합니다.
+- 메뉴에서 원격 서버 URL을 입력하면 `~/.codexwinmux/config.json`에 저장합니다.
 - URL scheme이 없으면 `http://`를 붙입니다.
 - 허용 scheme은 `http://`와 `https://`입니다.
 
@@ -237,7 +237,7 @@ download/install evidence는 사용자가 설치한 버전보다 더 최신 publ
 설치한 버전과 channel을 비교합니다.
 
 `smoke:windows:signing-evidence`는 `Get-AuthenticodeSignature`로
-`release/codexmux-Setup-<version>.exe`와 `release/win-unpacked/codexmux.exe`를
+`release/codexwinmux-Setup-<version>.exe`와 `release/win-unpacked/codexwinmux.exe`를
 검사하고 SHA-256, signature status, timestamp certificate evidence만 출력합니다.
 서명되지 않은 내부 파일럿 build는 이 smoke가 실패하는 것이 정상이며, 실패 blocker를
 운영 handoff에 기록합니다. 서명된 build에서 SmartScreen을 통과로 기록하려면 다음 중
@@ -263,24 +263,24 @@ harness 요구사항이며 제품 identity나 updater metadata 변경이 아닙�
 
 macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사용한다. `dmg-license`는 pnpm node linker에서 electron-builder의 runtime `require()`가 항상 해석되도록 direct devDependency로 고정한다. Linux에서는 `corepack pnpm build:electron`까지를 release smoke로 보고, macOS packaging은 Mac M1 같은 macOS host에서 `corepack pnpm pack:electron:mac:dev`/`pack:electron:mac`로 실행한다.
 
-2026-05-04 `v0.4.1` release 기준 Linux release host에서 `corepack pnpm build:electron`은 통과했다. 당시 macOS 패키징은 M1 macOS host(`Darwin arm64`)에서 commit `23fee4b`로 `release/codexmux-0.4.1-arm64.dmg`, `release/codexmux-0.4.1-arm64-mac.zip`, `release/codexmux-0.4.1.dmg`, `release/codexmux-0.4.1-mac.zip`을 생성했다. `node scripts/verify-runtime-native-bindings.mjs --electron`, `lipo -archs`, `Info.plist` version `0.4.1`, arm64/x86_64 app arch, `hdiutil verify`가 통과했다. `CODEXMUX_ELECTRON_APP_PATH=<release/.../codexmux.app>`를 주면 attach/runtime-v2 smoke가 packaged `.app` 실행 파일을 직접 띄울 수 있고, `CODEXMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES=1`로 CDP foreground probe 뒤 terminal attach를 반복 확인할 수 있다. Linux Electron 41 smoke에서는 `Browser.*` window bounds가 없어 `target-activate` fallback으로 통과했다. live checkout에서 Electron build/packaging을 실행한 뒤에는 `.next/standalone`이 다시 만들어지므로 Linux user service는 `corepack pnpm deploy:local`로 재시작해 cwd를 정상화한다.
+2026-05-04 `v0.4.1` release 기준 Linux release host에서 `corepack pnpm build:electron`은 통과했다. 당시 macOS 패키징은 M1 macOS host(`Darwin arm64`)에서 commit `23fee4b`로 `release/codexwinmux-0.4.1-arm64.dmg`, `release/codexwinmux-0.4.1-arm64-mac.zip`, `release/codexwinmux-0.4.1.dmg`, `release/codexwinmux-0.4.1-mac.zip`을 생성했다. `node scripts/verify-runtime-native-bindings.mjs --electron`, `lipo -archs`, `Info.plist` version `0.4.1`, arm64/x86_64 app arch, `hdiutil verify`가 통과했다. `CODEXMUX_ELECTRON_APP_PATH=<release/.../codexwinmux.app>`를 주면 attach/runtime-v2 smoke가 packaged `.app` 실행 파일을 직접 띄울 수 있고, `CODEXMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES=1`로 CDP foreground probe 뒤 terminal attach를 반복 확인할 수 있다. Linux Electron 41 smoke에서는 `Browser.*` window bounds가 없어 `target-activate` fallback으로 통과했다. live checkout에서 Electron build/packaging을 실행한 뒤에는 `.next/standalone`이 다시 만들어지므로 Linux user service는 `corepack pnpm deploy:local`로 재시작해 cwd를 정상화한다.
 
 ## 패키징 메모
 
 현재 패키징 metadata는 제품명/app id/data dir을 `codexmux`로 유지하고, publish
 repo만 `HardcoreMonk/codexwinmux`를 사용합니다. 현재 소스 버전은 `0.4.13`이며,
 새 published update evidence를 주장하려면 같은 버전의 `latest.yml`,
-`codexmux-Setup-<version>.exe`, matching `.blockmap`을 GitHub Release에 발행한 뒤
+`codexwinmux-Setup-<version>.exe`, matching `.blockmap`을 GitHub Release에 발행한 뒤
 published/updater smoke를 다시 실행해야 합니다.
 
-2026-05-07 `v0.4.8` release는 `latest.yml`, `codexmux-Setup-0.4.8.exe`,
-`codexmux-Setup-0.4.8.exe.blockmap`을 GitHub Release asset으로 발행했고,
+2026-05-07 `v0.4.8` release는 `latest.yml`, `codexwinmux-Setup-0.4.8.exe`,
+`codexwinmux-Setup-0.4.8.exe.blockmap`을 GitHub Release asset으로 발행했고,
 `CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=0.4.2 corepack pnpm smoke:windows:updater-published-channel`가
 `0.4.2 -> 0.4.8` channel evidence로 통과했습니다. 같은 날
 `smoke:windows:updater-github-feed`도 installed `0.4.2`에서 GitHub-hosted `0.4.8`
 download/install/`quitAndInstall`/post-update runtime v2 smoke까지 통과했습니다.
 
-`0.4.8` Windows installer와 `win-unpacked/codexmux.exe`는
+`0.4.8` Windows installer와 `win-unpacked/codexwinmux.exe`는
 `Get-AuthenticodeSignature` 기준 `NotSigned`입니다. 따라서 신뢰된 code signing
 certificate, timestamp signing, SmartScreen reputation은 signed installer를 다시
 발행하기 전까지 release blocker입니다.

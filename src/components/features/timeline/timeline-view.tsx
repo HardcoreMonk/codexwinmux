@@ -25,6 +25,7 @@ import TaskChecklist from '@/components/features/timeline/task-checklist';
 import TaskProgressItem from '@/components/features/timeline/task-progress-item';
 import ScrollToBottomButton from '@/components/features/timeline/scroll-to-bottom-button';
 import PermissionPromptItem from '@/components/features/timeline/permission-prompt-item';
+import { selectTimelineWindow } from '@/lib/timeline-window';
 
 interface ITimelineViewProps {
   entries: ITimelineEntry[];
@@ -323,11 +324,17 @@ const TimelineView = ({
   const [skipAnimation, setSkipAnimation] = useState(true);
   const [prevSessionId, setPrevSessionId] = useState(sessionId);
   const [hasOverflowBelow, setHasOverflowBelow] = useState(false);
+  const [virtualViewport, setVirtualViewport] = useState({
+    scrollTop: 0,
+    viewportHeight: 0,
+    stickToEnd: true,
+  });
 
   if (prevSessionId !== sessionId) {
     setPrevSessionId(sessionId);
     setSkipAnimation(true);
     setAnchorUserId(null);
+    setVirtualViewport({ scrollTop: 0, viewportHeight: 0, stickToEnd: true });
     armedRef.current = false;
     wasBusyRef.current = false;
     pendingShrinkRef.current = false;
@@ -347,6 +354,27 @@ const TimelineView = ({
   const groupedItems = groupedTimeline.items;
   const hasDisplayItems = groupedItems.length > 0;
   const lastUserMessageId = groupedTimeline.lastUserMessageId;
+  const anchorIndex = anchorUserId ? groupedItems.findIndex((item) => item.id === anchorUserId) : -1;
+  const timelineWindow = useMemo(() => selectTimelineWindow({
+    itemCount: groupedItems.length,
+    scrollTop: virtualViewport.scrollTop,
+    viewportHeight: virtualViewport.viewportHeight,
+    stickToEnd: virtualViewport.stickToEnd || skipAnimation,
+    anchorIndex: anchorIndex >= 0 ? anchorIndex : undefined,
+  }), [
+    groupedItems.length,
+    virtualViewport.scrollTop,
+    virtualViewport.viewportHeight,
+    virtualViewport.stickToEnd,
+    skipAnimation,
+    anchorIndex,
+  ]);
+  const visibleGroupedItems = useMemo(
+    () => timelineWindow.enabled
+      ? groupedItems.slice(timelineWindow.startIndex, timelineWindow.endIndex)
+      : groupedItems,
+    [groupedItems, timelineWindow.enabled, timelineWindow.startIndex, timelineWindow.endIndex],
+  );
 
   useEffect(() => {
     if (armedRef.current && lastUserMessageId && lastUserMessageId !== anchorUserId) {
@@ -383,6 +411,44 @@ const TimelineView = ({
       requestAnimationFrame(() => setSkipAnimation(false));
     }
   }, [skipAnimation, entries.length, scrollToBottom]);
+
+  const updateVirtualViewport = useCallback(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    const scrollTop = Math.max(0, scrollEl.scrollTop);
+    const viewportHeight = Math.max(0, scrollEl.clientHeight);
+    const distanceToBottom = Math.max(0, scrollEl.scrollHeight - viewportHeight - scrollTop);
+
+    setVirtualViewport((prev) => {
+      const stickToEnd = viewportHeight === 0 ? prev.stickToEnd : distanceToBottom < viewportHeight * 0.75;
+
+      return prev.scrollTop === scrollTop
+        && prev.viewportHeight === viewportHeight
+        && prev.stickToEnd === stickToEnd
+        ? prev
+        : { scrollTop, viewportHeight, stickToEnd };
+    });
+  }, [scrollRef]);
+
+  useLayoutEffect(() => {
+    updateVirtualViewport();
+  }, [groupedItems.length, updateVirtualViewport]);
+
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    updateVirtualViewport();
+    scrollEl.addEventListener('scroll', updateVirtualViewport, { passive: true });
+
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateVirtualViewport);
+    ro?.observe(scrollEl);
+
+    return () => {
+      scrollEl.removeEventListener('scroll', updateVirtualViewport);
+      ro?.disconnect();
+    };
+  }, [scrollRef, updateVirtualViewport]);
 
   const measureSpacer = useCallback(() => {
     const scrollEl = scrollRef.current;
@@ -585,7 +651,14 @@ const TimelineView = ({
           {tasks.length > 0 && (
             <TaskChecklist tasks={tasks} cliState={cliState} />
           )}
-          {groupedItems.map((item) => (
+          {timelineWindow.enabled && timelineWindow.beforeHeight > 0 && (
+            <div
+              aria-hidden
+              data-timeline-window-spacer="before"
+              style={{ height: timelineWindow.beforeHeight, overflowAnchor: 'none' }}
+            />
+          )}
+          {visibleGroupedItems.map((item) => (
             <TimelineGroupedItem
               key={item.id}
               item={item}
@@ -594,6 +667,13 @@ const TimelineView = ({
               sessionName={sessionName}
             />
           ))}
+          {timelineWindow.enabled && timelineWindow.afterHeight > 0 && (
+            <div
+              aria-hidden
+              data-timeline-window-spacer="after"
+              style={{ height: timelineWindow.afterHeight, overflowAnchor: 'none' }}
+            />
+          )}
           {(shouldProbeResumeDialog || needsInput) && sessionName && (
             <div className="px-4 py-1.5">
               <PermissionPromptItem

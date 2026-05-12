@@ -79,7 +79,7 @@ export const LoginForm = ({ className, onSuccess, ...props }: ILoginFormProps) =
                 <p className="text-muted-foreground">
                   {t('resetPasswordHelp', { action: isElectron ? t('restartApp') : t('restartServer') })}
                 </p>
-                <code className="mt-2 block rounded bg-muted px-2 py-1 font-mono">~/.codexmux/config.json</code>
+                <code className="mt-2 block rounded bg-muted px-2 py-1 font-mono">~/.codexwinmux/config.json</code>
               </PopoverContent>
             </Popover>
           </div>

@@ -69,7 +69,7 @@ const collectStorageFiles = async (dataDir: string): Promise<string[]> => {
 };
 
 export const createRuntimeStorageBackup = async ({
-  dataDir = path.join(os.homedir(), '.codexmux'),
+  dataDir = path.join(os.homedir(), '.codexwinmux'),
   outputRoot = path.join(dataDir, 'backups'),
   timestamp = timestampForBackup(),
 }: IRuntimeStorageBackupInput = {}): Promise<IRuntimeStorageBackupResult> => {

@@ -20,8 +20,8 @@ describe('Windows installer smoke helpers', () => {
   it('selects the newest codexmux NSIS installer', async () => {
     const { findWindowsInstaller } = await loadLib();
     const releaseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-installer-test-'));
-    const older = path.join(releaseDir, 'codexmux Setup 0.4.1.exe');
-    const newer = path.join(releaseDir, 'codexmux-Setup-0.4.2.exe');
+    const older = path.join(releaseDir, 'codexwinmux Setup 0.4.1.exe');
+    const newer = path.join(releaseDir, 'codexwinmux-Setup-0.4.2.exe');
     await fs.writeFile(older, '');
     await new Promise((resolve) => setTimeout(resolve, 20));
     await fs.writeFile(newer, '');
@@ -33,9 +33,9 @@ describe('Windows installer smoke helpers', () => {
     const { resolveInstalledAppPaths } = await loadLib();
 
     expect(resolveInstalledAppPaths('C:\\apps\\codexmux')).toEqual({
-      appExe: 'C:\\apps\\codexmux\\codexmux.exe',
+      appExe: 'C:\\apps\\codexmux\\codexwinmux.exe',
       appAsar: 'C:\\apps\\codexmux\\resources\\app.asar',
-      uninstaller: 'C:\\apps\\codexmux\\Uninstall codexmux.exe',
+      uninstaller: 'C:\\apps\\codexmux\\Uninstall codexwinmux.exe',
     });
   });
 });

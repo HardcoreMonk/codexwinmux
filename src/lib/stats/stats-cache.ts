@@ -22,7 +22,7 @@ import type {
 } from '@/types/stats';
 
 const CACHE_VERSION = 4;
-const CACHE_DIR = path.join(os.homedir(), '.codexmux', 'stats');
+const CACHE_DIR = path.join(os.homedir(), '.codexwinmux', 'stats');
 const CACHE_PATH = path.join(CACHE_DIR, 'cache.json');
 const CONCURRENCY_LIMIT = 10;
 

@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import { randomBytes } from 'crypto';
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const UPLOADS_DIR = path.join(BASE_DIR, 'uploads');
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;

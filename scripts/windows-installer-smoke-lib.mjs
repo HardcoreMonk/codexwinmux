@@ -11,7 +11,7 @@ export const findWindowsInstaller = (releaseDir) => {
     ? fs.readdirSync(releaseDir, { withFileTypes: true })
     : [];
   const installers = entries
-    .filter((entry) => entry.isFile() && /^codexmux(?: Setup |-Setup-).+\.exe$/i.test(entry.name))
+    .filter((entry) => entry.isFile() && /^codexwinmux(?: Setup |-Setup-).+\.exe$/i.test(entry.name))
     .map((entry) => path.join(releaseDir, entry.name))
     .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
 
@@ -19,7 +19,7 @@ export const findWindowsInstaller = (releaseDir) => {
 };
 
 export const resolveInstalledAppPaths = (installDir) => ({
-  appExe: path.join(installDir, 'codexmux.exe'),
+  appExe: path.join(installDir, 'codexwinmux.exe'),
   appAsar: path.join(installDir, 'resources', 'app.asar'),
-  uninstaller: path.join(installDir, 'Uninstall codexmux.exe'),
+  uninstaller: path.join(installDir, 'Uninstall codexwinmux.exe'),
 });

@@ -28,7 +28,7 @@ import type { IAgentProvider } from '@/lib/providers/types';
 
 const log = createLogger('layout');
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 
 interface ILayoutReconciler {
   reconcileWorkspaceTabs: (wsId: string, validTabIds: readonly string[]) => void;

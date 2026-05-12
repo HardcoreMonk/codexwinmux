@@ -12,11 +12,11 @@ describe('Windows update metadata smoke helpers', () => {
     const result = evaluateWindowsUpdateMetadata({
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -25,26 +25,26 @@ describe('Windows update metadata smoke helpers', () => {
       appUpdateMetadata: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
-        updaterCacheDirName: 'codexmux-updater',
+        repo: 'codexwinmux',
+        updaterCacheDirName: 'codexwinmux-updater',
       },
       publishConfig: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
+        repo: 'codexwinmux',
       },
       releaseFiles: [
-        { name: 'codexmux Setup 0.4.2.exe', size: 123 },
-        { name: 'codexmux Setup 0.4.2.exe.blockmap', size: 12 },
+        { name: 'codexwinmux Setup 0.4.2.exe', size: 123 },
+        { name: 'codexwinmux Setup 0.4.2.exe.blockmap', size: 12 },
       ],
     });
 
     expect(result.ok).toBe(false);
-    expect(result.referencedInstallerName).toBe('codexmux-Setup-0.4.2.exe');
+    expect(result.referencedInstallerName).toBe('codexwinmux-Setup-0.4.2.exe');
     expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toEqual([
       'windows-update-installer-missing',
     ]);
-    expect(JSON.stringify(result)).not.toContain('codexmux Setup 0.4.2.exe');
+    expect(JSON.stringify(result)).not.toContain('codexwinmux Setup 0.4.2.exe');
   });
 
   it('accepts latest.yml when installer, size, sha, and blockmap align', async () => {
@@ -53,11 +53,11 @@ describe('Windows update metadata smoke helpers', () => {
     const result = evaluateWindowsUpdateMetadata({
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -66,23 +66,23 @@ describe('Windows update metadata smoke helpers', () => {
       appUpdateMetadata: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
-        updaterCacheDirName: 'codexmux-updater',
+        repo: 'codexwinmux',
+        updaterCacheDirName: 'codexwinmux-updater',
       },
       publishConfig: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
+        repo: 'codexwinmux',
       },
       releaseFiles: [
-        { name: 'codexmux-Setup-0.4.2.exe', size: 123 },
-        { name: 'codexmux-Setup-0.4.2.exe.blockmap', size: 12 },
+        { name: 'codexwinmux-Setup-0.4.2.exe', size: 123 },
+        { name: 'codexwinmux-Setup-0.4.2.exe.blockmap', size: 12 },
       ],
     });
 
     expect(result).toMatchObject({
       ok: true,
-      referencedInstallerName: 'codexmux-Setup-0.4.2.exe',
+      referencedInstallerName: 'codexwinmux-Setup-0.4.2.exe',
       releaseFileCount: 2,
       checks: [
         'windows-update-version-present',
@@ -108,11 +108,11 @@ describe('Windows update metadata smoke helpers', () => {
     const result = evaluateWindowsUpdateMetadata({
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 124,
           },
@@ -121,17 +121,17 @@ describe('Windows update metadata smoke helpers', () => {
       appUpdateMetadata: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
-        updaterCacheDirName: 'codexmux-updater',
+        repo: 'codexwinmux',
+        updaterCacheDirName: 'codexwinmux-updater',
       },
       publishConfig: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
+        repo: 'codexwinmux',
       },
       releaseFiles: [
-        { name: 'codexmux-Setup-0.4.2.exe', size: 123 },
-        { name: 'codexmux-Setup-0.4.2.exe.blockmap', size: 12 },
+        { name: 'codexwinmux-Setup-0.4.2.exe', size: 123 },
+        { name: 'codexwinmux-Setup-0.4.2.exe.blockmap', size: 12 },
       ],
     });
 
@@ -147,11 +147,11 @@ describe('Windows update metadata smoke helpers', () => {
     const result = evaluateWindowsUpdateMetadata({
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -160,17 +160,17 @@ describe('Windows update metadata smoke helpers', () => {
       appUpdateMetadata: {
         provider: 'github',
         owner: 'SomeoneElse',
-        repo: 'codexmux',
-        updaterCacheDirName: 'codexmux-updater',
+        repo: 'codexwinmux',
+        updaterCacheDirName: 'codexwinmux-updater',
       },
       publishConfig: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
+        repo: 'codexwinmux',
       },
       releaseFiles: [
-        { name: 'codexmux-Setup-0.4.2.exe', size: 123 },
-        { name: 'codexmux-Setup-0.4.2.exe.blockmap', size: 12 },
+        { name: 'codexwinmux-Setup-0.4.2.exe', size: 123 },
+        { name: 'codexwinmux-Setup-0.4.2.exe.blockmap', size: 12 },
       ],
     });
 
@@ -178,8 +178,8 @@ describe('Windows update metadata smoke helpers', () => {
     expect(result.appUpdate).toEqual({
       provider: 'github',
       owner: 'SomeoneElse',
-      repo: 'codexmux',
-      updaterCacheDirName: 'codexmux-updater',
+      repo: 'codexwinmux',
+      updaterCacheDirName: 'codexwinmux-updater',
     });
     expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toEqual([
       'windows-app-update-owner-mismatch',
@@ -192,11 +192,11 @@ describe('Windows update metadata smoke helpers', () => {
     const result = evaluateWindowsUpdateMetadata({
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -205,17 +205,17 @@ describe('Windows update metadata smoke helpers', () => {
       appUpdateMetadata: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
-        updaterCacheDirName: 'codexmux-updater',
+        repo: 'codexwinmux',
+        updaterCacheDirName: 'codexwinmux-updater',
       },
       publishConfig: {
         provider: 'generic',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
+        repo: 'codexwinmux',
       },
       releaseFiles: [
-        { name: 'codexmux-Setup-0.4.2.exe', size: 123 },
-        { name: 'codexmux-Setup-0.4.2.exe.blockmap', size: 12 },
+        { name: 'codexwinmux-Setup-0.4.2.exe', size: 123 },
+        { name: 'codexwinmux-Setup-0.4.2.exe.blockmap', size: 12 },
       ],
     });
 
@@ -231,11 +231,11 @@ describe('Windows update metadata smoke helpers', () => {
     const result = evaluateWindowsUpdateMetadata({
       latestMetadata: {
         version: '0.4.2',
-        path: 'codexmux-Setup-0.4.2.exe',
+        path: 'codexwinmux-Setup-0.4.2.exe',
         sha512: 'installer-sha',
         files: [
           {
-            url: 'codexmux-Setup-0.4.2.exe',
+            url: 'codexwinmux-Setup-0.4.2.exe',
             sha512: 'installer-sha',
             size: 123,
           },
@@ -244,11 +244,11 @@ describe('Windows update metadata smoke helpers', () => {
       publishConfig: {
         provider: 'github',
         owner: 'HardcoreMonk',
-        repo: 'codexmux',
+        repo: 'codexwinmux',
       },
       releaseFiles: [
-        { name: 'codexmux-Setup-0.4.2.exe', size: 123 },
-        { name: 'codexmux-Setup-0.4.2.exe.blockmap', size: 12 },
+        { name: 'codexwinmux-Setup-0.4.2.exe', size: 123 },
+        { name: 'codexwinmux-Setup-0.4.2.exe.blockmap', size: 12 },
       ],
     });
 

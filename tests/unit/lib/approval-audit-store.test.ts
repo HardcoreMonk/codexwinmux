@@ -36,7 +36,7 @@ describe('approval audit store', () => {
       sessionName: string;
     });
 
-    const file = path.join(tempHome, '.codexmux', 'approval-audit.jsonl');
+    const file = path.join(tempHome, '.codexwinmux', 'approval-audit.jsonl');
     const raw = await fs.readFile(file, 'utf-8');
     expect(raw).toContain('"eventType":"selection-sent"');
     expect(raw).toContain('"selectedOptionIndex":1');

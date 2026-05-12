@@ -6,7 +6,7 @@ import { STATUSLINE_SCRIPT_PATH, STATUSLINE_SCRIPT_CONTENT } from '@/lib/statusl
 
 const log = createLogger('hooks');
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const HOOKS_FILE = path.join(BASE_DIR, 'hooks.json');
 const PORT_FILE = path.join(BASE_DIR, 'port');
 const HOOK_SCRIPT = path.join(BASE_DIR, 'status-hook.sh');
@@ -16,8 +16,8 @@ export const HOOK_SETTINGS_PATH = HOOKS_FILE;
 const HOOK_SCRIPT_CONTENT = `#!/bin/sh
 RAW_EVENT="\${1:-poll}"
 EVENT="$RAW_EVENT"
-PORT_FILE="$HOME/.codexmux/port"
-TOKEN_FILE="$HOME/.codexmux/cli-token"
+PORT_FILE="$HOME/.codexwinmux/port"
+TOKEN_FILE="$HOME/.codexwinmux/cli-token"
 [ -f "$PORT_FILE" ] || exit 0
 [ -f "$TOKEN_FILE" ] || exit 0
 PORT=$(cat "$PORT_FILE")

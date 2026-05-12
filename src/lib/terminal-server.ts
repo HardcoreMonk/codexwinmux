@@ -34,7 +34,7 @@ const THROTTLE_FLUSH_INTERVAL_MS = 250;
 const STDOUT_FLUSH_DELAY_MS = 8;
 const STDOUT_MAX_BUFFER_BYTES = 64 * 1024;
 
-const TMUX_SOCKET = 'codexmux';
+const TMUX_SOCKET = 'codexwinmux';
 const textDecoder = new TextDecoder();
 
 interface IActiveConnection {

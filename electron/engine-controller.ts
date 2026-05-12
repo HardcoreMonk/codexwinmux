@@ -60,7 +60,7 @@ export const buildEngineUrl = (port: number) => `http://127.0.0.1:${port}`;
 export const isCodexmuxHealth = (health: unknown): health is IEngineHealth =>
   !!health
   && typeof health === 'object'
-  && (health as IEngineHealth).app === 'codexmux';
+  && (health as IEngineHealth).app === 'codexwinmux';
 
 export const probeEngineHealth = async (
   url: string,

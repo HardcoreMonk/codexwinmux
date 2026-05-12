@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.hardcoremonk.codexmux',
-  appName: 'codexmux',
+  appId: 'com.hardcoremonk.codexwinmux',
+  appName: 'codexwinmux',
   webDir: 'android-web',
   server: {
     cleartext: true,

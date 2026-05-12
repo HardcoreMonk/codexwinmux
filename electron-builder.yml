@@ -1,5 +1,5 @@
-appId: com.hardcoremonk.codexmux
-productName: codexmux
+appId: com.hardcoremonk.codexwinmux
+productName: codexwinmux
 directories:
   buildResources: build-resources
   output: release

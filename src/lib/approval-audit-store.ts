@@ -67,7 +67,7 @@ const getHomeDir = (): string =>
   process.env.HOME || process.env.USERPROFILE || os.homedir() || '/';
 
 const getAuditFilePath = (): string =>
-  path.join(getHomeDir(), '.codexmux', 'approval-audit.jsonl');
+  path.join(getHomeDir(), '.codexwinmux', 'approval-audit.jsonl');
 
 const cleanId = (value: string): string => value.trim().slice(0, 120);
 

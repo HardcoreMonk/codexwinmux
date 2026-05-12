@@ -46,7 +46,7 @@ const main = async (): Promise<void> => {
   }
   checks.push('windows-process-inspector-adapter');
 
-  if (!plan.paths.dataDir.endsWith('.codexmux') || !plan.paths.codexDir.endsWith('.codex')) {
+  if (!plan.paths.dataDir.endsWith('.codexwinmux') || !plan.paths.codexDir.endsWith('.codex')) {
     throw new Error(`unexpected Windows data paths: ${JSON.stringify(plan.paths)}`);
   }
   checks.push('windows-data-paths');

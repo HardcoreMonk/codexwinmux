@@ -14,7 +14,7 @@ import {
 
 const PASSWORD = 'permission-prompt-smoke';
 const DEFAULT_TIMEOUT_MS = 20_000;
-const TMUX_SOCKET = 'codexmux';
+const TMUX_SOCKET = 'codexwinmux';
 const MARKER = 'CODEXMUX_PERMISSION_SMOKE_SELECTED';
 const rootDir = process.cwd();
 
@@ -218,7 +218,7 @@ const main = async () => {
   try {
     server = await startServer({ homeDir, port });
     const cookie = await ensureLoggedIn(server.baseUrl);
-    const tokenPath = path.join(homeDir, '.codexmux', 'cli-token');
+    const tokenPath = path.join(homeDir, '.codexwinmux', 'cli-token');
     const token = (await fs.readFile(tokenPath, 'utf8')).trim();
     checks.push('server-login');
 

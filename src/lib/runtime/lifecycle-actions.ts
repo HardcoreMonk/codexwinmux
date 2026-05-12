@@ -8,7 +8,7 @@ import { sanitizeLifecycleDiagnosticText } from '@/lib/runtime/lifecycle-control
 
 const execFile = promisify(execFileCb);
 
-export type TLifecycleActionId = 'phase6-gate' | 'restart-service' | 'deploy-local';
+export type TLifecycleActionId = 'phase6-gate' | 'restart-service' | 'deploy-local' | 'rollback-runtime-flags';
 export type TLifecycleActionEventId = TLifecycleActionId | 'unknown';
 export type TLifecycleActionStatus = 'running' | 'succeeded' | 'failed' | 'rejected';
 
@@ -84,6 +84,14 @@ const definitions: ILifecycleActionDefinition[] = [
     args: ['pnpm', 'deploy:local'],
     confirmationPhrase: 'deploy local',
   },
+  {
+    id: 'rollback-runtime-flags',
+    label: 'Apply Rollback Flags',
+    description: 'Write explicit runtime rollback flags to the systemd user drop-in and restart the service.',
+    command: 'corepack',
+    args: ['pnpm', 'lifecycle:rollback-apply'],
+    confirmationPhrase: 'rollback runtime v2',
+  },
 ];
 
 const definitionById = new Map<TLifecycleActionId, ILifecycleActionDefinition>(
@@ -94,7 +102,7 @@ const getHomeDir = (): string =>
   process.env.HOME || process.env.USERPROFILE || os.homedir() || '/';
 
 const getAuditFilePath = (): string =>
-  path.join(getHomeDir(), '.codexmux', 'lifecycle-actions.jsonl');
+  path.join(getHomeDir(), '.codexwinmux', 'lifecycle-actions.jsonl');
 
 const getActionCwd = (): string =>
   process.env.__CMUX_APP_DIR || process.env.INIT_CWD || process.cwd();

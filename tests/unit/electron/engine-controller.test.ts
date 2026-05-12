@@ -13,7 +13,7 @@ const healthyProbe = (url: string): IEngineProbeResult => ({
   owned: true,
   responded: true,
   health: {
-    app: 'codexmux',
+    app: 'codexwinmux',
     version: '0.4.13',
   },
   error: null,
@@ -45,7 +45,7 @@ describe('Electron engine controller', () => {
   });
 
   it('recognizes codexmux health payloads only', () => {
-    expect(isCodexmuxHealth({ app: 'codexmux' })).toBe(true);
+    expect(isCodexmuxHealth({ app: 'codexwinmux' })).toBe(true);
     expect(isCodexmuxHealth({ app: 'other' })).toBe(false);
     expect(isCodexmuxHealth(null)).toBe(false);
   });
@@ -80,7 +80,7 @@ describe('Electron engine controller', () => {
       started: false,
       attached: true,
       health: {
-        app: 'codexmux',
+        app: 'codexwinmux',
       },
     });
     expect(launchEngine).not.toHaveBeenCalled();

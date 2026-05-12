@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const appId = 'com.hardcoremonk.codexmux';
+const appId = 'com.hardcoremonk.codexwinmux';
 const activity = `${appId}/.MainActivity`;
 
 const fail = (code, message, details = {}) => {

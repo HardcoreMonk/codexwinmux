@@ -9,7 +9,7 @@
 - framework, router, server boundary 변경
 - tmux/session/process 감지 방식 변경
 - provider model 또는 `agent*` metadata 의미 변경
-- `~/.codexmux/` 저장 구조나 auth/security 동작 변경
+- `~/.codexwinmux/` 저장 구조나 auth/security 동작 변경
 - Electron/Android 같은 platform client 동작 변경
 - notification, locale, mobile UX, terminal input, reconnect/dedupe 같은 cross-platform 정책 변경
 
@@ -70,7 +70,7 @@
 
 - Status: Proposed
 - Decision: workspace/layout/tab/status metadata의 runtime v2 source of truth는
-  Storage Worker가 소유하는 `~/.codexmux/runtime-v2/state.db`다.
+  Storage Worker가 소유하는 `~/.codexwinmux/runtime-v2/state.db`다.
   `CODEXMUX_RUNTIME_V2_RESET=1`은 `state.db`, `state.db-wal`,
   `state.db-shm`을 독립적으로 timestamp `.bak` 파일로 이동한 뒤 새 DB를 만든다.
 - Rationale: normalized entities, transactions, invariant enforcement, indexed
@@ -157,10 +157,10 @@
 - Rationale: 같은 Node process 안에서도 server bundle과 API route module graph가 분리될 수 있다.
 - Consequences: 새 key는 일반적으로 `__pt` plus PascalCase를 사용한다. 기존 `__codexmux*`, `__cmux*` key는 주변 코드와 맞춰 유지한다.
 
-## ADR-005: App State는 `~/.codexmux/`, Codex State는 Read-only
+## ADR-005: App State는 `~/.codexwinmux/`, Codex State는 Read-only
 
 - Status: Accepted
-- Decision: codexmux 영속 상태는 `~/.codexmux/`에 저장하고, Codex CLI session JSONL은 `~/.codex/sessions/`에서 읽기 전용으로 참조한다.
+- Decision: codexmux 영속 상태는 `~/.codexwinmux/`에 저장하고, Codex CLI session JSONL은 `~/.codex/sessions/`에서 읽기 전용으로 참조한다.
 - Rationale: codexmux 설정과 Codex CLI 소유 데이터를 분리해야 안전한 초기화와 migration이 가능하다.
 - Consequences: `config.json` 삭제는 locale/theme/network/Codex option까지 초기화한다. 비밀번호만 초기화하려면 `authPassword`, `authSecret`만 제거한다.
 
@@ -176,7 +176,7 @@
 - Status: Accepted
 - Decision: Electron과 Android 앱은 Codex/tmux를 직접 재구현하지 않고 실행 중인 codexmux 서버에 연결하는 shell로 유지한다.
 - Rationale: Codex와 tmux execution은 서버 환경에 두고, desktop/mobile 앱은 연결성과 UX를 담당하는 편이 안정적이다.
-- Consequences: Electron remote/local server mode는 `~/.codexmux/config.json`을 공유한다. Android 런처는 서버 URL 저장, 최근 서버, 자동 연결, 연결 실패 복구, 앱 정보/재시작을 담당한다. Android WebView 안에서는 `CodexmuxAndroid` native bridge로 versionName/versionCode, package, device, Android version을 읽고 WebView/Activity를 재시작한다. Android main-frame network/HTTP/SSL 실패는 현재 WebView load를 중단한 뒤 launcher로 전환한다. Android WebView smoke는 ADB와 WebView DevTools로 foreground reconnect, failure recovery, fresh app data clear first-run을 반복 검증한다.
+- Consequences: Electron remote/local server mode는 `~/.codexwinmux/config.json`을 공유한다. Android 런처는 서버 URL 저장, 최근 서버, 자동 연결, 연결 실패 복구, 앱 정보/재시작을 담당한다. Android WebView 안에서는 `CodexmuxAndroid` native bridge로 versionName/versionCode, package, device, Android version을 읽고 WebView/Activity를 재시작한다. Android main-frame network/HTTP/SSL 실패는 현재 WebView load를 중단한 뒤 launcher로 전환한다. Android WebView smoke는 ADB와 WebView DevTools로 foreground reconnect, failure recovery, fresh app data clear first-run을 반복 검증한다.
 
 ## ADR-008: Notification Sound는 공통 설정으로 제어
 
@@ -225,12 +225,12 @@
 - Status: Accepted
 - Decision: 이전 원격 기기 동기화, 원격 terminal sidecar, 원격 session filter, 전용 page/API route, helper script를 제품 surface에서 제거한다. Session list와 timeline은 로컬 `~/.codex/sessions/**/*.jsonl`만 인덱싱하고, terminal WebSocket은 tmux-backed `/api/terminal`과 runtime v2 `/api/v2/terminal`만 유지한다.
 - Rationale: codexmux의 핵심 안정성은 tmux-backed session, 로컬 Codex JSONL, 모바일/desktop reconnect에 있다. 별도 Windows sidecar 경로는 다른 lifecycle, 별도 auth/token 배포, 읽기 전용 timeline, 별도 terminal queue를 요구해 운영면과 테스트면을 넓혔지만 핵심 session 안정성에 직접 기여하지 않았다.
-- Consequences: 이전 빌드가 만든 `~/.codexmux/remote/codex/` 파일은 삭제하지 않지만 현재 앱은 읽지 않는다. 필요하면 운영자가 수동으로 지울 수 있다. 새 Windows 연동을 다시 도입하려면 별도 ADR, lifecycle spec, platform smoke 기준을 먼저 갱신해야 한다.
+- Consequences: 이전 빌드가 만든 `~/.codexwinmux/remote/codex/` 파일은 삭제하지 않지만 현재 앱은 읽지 않는다. 필요하면 운영자가 수동으로 지울 수 있다. 새 Windows 연동을 다시 도입하려면 별도 ADR, lifecycle spec, platform smoke 기준을 먼저 갱신해야 한다.
 
 ## ADR-015: Session list는 백그라운드 인덱스를 사용한다
 
 - Status: Accepted
-- Decision: `/api/timeline/sessions`는 요청마다 Codex JSONL을 재귀 스캔하지 않고 `SessionIndexService`의 `globalThis.__ptSessionIndex` snapshot을 읽는다. 인덱스는 `~/.codexmux/session-index.json`에 persist하고 백그라운드 refresh로 갱신한다.
+- Decision: `/api/timeline/sessions`는 요청마다 Codex JSONL을 재귀 스캔하지 않고 `SessionIndexService`의 `globalThis.__ptSessionIndex` snapshot을 읽는다. 인덱스는 `~/.codexwinmux/session-index.json`에 persist하고 백그라운드 refresh로 갱신한다.
 - Rationale: 로컬 Codex 세션이 늘어나면 session list 요청 경로에서 전체 JSONL 파싱, 정렬, slice가 반복되어 메모리와 CPU가 급증한다. session 목록은 실시간 terminal byte stream보다 지연 허용치가 크므로 request path에서 source scan을 제거하는 편이 안정적이다.
 - Consequences: 로컬 Codex JSONL은 mtime/size가 바뀐 파일만 다시 파싱한다. session list API는 index snapshot을 페이지네이션만 해서 반환한다. Codex provider의 JSONL lookup은 index를 먼저 사용하고 miss 때만 filesystem scan으로 fallback한다. `/api/debug/perf`는 session index의 파일 수, cache hit/miss, build duration을 노출한다.
 
@@ -251,16 +251,16 @@
 ## ADR-018: Approval Audit은 Sanitized Action Log로 제한한다
 
 - Status: Accepted
-- Decision: approval queue의 durable history는 `~/.codexmux/approval-audit.jsonl` append-only action log로 제한한다. 저장 필드는 event type, workspace id, tab id, prompt/risk/approval enum, option count, selected option index, fallback reason이다.
+- Decision: approval queue의 durable history는 `~/.codexwinmux/approval-audit.jsonl` append-only action log로 제한한다. 저장 필드는 event type, workspace id, tab id, prompt/risk/approval enum, option count, selected option index, fallback reason이다.
 - Rationale: 운영자는 approval queue가 실제로 표시됐는지, fallback이 있었는지, 선택 전송이 성공했는지 확인할 수 있어야 한다. 그러나 Codex permission prompt의 원문 command, file path, cwd, session name, JSONL path, prompt body, terminal output은 lock screen, status payload, local audit file 어디에도 장기 저장하지 않는 편이 안전하다.
 - Consequences: `/api/approval/audit`는 POST body에서 whitelist field만 받아 store에 append하고, GET은 최신 event를 제한된 개수로 반환한다. Client는 option label이나 command preview를 audit에 보내지 않고 selected option index와 enum metadata만 보낸다. Web Push 새 창 fallback은 root deep link query에 workspace/tab/session id만 넣고 workspace name, workspace dir, command/file detail은 cache/message path에만 남긴다.
 
 ## ADR-019: Lifecycle Actions는 Allowlist와 Sanitized Audit으로 제한한다
 
 - Status: Accepted
-- Decision: `/experimental/runtime`에서 실행 가능한 lifecycle control은 서버 allowlist action id로 제한한다. 현재 action은 `phase6-gate`, `restart-service`, `deploy-local`이며 API는 임의 command text를 받지 않는다. Restart/deploy 계열 action은 exact confirmation phrase를 요구한다.
+- Decision: `/experimental/runtime`에서 실행 가능한 lifecycle control은 서버 allowlist action id로 제한한다. 현재 action은 `phase6-gate`, `restart-service`, `deploy-local`, `rollback-runtime-flags`이며 API는 임의 command text를 받지 않는다. Restart/deploy/rollback 계열 action은 exact confirmation phrase를 요구한다.
 - Rationale: 운영 UI에서 Phase 6 gate, service restart, local deploy를 빠르게 실행할 필요는 있지만, codexmux server를 일반 원격 shell로 만들면 auth, audit, prompt/cwd/token 유출 위험이 커진다. Named action allowlist와 confirmation을 분리하면 좁은 운영 편의만 제공하면서 command injection과 accidental restart를 줄일 수 있다.
-- Consequences: 실행 기록은 `~/.codexmux/lifecycle-actions.jsonl` append-only event로 남긴다. 저장 필드는 action id, status, timestamps, duration, exit code, sanitized failure label뿐이며 stdout/stderr, env, cwd, token, session name, JSONL path, prompt body, terminal output은 저장하지 않는다. 한 서버 process에서는 lifecycle action 하나만 실행된다. Rollback flag mutation, systemd drop-in 편집, arbitrary command execution은 별도 spec 없이는 UI action으로 추가하지 않는다.
+- Consequences: 실행 기록은 `~/.codexwinmux/lifecycle-actions.jsonl` append-only event로 남긴다. 저장 필드는 action id, status, timestamps, duration, exit code, sanitized failure label뿐이며 stdout/stderr, env, cwd, token, session name, JSONL path, prompt body, terminal output은 저장하지 않는다. 한 서버 process에서는 lifecycle action 하나만 실행된다. `rollback-runtime-flags`는 `corepack pnpm lifecycle:rollback-apply`만 실행하며, 기존 systemd drop-in을 timestamp `.bak`으로 백업한 뒤 `CODEXMUX_RUNTIME_V2=1`, storage `write`, terminal/timeline/status `off`를 쓰고 `systemctl --user daemon-reload`, `systemctl --user restart codexmux.service`를 실행한다. Apply 결과와 audit은 기존 drop-in 본문을 저장하지 않는다. Arbitrary command execution과 다른 systemd 파일 편집은 별도 spec 없이는 UI action으로 추가하지 않는다.
 
 ## ADR-020: Windows-only 제품 타깃
 
@@ -269,9 +269,9 @@
 - Rationale: 사용자 목표는 기존 codexmux 기반을 Windows 전용 제품으로 전환해 구축하고 제공하는 것이다. 이를 기존 Windows companion integration의 복구로 해석하면 제거된 remote data/source/terminal model과 충돌하고, 실제 필요한 terminal runtime, process inspection, service host, installer, smoke gate 전환을 흐리게 만든다.
 - Consequences: Windows-only gap audit과 transition plan을 먼저 유지한다. Terminal runtime은 `tmux` 자체가 아니라 adapter boundary 뒤의 구현으로 다뤄야 하며, process/session detection도 Linux `/proc`, `pgrep`, `ps`, `lsof`에 직접 묶이지 않게 분리해야 한다. Public terminal/timeline protocol은 가능한 유지하되, Windows runtime parity test가 생기기 전에는 tmux path를 제거하지 않는다. README, `TMUX.md`, `SYSTEMD.md`, `ELECTRON.md`, `ANDROID.md`, smoke command, release checklist는 Windows runtime implementation slice가 승인된 뒤 staged cutover한다.
 
-## ADR-021: codexwinmux 전환은 release channel부터 적용한다
+## ADR-021: codexwinmux 제품 identity를 독립 적용한다
 
 - Status: Accepted
-- Decision: `0.4.8` Windows release에서는 GitHub repository와 updater publish channel을 `HardcoreMonk/codexwinmux`로 전환하되, Electron `productName`, `appId`, installer artifact basename, CLI binary, and data dir remain `codexmux`.
-- Rationale: 제품명/app id/data dir rename은 installer identity, updater cache, Windows Start Menu/app shortcuts, `~/.codexmux` migration, CLI binary compatibility, docs, and rollback behavior를 동시에 바꾸는 hard-to-reverse decision이다. 현재 우선순위는 기존 `0.4.2` 설치 사용자가 published `0.4.8` Windows update channel로 안정적으로 올라오는지 증명하는 것이다.
-- Consequences: `latest.yml`, `codexmux-Setup-<version>.exe`, and matching `.blockmap` are published under the `codexwinmux` GitHub release channel, but installed app identity and persisted data stay compatible with previous `codexmux` builds. A future full identity migration must include a separate spec, migration/rollback plan, signed installer evidence, user data preservation smoke, and explicit release notes. Do not opportunistically rename `~/.codexmux`, `com.hardcoremonk.codexmux`, `codexmux.exe`, or `codexmux`/`cmux` binaries in unrelated Windows runtime work.
+- Decision: `0.4.14`부터 Windows 제품 identity는 `codexwinmux`로 독립 적용한다. Electron `productName`은 `codexwinmux`, Electron `appId`는 `com.hardcoremonk.codexwinmux`, installer artifact basename은 `codexwinmux-Setup-<version>.exe`, 실행 파일은 `codexwinmux.exe`, app state data dir은 `~/.codexwinmux`다. GitHub updater publish channel은 계속 `HardcoreMonk/codexwinmux`다.
+- Rationale: channel-only 전환은 `0.4.8` 업데이트 경로 검증에는 충분했지만, 이후 내부 배포에서는 Start Menu/app shortcut, updater cache, health identity, 앱 데이터 위치가 repository/product line과 다르면 운영 증거가 흔들린다. 독립 제품으로 제공하려면 설치/실행/진단에서 보이는 identity를 한 줄로 맞춰야 한다.
+- Consequences: 기존 `~/.codexmux`와 `codexmux` 설치는 자동 삭제하거나 병합하지 않는다. `CODEXMUX_*` 환경 변수, `CMUX_PORT`/`CMUX_TOKEN`, `x-cmux-token`, `codexmux`/`cmux` CLI alias는 내부 호환 레이어로 유지한다. 새 릴리스 evidence는 `latest.yml`, `codexwinmux-Setup-<version>.exe`, matching `.blockmap`, `release/win-unpacked/codexwinmux.exe`, `~/.codexwinmux`, `com.hardcoremonk.codexwinmux`를 기준으로 수집한다.

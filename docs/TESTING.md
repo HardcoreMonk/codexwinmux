@@ -134,17 +134,17 @@ corepack pnpm smoke:runtime-v2:storage-default-read
 
 `smoke:runtime-v2:storage-dry-run`은 fixture에서 workspace group, split layout, legacy tab,
 status metadata blocker를 만들고, report가 cwd/workspace name/session name/prompt를 노출하지
-않는지 확인한다. `runtime-v2:storage-dry-run`은 실제 `~/.codexmux`의 `workspaces.json`과
+않는지 확인한다. `runtime-v2:storage-dry-run`은 실제 `~/.codexwinmux`의 `workspaces.json`과
 workspace별 `layout.json`을 read-only로 검사하고, `runtime-v2/state.db` 전환 전에 필요한
 상대 backup manifest와 blocker code를 출력한다. 이 명령은 migration/import를 수행하지 않는다.
 `smoke:runtime-v2:storage-backup`은 temp data dir에서 JSON store와 SQLite 파일을 실제로
 복사하고, command result가 원문 cwd/session/content를 노출하지 않는지 확인한다.
-`runtime-v2:storage-backup`은 live data dir에서 `~/.codexmux/backups/runtime-v2-storage-{timestamp}/`
+`runtime-v2:storage-backup`은 live data dir에서 `~/.codexwinmux/backups/runtime-v2-storage-{timestamp}/`
 로 `workspaces.json`, `workspaces/**.json`, `runtime-v2/state.db*`를 복사한다.
 `smoke:runtime-v2:storage-import`는 grouped workspace, split layout, message history,
 legacy terminal tab, runtime v2 terminal tab, web tab, status metadata를 temp SQLite DB로 import하고, legacy
 `pt-` session이 runtime v2 attach/cleanup 대상에 노출되지 않는지 확인한다.
-`runtime-v2:storage-import`는 live `~/.codexmux` JSON snapshot을 `runtime-v2/state.db`로
+`runtime-v2:storage-import`는 live `~/.codexwinmux` JSON snapshot을 `runtime-v2/state.db`로
 import하지만 production source-of-truth를 바꾸지는 않는다.
 `smoke:runtime-v2:storage-write`는 `CODEXMUX_RUNTIME_STORAGE_V2_MODE=write`에서 legacy
 layout JSON write 직후 SQLite projection과 status metadata mirror가 갱신되는지 temp
@@ -332,7 +332,7 @@ terminal output 원문을 노출하지 않는지 함께 확인한다.
 Lifecycle action API는 command text를 받지 않고 `phase6-gate`, `restart-service`,
 `deploy-local` action id만 허용한다. `restart-service`와 `deploy-local`은 각각
 `restart codexmux.service`, `deploy local` exact confirmation이 필요하다. Audit은
-`~/.codexmux/lifecycle-actions.jsonl`에 sanitized status event와 failure label만 남기며 stdout/stderr,
+`~/.codexwinmux/lifecycle-actions.jsonl`에 sanitized status event와 failure label만 남기며 stdout/stderr,
 env, cwd, prompt, terminal output은 저장하지 않는다. Rollback flag mutation과 systemd
 drop-in 편집은 아직 UI action이 아니며 copy-only runbook으로 유지한다.
 
@@ -375,7 +375,7 @@ corepack pnpm smoke:windows:installer-runtime-v2
 corepack pnpm smoke:windows:package-gate
 ```
 
-`pack:electron:dev` must create `release/win-unpacked/codexmux.exe`,
+`pack:electron:dev` must create `release/win-unpacked/codexwinmux.exe`,
 `resources/app.asar`, and unpacked native runtime modules. `pack:electron` must
 also create the Windows NSIS installer and zip package under `release/`.
 `smoke:windows:zip-artifact` verifies that the generated Windows zip contains
@@ -407,7 +407,7 @@ bumping the repository to the release version, set
 compares the published release against the version already installed by users.
 `smoke:windows:updater-github-feed` mutates the current Windows user install
 state temporarily: it silent-installs `CODEXMUX_WINDOWS_UPDATER_BASE_INSTALLER_PATH`
-or `release/codexmux-Setup-0.4.2.exe`, points the installed app at the GitHub
+or `release/codexwinmux-Setup-0.4.2.exe`, points the installed app at the GitHub
 Release download feed, waits for download and `quitAndInstall`, then launches the
 updated install path with packaged runtime v2 terminal smoke before uninstalling.
 Set `CODEXMUX_WINDOWS_UPDATER_GITHUB_OWNER`, `CODEXMUX_WINDOWS_UPDATER_GITHUB_REPO`,
@@ -549,7 +549,7 @@ because they require a real device or macOS app bundle context.
 `Platform Smoke Artifacts` is a manual `workflow_dispatch` workflow for collecting smoke JSON
 outside the tag release path. Browser reconnect can run on GitHub-hosted Ubuntu. Electron runtime
 v2 can run on GitHub-hosted macOS when the runner supports Electron DevTools. Android
-foreground/runtime/timeline smokes require a self-hosted runner labeled `codexmux-android`;
+foreground/runtime/timeline smokes require a self-hosted runner labeled `codexwinmux-android`;
 GitHub-hosted runners do not provide the required real device, ADB session, WebView DevTools
 target, or Tailscale route.
 

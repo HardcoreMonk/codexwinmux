@@ -48,7 +48,7 @@ describe('/api/health', () => {
     expect(response.headers['Access-Control-Allow-Origin']).toBe('*');
     expect(response.headers['Access-Control-Allow-Methods']).toBe('GET, OPTIONS');
     expect(response.body).toMatchObject({
-      app: 'codexmux',
+      app: 'codexwinmux',
       version: packageJson.version,
     });
     expect(response.body).toHaveProperty('commit');

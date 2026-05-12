@@ -43,7 +43,7 @@ import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const PASSWORD = 'android-timeline-foreground-smoke';
 const DEFAULT_TIMEOUT_MS = 35_000;
-const TMUX_SOCKET = 'codexmux';
+const TMUX_SOCKET = 'codexwinmux';
 const SESSION_ID = '44444444-4444-4444-8444-444444444444';
 const INITIAL_ENTRY_COUNT = 3;
 const SMOKE_NAME = 'android-timeline-foreground';

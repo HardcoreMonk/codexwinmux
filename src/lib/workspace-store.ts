@@ -49,7 +49,7 @@ const nextWorkspaceName = (workspaces: IWorkspace[]): string => {
   return `${WORKSPACE_PREFIX}${max + 1}`;
 };
 
-const BASE_DIR = path.join(os.homedir(), '.codexmux');
+const BASE_DIR = path.join(os.homedir(), '.codexwinmux');
 const WORKSPACES_FILE = path.join(BASE_DIR, 'workspaces.json');
 const LEGACY_LAYOUT_FILE = path.join(BASE_DIR, 'layout.json');
 const LEGACY_TABS_FILE = path.join(BASE_DIR, 'tabs.json');
