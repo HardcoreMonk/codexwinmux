@@ -28,6 +28,23 @@ const hasWindowsPackagerDir = (command) =>
 
 const normalizePath = (value) => value.replace(/\\/g, '/');
 
+const collectExtraResourceSources = (extraResources) => {
+  const entries = Array.isArray(extraResources)
+    ? extraResources
+    : extraResources
+      ? [extraResources]
+      : [];
+  return entries
+    .map((entry) => {
+      if (typeof entry === 'string') return normalizePath(entry);
+      if (entry && typeof entry === 'object' && typeof entry.from === 'string') {
+        return normalizePath(entry.from);
+      }
+      return null;
+    })
+    .filter(Boolean);
+};
+
 const addBlocker = (blockers, ruleId, message) => {
   blockers.push({ ruleId, message });
 };
@@ -137,6 +154,16 @@ export const validateWindowsElectronPackaging = ({
       blockers,
       'windows-icon-missing',
       'electron-builder win.icon must point to an existing .ico file.',
+    );
+  }
+
+  if (winIcon && collectExtraResourceSources(builderConfig?.extraResources).includes(winIcon)) {
+    checks.push('windows-tray-icon-resource-present');
+  } else {
+    addBlocker(
+      blockers,
+      'windows-tray-icon-resource-missing',
+      'electron-builder extraResources must copy the Windows .ico so Electron Tray does not load the exe as an image.',
     );
   }
 

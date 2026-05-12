@@ -3,6 +3,7 @@ import { applyResolvedShellEnv } from './shell-env';
 import { buildEngineUrl, createEngineController, probeEngineHealth } from './engine-controller';
 import { applyElectronBootstrapEnv, buildFileImportSpecifier, buildPackagedNodePath } from './runtime-env';
 import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smoke';
+import { resolveTrayIconPath } from './tray-icon';
 import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog, Tray, nativeImage } from 'electron';
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { spawn } from 'child_process';
@@ -655,7 +656,14 @@ const updateTrayMenu = () => {
 const ensureTray = () => {
   if (tray) return;
   try {
-    tray = new Tray(process.platform === 'win32' ? process.execPath : nativeImage.createEmpty());
+    const iconPath = resolveTrayIconPath({
+      platform: process.platform,
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      appPath: app.getAppPath(),
+    });
+    const trayImage = iconPath ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
+    tray = new Tray(trayImage.isEmpty() ? nativeImage.createEmpty() : trayImage);
     tray.setToolTip(APP_DISPLAY_NAME);
     tray.on('click', showPrimaryWindow);
     updateTrayMenu();

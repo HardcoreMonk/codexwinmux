@@ -32,6 +32,7 @@ describe('Windows Electron packaging smoke helpers', () => {
       'windows-nsis-run-after-finish-enabled',
       'windows-nsis-artifact-name-unstable',
       'windows-icon-missing',
+      'windows-tray-icon-resource-missing',
     ]);
   });
 
@@ -61,6 +62,9 @@ describe('Windows Electron packaging smoke helpers', () => {
           artifactName: '${productName}-Setup-${version}.${ext}',
           include: 'build-resources/installer.nsh',
         },
+        extraResources: [
+          { from: 'build-resources/icon.ico', to: 'icon.ico' },
+        ],
       },
       nsisIncludeText: `
 !macro customHeader
@@ -83,6 +87,7 @@ describe('Windows Electron packaging smoke helpers', () => {
         'windows-nsis-artifact-name-stable',
         'windows-nsis-install-details-visible',
         'windows-icon-present',
+        'windows-tray-icon-resource-present',
       ],
     });
   });
@@ -113,6 +118,9 @@ describe('Windows Electron packaging smoke helpers', () => {
           artifactName: '${productName}-Setup-${version}.${ext}',
           include: 'build-resources/installer.nsh',
         },
+        extraResources: [
+          { from: 'build-resources/icon.ico', to: 'icon.ico' },
+        ],
       },
       nsisIncludeText: `
 !macro customHeader
@@ -128,6 +136,7 @@ describe('Windows Electron packaging smoke helpers', () => {
     expect(result.checks).toContain('pack-electron-dev-windows-dir');
     expect(result.checks).toContain('windows-nsis-artifact-name-stable');
     expect(result.checks).toContain('windows-nsis-install-details-visible');
+    expect(result.checks).toContain('windows-tray-icon-resource-present');
   });
 
   it('requires NSIS install and uninstall detail panes to stay visible', async () => {
@@ -154,6 +163,9 @@ describe('Windows Electron packaging smoke helpers', () => {
           runAfterFinish: false,
           artifactName: '${productName}-Setup-${version}.${ext}',
         },
+        extraResources: [
+          { from: 'build-resources/icon.ico', to: 'icon.ico' },
+        ],
       },
       resources: new Set(['build-resources/icon.ico']),
     });

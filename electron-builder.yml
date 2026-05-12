@@ -72,6 +72,10 @@ asarUnpack:
   - ".next/standalone/**"
   - "src/config/tmux.conf"
 
+extraResources:
+  - from: build-resources/icon.ico
+    to: icon.ico
+
 afterPack: "./scripts/after-pack.js"
 
 extraMetadata:
