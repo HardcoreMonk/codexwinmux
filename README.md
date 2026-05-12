@@ -229,8 +229,9 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
   범위가 아닙니다.
 - app id, data dir, executable/artifact name은 `codexwinmux` 기준으로 독립되어
   있습니다. 기존 `codexmux` 데이터는 자동 병합하지 않습니다.
-- code signing 인증서 신뢰와 SmartScreen reputation은 내부 전체 배포 전 확인해야
-  합니다.
+- Windows code signing과 timestamp 증거는 `0.4.14`부터 확보했습니다. 내부 전용
+  배포에서는 trusted root distribution 범위의 SmartScreen 판정을 사용하며, 외부 공개
+  배포를 시작할 때만 public SmartScreen reputation을 별도 gate로 둡니다.
 
 ## 문제 확인
 

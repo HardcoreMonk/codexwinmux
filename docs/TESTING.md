@@ -375,60 +375,59 @@ corepack pnpm smoke:windows:installer-runtime-v2
 corepack pnpm smoke:windows:package-gate
 ```
 
-`pack:electron:dev` must create `release/win-unpacked/codexwinmux.exe`,
-`resources/app.asar`, and unpacked native runtime modules. `pack:electron` must
-also create the Windows NSIS installer and zip package under `release/`.
-`smoke:windows:zip-artifact` verifies that the generated Windows zip contains
-the app exe, `app.asar`, `app-update.yml`, runtime v2 workers, `node-pty`
-ConPTY files, and the Electron ABI `better-sqlite3` native binding.
-`smoke:windows:update-metadata` verifies that `latest.yml` references an
-installer artifact that exists in `release/`, has matching size and sha512
-metadata, has a matching `.blockmap`, and that packaged `app-update.yml` points
-to the same GitHub publish owner/repo as `electron-builder.yml`.
+`pack:electron:dev`는 `release/win-unpacked/codexwinmux.exe`,
+`resources/app.asar`, unpacked native runtime module을 생성해야 한다. `pack:electron`은
+Windows NSIS installer와 zip package도 `release/` 아래에 생성해야 한다.
+`smoke:windows:zip-artifact`는 생성된 Windows zip에 app exe, `app.asar`,
+`app-update.yml`, runtime v2 worker, `node-pty` ConPTY 파일, Electron ABI
+`better-sqlite3` native binding이 포함됐는지 확인한다.
+`smoke:windows:update-metadata`는 `latest.yml`이 `release/`의 실제 installer artifact,
+matching size, sha512 metadata, `.blockmap`을 가리키고 packaged `app-update.yml`이
+`electron-builder.yml`과 같은 GitHub publish owner/repo를 가리키는지 확인한다.
 `smoke:windows:signing-evidence`는 NSIS installer와 `win-unpacked` 실행 파일이
 Authenticode로 서명됐는지, timestamp가 있는지, 명시적인 SmartScreen 증거가 있는지
-확인한다. `CODEXMUX_SMARTSCREEN_EVIDENCE_PATH` 또는
-`CODEXMUX_SMARTSCREEN_STATUS=passed`가 없으면 code signing이 유효해도 SmartScreen
-gate는 계속 막힌다. 서명되지 않은 artifact는 `windows-smartscreen-blocked-unsigned`로
-실패한다.
-`smoke:windows:updater-local-feed` mutates the current Windows user install
-state temporarily: it silent-installs the generated NSIS artifact, creates a
-synthetic local `latest.yml` with a bumped patch version, verifies Electron
-updater download/install events through `quitAndInstall`, then launches and
-uninstalls the updated install path.
-`smoke:windows:updater-published-channel` is read-only and checks the configured
-GitHub Releases channel from `electron-builder.yml`. It requires a published
-release with `latest.yml`, the referenced NSIS installer, matching `.blockmap`,
-download URLs, and a `latest.yml` version newer than the current package version.
-If the repo only has tags and no release assets, it fails with
-`windows-published-release-missing`. To verify a real upgrade channel after
-bumping the repository to the release version, set
-`CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=<installed-version>` so the smoke
-compares the published release against the version already installed by users.
-`smoke:windows:updater-github-feed` mutates the current Windows user install
-state temporarily: it silent-installs `CODEXMUX_WINDOWS_UPDATER_BASE_INSTALLER_PATH`
-or `release/codexwinmux-Setup-0.4.2.exe`, points the installed app at the GitHub
-Release download feed, waits for download and `quitAndInstall`, then launches the
-updated install path with packaged runtime v2 terminal smoke before uninstalling.
-Set `CODEXMUX_WINDOWS_UPDATER_GITHUB_OWNER`, `CODEXMUX_WINDOWS_UPDATER_GITHUB_REPO`,
-and `CODEXMUX_WINDOWS_UPDATER_GITHUB_TAG` when testing a repository/tag other than
-the packaged publish config. Set
-`CODEXMUX_WINDOWS_UPDATER_GITHUB_FEED_POST_INSTALL_HOLD_MS` to keep the updated
-installed app alive for long-running workspace stability evidence.
-`smoke:windows:packaged-launch` starts the generated app with an isolated
-Windows user profile and verifies the packaged local server, Electron preload
-bridge, health endpoint, runtime diagnostics, and blocking console count.
-`smoke:windows:packaged-runtime-v2` additionally creates a workspace and runtime
-v2 terminal tab inside the packaged app, then verifies `/api/v2/terminal`
-WebSocket attach with a Windows shell marker command.
-`smoke:windows:installer-install` mutates the current Windows user install state
-temporarily: it silent-installs to a temp directory, launches the installed app
-through the packaged launch smoke, then runs the generated uninstaller.
-`smoke:windows:installer-runtime-v2` runs the same installed-app path with the
-packaged runtime v2 terminal check enabled.
-`smoke:windows:package-gate` does not build packages; it runs zip artifact,
-update metadata, updater local feed, packaged launch, packaged runtime v2, and installer runtime v2
-smoke against existing `release/` artifacts and stops at the first failure.
+확인한다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와
+`CODEXWINMUX_SMARTSCREEN_STATUS`이며, public 배포는 `passed`, 내부 전용 배포는
+signed/timestamped artifact를 전제로 `internal-not-required` 또는
+`internal-trusted-root`를 사용할 수 있다. 서명되지 않은 artifact는
+`windows-smartscreen-blocked-unsigned`로 실패한다.
+`smoke:windows:updater-local-feed`는 현재 Windows 사용자 설치 상태를 임시로
+변경한다. 생성된 NSIS artifact를 silent install하고, patch version을 올린 synthetic
+local `latest.yml`을 만든 뒤 Electron updater download/install event와
+`quitAndInstall`을 확인하고 업데이트된 설치 경로를 launch/uninstall한다.
+`smoke:windows:updater-published-channel`은 read-only smoke다. `electron-builder.yml`의
+GitHub Releases channel에 published release가 있고, `latest.yml`, 참조된 NSIS
+installer, matching `.blockmap`, download URL, 현재 package version보다 높은
+`latest.yml` version이 있는지 확인한다. release asset 없이 tag만 있으면
+`windows-published-release-missing`으로 실패한다. repository version을 release
+version까지 올린 뒤 실제 upgrade channel을 검증하려면
+`CODEXWINMUX_WINDOWS_UPDATER_CURRENT_VERSION=<installed-version>`을 지정해 사용자가
+이미 설치한 버전과 published release를 비교한다. 기존 `CODEXMUX_*` env는 호환
+fallback이다.
+`smoke:windows:updater-github-feed`는 현재 Windows 사용자 설치 상태를 임시로
+변경한다. `CODEXWINMUX_WINDOWS_UPDATER_BASE_INSTALLER_PATH` 또는
+`release/codexwinmux-Setup-0.4.2.exe`를 silent install하고, 설치된 앱을 GitHub
+Release download feed에 연결한 뒤 download와 `quitAndInstall`을 기다린다. 이후
+업데이트된 설치 경로를 packaged runtime v2 terminal smoke로 실행하고 uninstall한다.
+packaged publish config와 다른 repository/tag를 테스트하려면
+`CODEXWINMUX_WINDOWS_UPDATER_GITHUB_OWNER`, `CODEXWINMUX_WINDOWS_UPDATER_GITHUB_REPO`,
+`CODEXWINMUX_WINDOWS_UPDATER_GITHUB_TAG`를 지정한다. 장시간 workspace stability
+증거가 필요하면 `CODEXWINMUX_WINDOWS_UPDATER_GITHUB_FEED_POST_INSTALL_HOLD_MS`를
+지정한다.
+`smoke:windows:packaged-launch`는 isolated Windows user profile로 생성된 앱을
+실행하고 packaged local server, Electron preload bridge, health endpoint, runtime
+diagnostics, blocking console count를 확인한다.
+`smoke:windows:packaged-runtime-v2`는 packaged app 안에서 workspace와 runtime v2
+terminal tab을 추가로 만들고 `/api/v2/terminal` WebSocket attach와 Windows shell
+marker command를 확인한다.
+`smoke:windows:installer-install`은 현재 Windows 사용자 설치 상태를 임시로 변경한다.
+temp directory에 silent install하고, 설치된 앱을 packaged launch smoke로 실행한 뒤
+생성된 uninstaller를 실행한다.
+`smoke:windows:installer-runtime-v2`는 같은 installed-app 경로에 packaged runtime v2
+terminal check를 적용한다.
+`smoke:windows:package-gate`는 package를 새로 만들지 않는다. 기존 `release/` artifact를
+대상으로 zip artifact, update metadata, updater local feed, packaged launch,
+packaged runtime v2, installer runtime v2 smoke를 순차 실행하고 첫 실패에서 중단한다.
 
 macOS packaging smoke:
 
@@ -497,72 +496,73 @@ React/server reconnect 수정은 APK 재빌드 없이 `corepack pnpm deploy:loca
 `CodexmuxAndroid` native bridge, Android manifest, launcher asset, version metadata를 바꾸면
 APK를 다시 빌드해 설치한다.
 
-## Smoke Artifact Evidence
+## Smoke Artifact 증거
 
-Smoke scripts that support release evidence write sanitized JSON when
-`CODEXMUX_SMOKE_ARTIFACT_DIR` is set:
+Release evidence를 지원하는 smoke script는 `CODEXWINMUX_SMOKE_ARTIFACT_DIR`이 설정되면
+sanitized JSON을 기록한다. 기존 `CODEXMUX_SMOKE_ARTIFACT_DIR`은 호환 fallback이다.
 
 ```bash
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:browser-reconnect
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:electron:runtime-v2
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:foreground
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:runtime-v2
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:timeline-foreground
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:release-gate
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:zip-artifact
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:update-metadata
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:signing-evidence
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:updater-local-feed
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:updater-published-channel
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:packaged-runtime-v2
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:installer-runtime-v2
-CODEXMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:package-gate
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:browser-reconnect
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:electron:runtime-v2
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:foreground
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:runtime-v2
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:android:timeline-foreground
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:release-gate
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:zip-artifact
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:update-metadata
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:signing-evidence
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:updater-local-feed
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:updater-published-channel
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:packaged-runtime-v2
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:installer-runtime-v2
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=artifacts/smoke corepack pnpm smoke:windows:package-gate
 ```
 
-Artifacts preserve pass/fail state, check names, runtime/app/device metadata, reconnect round
-counts, and blocking console/logcat counts. They do not preserve token values, temp HOME paths,
-session identifiers, target URLs, server stdout/stderr, prompt body, terminal output, or Codex
-JSONL paths. `smoke:windows:release-gate` writes a summary-only artifact with step id, script,
-duration, exit code, and signal. It does not store child smoke stdout, stderr, terminal tails,
-Codex session ids, JSONL paths, or temp smoke directories.
-Windows packaged/installer package artifacts also stay summary-only: they keep check names,
+Artifact는 pass/fail 상태, check name, runtime/app/device metadata, reconnect round count,
+blocking console/logcat count를 보존한다. token 값, temp HOME path, session identifier,
+target URL, server stdout/stderr, prompt body, terminal output, Codex JSONL path는 보존하지
+않는다. `smoke:windows:release-gate`는 step id, script, duration, exit code, signal만
+담은 summary artifact를 기록한다. child smoke stdout, stderr, terminal tail, Codex
+session id, JSONL path, temp smoke directory는 저장하지 않는다.
+Windows packaged/installer package artifact도 summary-only로 유지한다. check name,
 launch mode, Electron preload state, version/build metadata, runtime v2 terminal verification
-status, and console counts without app install temp paths, target URLs, terminal marker text, or
-child process stdout/stderr.
-`smoke:windows:package-gate` writes a summary artifact with package step id,
-script, duration, exit code, signal, and failure label only. Child package smokes
-write their own sanitized artifacts when the same artifact directory is set.
-`smoke:windows:updater-published-channel` artifacts are read-only channel
-summaries: current/latest version, release count, latest release tag/url,
-referenced installer name, checks, and blocker ids. They do not include tokens or
-raw GitHub API bodies.
+status, console count만 남기고 app install temp path, target URL, terminal marker text,
+child process stdout/stderr는 저장하지 않는다.
+`smoke:windows:package-gate`는 package step id, script, duration, exit code, signal,
+failure label만 담은 summary artifact를 기록한다. 같은 artifact directory가 설정되면 child
+package smoke는 각자의 sanitized artifact를 기록한다.
+`smoke:windows:updater-published-channel` artifact는 read-only channel summary다.
+current/latest version, release count, latest release tag/url, referenced installer name,
+check, blocker id만 남기며 token이나 raw GitHub API body는 포함하지 않는다.
 `smoke:windows:signing-evidence` artifact는 파일명, hash, signature status,
 signer/timestamp certificate subject/thumbprint, SmartScreen status, check,
 blocker id만 보존한다. 로컬 release path나 raw PowerShell output은 포함하지 않는다.
 
-The release workflow runs `smoke:browser-reconnect` on GitHub-hosted Ubuntu and uploads
-`smoke-browser-reconnect`. Android and packaged Electron smoke remain manual or self-hosted
-because they require a real device or macOS app bundle context.
+Release workflow는 GitHub-hosted Ubuntu에서 `smoke:browser-reconnect`를 실행하고
+`smoke-browser-reconnect` artifact를 업로드한다. Android와 packaged Electron smoke는
+실기기 또는 macOS app bundle context가 필요하므로 manual 또는 self-hosted 경로로
+유지한다.
 
-### Platform smoke artifacts
+### Platform smoke artifact
 
-`Platform Smoke Artifacts` is a manual `workflow_dispatch` workflow for collecting smoke JSON
-outside the tag release path. Browser reconnect can run on GitHub-hosted Ubuntu. Electron runtime
-v2 can run on GitHub-hosted macOS when the runner supports Electron DevTools. Android
-foreground/runtime/timeline smokes require a self-hosted runner labeled `codexwinmux-android`;
-GitHub-hosted runners do not provide the required real device, ADB session, WebView DevTools
-target, or Tailscale route.
+`Platform Smoke Artifacts`는 tag release path 밖에서 smoke JSON을 수집하는 manual
+`workflow_dispatch` workflow다. Browser reconnect는 GitHub-hosted Ubuntu에서 실행할 수
+있다. Electron runtime v2는 runner가 Electron DevTools를 지원하는 경우 GitHub-hosted
+macOS에서 실행할 수 있다. Android foreground/runtime/timeline smoke는
+`codexwinmux-android` label이 붙은 self-hosted runner가 필요하다. GitHub-hosted runner는
+필요한 실기기, ADB session, WebView DevTools target, Tailscale route를 제공하지 않는다.
 
-Local operations batch evidence:
+Local operations batch 증거:
 
 ```bash
-CODEXMUX_SMOKE_ARTIFACT_DIR=/tmp/codexmux-ops-smoke corepack pnpm smoke:ops:batch
+CODEXWINMUX_SMOKE_ARTIFACT_DIR=/tmp/codexwinmux-ops-smoke corepack pnpm smoke:ops:batch
 ```
 
-The batch runs browser reconnect automatically and writes an `ops-smoke-batch` artifact. Set
-`CODEXMUX_OPS_SMOKE_PWA_URL` or `CODEXMUX_OPS_SMOKE_RUNTIME_URL` to include PWA and runtime Phase 6
-target checks. iPad long-background and Mac packaged UX rows stay `manual-required` unless real
-device/package evidence is collected outside the runner.
+batch는 browser reconnect를 자동 실행하고 `ops-smoke-batch` artifact를 기록한다.
+PWA와 runtime Phase 6 target check를 포함하려면 `CODEXWINMUX_OPS_SMOKE_PWA_URL` 또는
+`CODEXWINMUX_OPS_SMOKE_RUNTIME_URL`을 지정한다. iPad long-background와 Mac packaged UX
+행은 runner 밖에서 실제 device/package evidence를 수집하기 전까지 `manual-required`로
+남는다. 기존 `CODEXMUX_*` env는 호환 fallback이다.
 
 ## Permission, Stats, Timeline
 
