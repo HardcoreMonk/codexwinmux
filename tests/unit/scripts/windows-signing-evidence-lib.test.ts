@@ -204,4 +204,77 @@ describe('Windows signing evidence helpers', () => {
       'windows-smartscreen-public-evidence-required',
     ]);
   });
+
+  it('blocks bare passed SmartScreen status in public release mode without public launch evidence', async () => {
+    const { evaluateWindowsSigningEvidence } = await loadLib();
+    const signedArtifacts = unsignedArtifacts.map((artifact) => ({
+      ...artifact,
+      signature: {
+        status: 'Valid',
+        statusMessage: 'Signature verified',
+        signatureType: 'Authenticode',
+        signerSubject: 'CN=PureCVisor Desktop Node Internal Code Signing',
+        signerThumbprint: 'ABCDEF',
+        timeStamperSubject: 'CN=Timestamp Authority',
+        timeStamperThumbprint: '123456',
+      },
+    }));
+
+    const result = evaluateWindowsSigningEvidence({
+      artifacts: signedArtifacts,
+      publicRelease: true,
+      smartScreenEvidence: {
+        status: 'passed',
+        checkedAt: '2026-05-12T00:00:00.000Z',
+        environment: 'clean-windows-11-vm',
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toEqual([
+      'windows-smartscreen-public-launch-evidence-required',
+    ]);
+  });
+
+  it('accepts public SmartScreen passed evidence from a public launch smoke', async () => {
+    const { evaluateWindowsSigningEvidence } = await loadLib();
+    const signedArtifacts = unsignedArtifacts.map((artifact) => ({
+      ...artifact,
+      signature: {
+        status: 'Valid',
+        statusMessage: 'Signature verified',
+        signatureType: 'Authenticode',
+        signerSubject: 'CN=PureCVisor Desktop Node Internal Code Signing',
+        signerThumbprint: 'ABCDEF',
+        timeStamperSubject: 'CN=Timestamp Authority',
+        timeStamperThumbprint: '123456',
+      },
+    }));
+
+    const result = evaluateWindowsSigningEvidence({
+      artifacts: signedArtifacts,
+      publicRelease: true,
+      smartScreenEvidence: {
+        status: 'passed',
+        checkedAt: '2026-05-12T00:00:00.000Z',
+        environment: 'clean-windows-11-vm',
+        verificationMethod: 'windows-smartscreen-public-launch-smoke',
+        artifactSha256: 'D9C41DEAF282B7EF6C681392D6B30E43602F5E3C18F389F84BFF383AA7F4F995',
+        download: {
+          url: 'https://github.com/HardcoreMonk/codexwinmux/releases/download/v0.4.14/codexwinmux-Setup-0.4.14.exe',
+          zoneId: 3,
+        },
+        launch: {
+          started: true,
+          exitCode: 0,
+          timedOut: false,
+        },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.checks).toContain('windows-smartscreen-public-evidence-passed');
+    expect(result.checks).toContain('windows-smartscreen-public-launch-evidence-present');
+    expect(result.blockers).toEqual([]);
+  });
 });

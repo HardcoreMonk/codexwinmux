@@ -29,6 +29,15 @@ describe('runtime storage v2 mode', () => {
     expect(getRuntimeStorageV2Mode({} as unknown as NodeJS.ProcessEnv)).toBe('off');
   });
 
+  it('prefers CODEXWINMUX runtime aliases over legacy CODEXMUX storage mode env', () => {
+    expect(getRuntimeStorageV2Mode({
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXMUX_RUNTIME_V2: '0',
+      CODEXWINMUX_RUNTIME_STORAGE_V2_MODE: 'default',
+      CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'off',
+    } as unknown as NodeJS.ProcessEnv)).toBe('default');
+  });
+
   it('mirrors legacy JSON writes only when runtime v2 and write ownership are enabled', () => {
     expect(shouldMirrorLegacyStorageToRuntimeV2({
       runtimeV2Enabled: true,

@@ -18,6 +18,7 @@ corepack pnpm smoke:windows:electron-packaging
 corepack pnpm smoke:windows:zip-artifact
 corepack pnpm smoke:windows:update-metadata
 corepack pnpm smoke:windows:signing-evidence
+corepack pnpm smoke:windows:smartscreen-public-evidence
 corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
 corepack pnpm smoke:windows:packaged-launch
@@ -42,6 +43,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:zip-artifact`: `release/*-win.zip` archive 안에 exe, `app.asar`, runtime v2 workers, Windows native terminal/runtime modules가 있는지 확인합니다.
 - `smoke:windows:update-metadata`: `release/latest.yml`이 실제 NSIS installer, installer size, sha512, blockmap artifact와 일치하고, packaged `app-update.yml`이 GitHub publish provider와 같은 owner/repo를 가리키는지 확인합니다.
 - `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 `internal-not-required` 또는 `internal-trusted-root` 상태를 signed/timestamped artifact와 함께 기록할 수 있습니다. 기존 `CODEXMUX_*` env는 호환 fallback입니다.
+- `smoke:windows:smartscreen-public-evidence`: GitHub Release 같은 HTTPS public download URL에서 Chromium download로 installer를 내려받고, Internet ZoneId=3과 `Start-Process` launch/exit 증거를 확인해 public SmartScreen `passed` evidence JSON을 생성합니다. 이 smoke는 temp install/uninstall을 수행하므로 Windows 사용자 설치 상태를 임시로 변경합니다.
 - `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다.
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
@@ -240,17 +242,20 @@ download/install evidence는 사용자가 설치한 버전보다 더 최신 publ
 `release/codexwinmux-Setup-<version>.exe`와 `release/win-unpacked/codexwinmux.exe`를
 검사하고 SHA-256, signature status, signer, timestamp certificate evidence를
 출력합니다. 서명되지 않은 build는 실패가 정상이며, release blocker로 기록합니다.
-서명된 build에서 public SmartScreen 통과를 기록하려면 다음 중 하나를 함께 제공합니다.
-내부 전용 배포는 signed/timestamped artifact를 전제로 `internal-not-required` 또는
-`internal-trusted-root` 상태를 사용할 수 있습니다. `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1`
-모드에서는 internal-only 상태를 허용하지 않습니다.
+서명된 build에서 public SmartScreen 통과를 기록하려면 먼저 public launch evidence를
+수집한 뒤 그 JSON을 signing evidence에 제공합니다. 내부 전용 배포는 signed/timestamped
+artifact를 전제로 `internal-not-required` 또는 `internal-trusted-root` 상태를 사용할 수
+있습니다. `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1` 모드에서는 internal-only 상태와
+단순 `CODEXWINMUX_SMARTSCREEN_STATUS=passed` shorthand를 허용하지 않습니다.
 
 ```bash
-CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH=artifacts/smartscreen-v0.4.14.json corepack pnpm smoke:windows:signing-evidence
-CODEXWINMUX_SMARTSCREEN_STATUS=passed CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=clean-windows-11-vm corepack pnpm smoke:windows:signing-evidence
+CODEXWINMUX_SMARTSCREEN_DOWNLOAD_URL=https://github.com/HardcoreMonk/codexwinmux/releases/download/v0.4.14/codexwinmux-Setup-0.4.14.exe CODEXWINMUX_SMARTSCREEN_EXPECTED_SHA256=<installer-sha256> CODEXWINMUX_SMARTSCREEN_PUBLIC_EVIDENCE_OUTPUT=artifacts/smartscreen-v0.4.14-public.json corepack pnpm smoke:windows:smartscreen-public-evidence
+CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1 CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH=artifacts/smartscreen-v0.4.14-public.json corepack pnpm smoke:windows:signing-evidence
 CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=internal-trusted-root-distribution corepack pnpm smoke:windows:signing-evidence
-CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1 CODEXWINMUX_SMARTSCREEN_STATUS=passed CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=clean-windows-11-vm corepack pnpm smoke:windows:signing-evidence
 ```
+
+Playwright Chromium binary가 없는 새 Windows runner에서는 먼저
+`corepack pnpm exec playwright install chromium`을 실행합니다.
 
 `smoke:windows:updater-github-feed`는 설치된 앱 전체를 대상으로 하는 updater
 smoke입니다. 기준 installer를 silent install하고, 설치된 앱을 GitHub Release
@@ -290,7 +295,7 @@ certificate로 Authenticode 서명됐고 DigiCert RFC3161 timestamp evidence를 
 trusted root distribution 범위의 SmartScreen evidence로 기록합니다. 외부 공개 배포를
 시작할 때만 public SmartScreen reputation을 별도 release blocker로 둡니다.
 `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1` strict mode는 이 내부 판정을 거부하고
-`passed` evidence를 요구합니다.
+public launch evidence JSON 기반 `passed` evidence를 요구합니다.
 
 Windows packaging과 updater smoke child process에는 `NODE_OPTIONS`로 `DEP0176`,
 `DEP0190` warning suppression을 병합합니다. 두 warning은 현재 최신
@@ -303,4 +308,6 @@ electron-builder/electron-updater dependency 경로에서 발생하는 Node depr
 - Windows code signing certificate와 thumbprint
 - timestamp signing 설정
 - 내부 또는 public SmartScreen 판정 범위
+- 기존 version tag/release가 이미 있으면 `smoke:release-immutability`가 실패하므로
+  새 버전 번호로 발행
 - `node-pty` native binary가 `asarUnpack`에 포함되는지 확인

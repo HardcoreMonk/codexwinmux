@@ -28,6 +28,15 @@ describe('runtime status v2 mode', () => {
     expect(getRuntimeStatusV2Mode({} as unknown as NodeJS.ProcessEnv)).toBe('off');
   });
 
+  it('prefers CODEXWINMUX runtime aliases over legacy CODEXMUX status mode env', () => {
+    expect(getRuntimeStatusV2Mode({
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXMUX_RUNTIME_V2: '0',
+      CODEXWINMUX_RUNTIME_STATUS_V2_MODE: 'default',
+      CODEXMUX_RUNTIME_STATUS_V2_MODE: 'off',
+    } as unknown as NodeJS.ProcessEnv)).toBe('default');
+  });
+
   it('allows live status ownership only for runtime default mode', () => {
     expect(shouldUseRuntimeStatusV2Live({
       runtimeV2Enabled: true,

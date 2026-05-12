@@ -26,8 +26,9 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 현재 Windows 제품 identity는 `codexwinmux`입니다. Electron `productName`,
 `appId`, 설치 파일명, 실행 파일명, updater cache, 앱 데이터 디렉터리는
 `codexwinmux` 기준으로 분리합니다. CLI package alias는 `codexwinmux`와 `cwmux`만
-노출합니다. 내부 runtime env는 아직 `CODEXMUX_RUNTIME_*` 계열을 사용하지만, smoke와
-운영 입력 env는 `CODEXWINMUX_*`를 우선합니다. `CMUX_PORT`/`CMUX_TOKEN`과
+노출합니다. Runtime v2 mode resolver와 Windows smoke 입력은 `CODEXWINMUX_RUNTIME_*`와
+`CODEXWINMUX_*`를 우선하고, 기존 `CODEXMUX_RUNTIME_*`/`CODEXMUX_*`는 staged
+fallback으로만 유지합니다. `CMUX_PORT`/`CMUX_TOKEN`과
 `x-cmux-token`은 API 호환 레이어로 유지합니다.
 
 ## 설치와 실행
@@ -146,6 +147,7 @@ GitHub Release 기반 updater channel은 다음 asset이 모두 있을 때 유�
 ```bash
 corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
+corepack pnpm smoke:release-immutability
 ```
 
 설치된 이전 버전에서 GitHub-hosted 최신 버전으로 `download -> update-downloaded
@@ -235,7 +237,9 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
   `cmux` alias는 legacy sunset gate 이후 제거했습니다.
 - Windows code signing과 timestamp 증거는 `0.4.14`부터 확보했습니다. 내부 전용
   배포에서는 trusted root distribution 범위의 SmartScreen 판정을 사용하며, 외부 공개
-  배포를 시작할 때만 public SmartScreen reputation을 별도 gate로 둡니다.
+  배포를 시작할 때만 public SmartScreen reputation을 별도 gate로 둡니다. Public
+  gate는 `smoke:windows:smartscreen-public-evidence`가 만든 public launch evidence
+  JSON이 있어야 통과합니다.
 
 ## 문제 확인
 

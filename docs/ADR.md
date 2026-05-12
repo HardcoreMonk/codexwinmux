@@ -275,3 +275,17 @@
 - Decision: `0.4.14`부터 Windows 제품 identity는 `codexwinmux`로 독립 적용한다. Electron `productName`은 `codexwinmux`, Electron `appId`는 `com.hardcoremonk.codexwinmux`, installer artifact basename은 `codexwinmux-Setup-<version>.exe`, 실행 파일은 `codexwinmux.exe`, app state data dir은 `~/.codexwinmux`다. GitHub updater publish channel은 계속 `HardcoreMonk/codexwinmux`다.
 - Rationale: channel-only 전환은 `0.4.8` 업데이트 경로 검증에는 충분했지만, 이후 내부 배포에서는 Start Menu/app shortcut, updater cache, health identity, 앱 데이터 위치가 repository/product line과 다르면 운영 증거가 흔들린다. 독립 제품으로 제공하려면 설치/실행/진단에서 보이는 identity를 한 줄로 맞춰야 한다.
 - Consequences: 기존 `~/.codexmux`와 `codexmux` 설치는 자동 삭제하거나 병합하지 않는다. `CMUX_PORT`/`CMUX_TOKEN`, `x-cmux-token`은 API 호환 레이어로 유지한다. 내부 runtime env는 아직 `CODEXMUX_RUNTIME_*`를 사용하지만, 운영/smoke 입력 env는 `CODEXWINMUX_*`를 preferred alias로 사용한다. `0.4.14` 후속 legacy sunset gate 이후 package CLI alias는 `codexwinmux`와 `cwmux`만 노출하고 `codexmux`/`cmux` alias는 제거한다. 새 릴리스 evidence는 `latest.yml`, `codexwinmux-Setup-<version>.exe`, matching `.blockmap`, `release/win-unpacked/codexwinmux.exe`, `~/.codexwinmux`, `com.hardcoremonk.codexwinmux`를 기준으로 수집한다.
+
+## ADR-022: Runtime env 이름 전환은 staged alias migration으로 진행한다
+
+- Status: Accepted
+- Decision: `CODEXWINMUX_RUNTIME_*`를 새 preferred runtime env namespace로 둔다. Mode resolver와 Windows smoke/packaged bootstrap은 preferred 값을 먼저 읽고, 기존 `CODEXMUX_RUNTIME_*`는 fallback으로만 해석한다. 전체 내부 코드에서 `CODEXMUX_RUNTIME_*` 문자열을 즉시 제거하지 않고, runtime worker, systemd rollback, lifecycle UI 문구, 오래된 smoke fixture는 별도 slice로 migration한다.
+- Rationale: Runtime v2 env는 terminal/storage/timeline/status ownership, rollback, worker DB path, smoke timeout/home path까지 넓게 걸쳐 있다. 한 번에 이름을 바꾸면 rollback 문서와 기존 운영 drop-in이 동시에 깨질 수 있다. Preferred alias를 먼저 도입하면 새 Windows 제품 identity를 적용하면서도 기존 runtime rollback 경로를 유지할 수 있다.
+- Consequences: 새 운영 입력과 문서는 `CODEXWINMUX_RUNTIME_*`를 우선한다. `CODEXMUX_RUNTIME_*`는 staged fallback이며, strict identity는 외부 smoke/배포 입력 env부터 차단한다. Zero-`CODEXMUX` 내부 정리는 별도 작업으로 `runtime env helper 적용 범위 확대 -> lifecycle/systemd 문구 교체 -> smoke fixture 교체 -> legacy fallback 제거` 순서로 진행한다.
+
+## ADR-023: 릴리스 버전은 불변으로 발행한다
+
+- Status: Accepted
+- Decision: GitHub Release asset과 tag는 같은 semver에서 재발행하거나 clobber하지 않는다. `smoke:release-immutability`는 현재 `package.json` version의 local tag, remote tag, GitHub Release가 이미 있으면 실패한다. 이미 발행한 버전을 갱신해야 하는 상황에서도 다음 patch/minor/major 버전으로 새 릴리스를 만든다.
+- Rationale: updater channel과 SmartScreen, code signing, hash evidence는 버전/태그/asset digest가 함께 맞아야 신뢰할 수 있다. 같은 `v0.4.14`를 여러 번 덮어쓰면 설치자와 운영 기록이 서로 다른 artifact를 가리킬 수 있다.
+- Consequences: `gh release upload --clobber`, tag force-push, 기존 release asset 교체는 운영 예외로 남기지 않는다. 기존 `v0.4.14` 갱신은 과거 closeout 기록으로 보존하고, 이후 릴리스는 새 버전 번호만 사용한다.

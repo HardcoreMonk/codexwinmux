@@ -367,12 +367,14 @@ corepack pnpm pack:electron
 corepack pnpm smoke:windows:zip-artifact
 corepack pnpm smoke:windows:update-metadata
 corepack pnpm smoke:windows:signing-evidence
+corepack pnpm smoke:windows:smartscreen-public-evidence
 corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
 corepack pnpm smoke:windows:updater-github-feed
 corepack pnpm smoke:windows:installer-install
 corepack pnpm smoke:windows:installer-runtime-v2
 corepack pnpm smoke:windows:package-gate
+corepack pnpm smoke:release-immutability
 ```
 
 `pack:electron:dev`는 `release/win-unpacked/codexwinmux.exe`,
@@ -387,11 +389,16 @@ matching size, sha512 metadata, `.blockmap`을 가리키고 packaged `app-update
 `smoke:windows:signing-evidence`는 NSIS installer와 `win-unpacked` 실행 파일이
 Authenticode로 서명됐는지, timestamp가 있는지, 명시적인 SmartScreen 증거가 있는지
 확인한다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와
-`CODEXWINMUX_SMARTSCREEN_STATUS`이며, public 배포는 `passed`, 내부 전용 배포는
-signed/timestamped artifact를 전제로 `internal-not-required` 또는
-`internal-trusted-root`를 사용할 수 있다. 서명되지 않은 artifact는
-`windows-smartscreen-blocked-unsigned`로 실패한다. `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1`을
-설정하면 internal-only status를 허용하지 않고 `passed` evidence만 통과시킨다.
+`CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 signed/timestamped artifact를
+전제로 `internal-not-required` 또는 `internal-trusted-root`를 사용할 수 있다.
+서명되지 않은 artifact는 `windows-smartscreen-blocked-unsigned`로 실패한다.
+`CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1`을 설정하면 internal-only status와 단순
+`STATUS=passed` shorthand를 허용하지 않고,
+`smoke:windows:smartscreen-public-evidence`가 만든 public launch evidence JSON만
+통과시킨다. Public smoke는 Chromium HTTPS download, Internet ZoneId=3,
+`Start-Process` launch exit code 0을 함께 기록하며 temp install/uninstall을 수행한다.
+새 runner에서 Chromium binary가 없으면
+`corepack pnpm exec playwright install chromium`으로 먼저 설치한다.
 `smoke:windows:updater-local-feed`는 현재 Windows 사용자 설치 상태를 임시로
 변경한다. 생성된 NSIS artifact를 silent install하고, patch version을 올린 synthetic
 local `latest.yml`을 만든 뒤 Electron updater download/install event와
@@ -415,6 +422,9 @@ packaged publish config와 다른 repository/tag를 테스트하려면
 `CODEXWINMUX_WINDOWS_UPDATER_GITHUB_TAG`를 지정한다. 장시간 workspace stability
 증거가 필요하면 `CODEXWINMUX_WINDOWS_UPDATER_GITHUB_FEED_POST_INSTALL_HOLD_MS`를
 지정한다.
+`smoke:release-immutability`는 read-only smoke다. 현재 `package.json` version의 local
+tag, remote tag, GitHub Release가 이미 있으면 실패한다. 실패는 같은 version의 asset을
+덮어쓰지 말고 다음 version을 발행하라는 신호다.
 `smoke:windows:packaged-launch`는 isolated Windows user profile로 생성된 앱을
 실행하고 packaged local server, Electron preload bridge, health endpoint, runtime
 diagnostics, blocking console count를 확인한다.

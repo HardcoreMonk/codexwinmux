@@ -38,6 +38,16 @@ describe('terminal runtime adapter factory', () => {
     })).toBe('windows');
   });
 
+  it('prefers CODEXWINMUX terminal adapter alias over legacy CODEXMUX adapter env', () => {
+    expect(resolveTerminalRuntimeAdapterKind({
+      env: {
+        CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
+        CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'tmux',
+      },
+      platform: 'win32',
+    })).toBe('windows');
+  });
+
   it('fails closed when an unknown terminal runtime adapter is requested', () => {
     expect(() => resolveTerminalRuntimeAdapterKind({
       env: { CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'conpty' },

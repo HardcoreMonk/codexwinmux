@@ -1,3 +1,5 @@
+import { hasOwnRuntimeOption, isRuntimeV2Enabled, readRuntimeEnvAlias } from '@/lib/runtime/env';
+
 export type TRuntimeTimelineV2Mode = 'off' | 'shadow' | 'default';
 const defaultRuntimeTimelineV2Mode: TRuntimeTimelineV2Mode = 'default';
 
@@ -12,40 +14,60 @@ export const parseRuntimeTimelineV2Mode = (value: unknown): TRuntimeTimelineV2Mo
   return 'off';
 };
 
-export const resolveRuntimeTimelineV2Mode = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  timelineMode = process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE,
-}: IRuntimeTimelineV2ModeOptions = {}): TRuntimeTimelineV2Mode => {
+export const resolveRuntimeTimelineV2Mode = (
+  options: IRuntimeTimelineV2ModeOptions = {},
+): TRuntimeTimelineV2Mode => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
+    ? options.timelineMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
   if (timelineMode === undefined && runtimeV2Enabled) return defaultRuntimeTimelineV2Mode;
   return parseRuntimeTimelineV2Mode(timelineMode);
 };
 
 export const getRuntimeTimelineV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeTimelineV2Mode =>
   resolveRuntimeTimelineV2Mode({
-    runtimeV2Enabled: env.CODEXMUX_RUNTIME_V2 === '1',
-    timelineMode: env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE,
+    runtimeV2Enabled: isRuntimeV2Enabled(env),
+    timelineMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE'),
   });
 
-export const shouldUseRuntimeTimelineV2Live = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  timelineMode = process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE,
-}: IRuntimeTimelineV2ModeOptions = {}): boolean => {
+export const shouldUseRuntimeTimelineV2Live = (
+  options: IRuntimeTimelineV2ModeOptions = {},
+): boolean => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
+    ? options.timelineMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeTimelineV2Mode({ runtimeV2Enabled, timelineMode }) === 'default';
 };
 
-export const shouldUseRuntimeTimelineV2Reads = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  timelineMode = process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE,
-}: IRuntimeTimelineV2ModeOptions = {}): boolean => {
+export const shouldUseRuntimeTimelineV2Reads = (
+  options: IRuntimeTimelineV2ModeOptions = {},
+): boolean => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
+    ? options.timelineMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeTimelineV2Mode({ runtimeV2Enabled, timelineMode }) === 'default';
 };
 
-export const shouldRunRuntimeTimelineV2Shadow = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  timelineMode = process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE,
-}: IRuntimeTimelineV2ModeOptions = {}): boolean => {
+export const shouldRunRuntimeTimelineV2Shadow = (
+  options: IRuntimeTimelineV2ModeOptions = {},
+): boolean => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
+    ? options.timelineMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeTimelineV2Mode({ runtimeV2Enabled, timelineMode }) === 'shadow';
 };

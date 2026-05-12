@@ -1,3 +1,5 @@
+import { hasOwnRuntimeOption, isRuntimeV2Enabled, readRuntimeEnvAlias } from '@/lib/runtime/env';
+
 export type TRuntimeStorageV2Mode = 'off' | 'shadow' | 'write' | 'default';
 const defaultRuntimeStorageV2Mode: TRuntimeStorageV2Mode = 'default';
 
@@ -12,24 +14,34 @@ export const parseRuntimeStorageV2Mode = (value: unknown): TRuntimeStorageV2Mode
   return 'off';
 };
 
-export const resolveRuntimeStorageV2Mode = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  storageMode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE,
-}: IRuntimeStorageV2ModeOptions = {}): TRuntimeStorageV2Mode => {
+export const resolveRuntimeStorageV2Mode = (
+  options: IRuntimeStorageV2ModeOptions = {},
+): TRuntimeStorageV2Mode => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const storageMode = hasOwnRuntimeOption(options, 'storageMode')
+    ? options.storageMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE');
   if (storageMode === undefined && runtimeV2Enabled) return defaultRuntimeStorageV2Mode;
   return parseRuntimeStorageV2Mode(storageMode);
 };
 
 export const getRuntimeStorageV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeStorageV2Mode =>
   resolveRuntimeStorageV2Mode({
-    runtimeV2Enabled: env.CODEXMUX_RUNTIME_V2 === '1',
-    storageMode: env.CODEXMUX_RUNTIME_STORAGE_V2_MODE,
+    runtimeV2Enabled: isRuntimeV2Enabled(env),
+    storageMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE'),
   });
 
-export const shouldMirrorLegacyStorageToRuntimeV2 = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  storageMode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE,
-}: IRuntimeStorageV2ModeOptions = {}): boolean => {
+export const shouldMirrorLegacyStorageToRuntimeV2 = (
+  options: IRuntimeStorageV2ModeOptions = {},
+): boolean => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const storageMode = hasOwnRuntimeOption(options, 'storageMode')
+    ? options.storageMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   const mode = resolveRuntimeStorageV2Mode({ runtimeV2Enabled, storageMode });
   return mode === 'write' || mode === 'default';

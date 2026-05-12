@@ -30,6 +30,15 @@ describe('runtime timeline v2 mode', () => {
     expect(getRuntimeTimelineV2Mode({} as unknown as NodeJS.ProcessEnv)).toBe('off');
   });
 
+  it('prefers CODEXWINMUX runtime aliases over legacy CODEXMUX timeline mode env', () => {
+    expect(getRuntimeTimelineV2Mode({
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXMUX_RUNTIME_V2: '0',
+      CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE: 'default',
+      CODEXMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
+    } as unknown as NodeJS.ProcessEnv)).toBe('default');
+  });
+
   it('allows live timeline ownership only for runtime default mode', () => {
     expect(shouldUseRuntimeTimelineV2Live({
       runtimeV2Enabled: true,

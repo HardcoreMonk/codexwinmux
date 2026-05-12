@@ -32,6 +32,15 @@ describe('runtime terminal v2 mode', () => {
     expect(getRuntimeTerminalV2Mode({} as unknown as NodeJS.ProcessEnv)).toBe('off');
   });
 
+  it('prefers CODEXWINMUX runtime aliases over legacy CODEXMUX runtime mode env', () => {
+    expect(getRuntimeTerminalV2Mode({
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXMUX_RUNTIME_V2: '0',
+      CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE: 'new-tabs',
+      CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
+    } as unknown as NodeJS.ProcessEnv)).toBe('new-tabs');
+  });
+
   it('allows runtime v2 tab creation only when runtime is enabled and terminal mode opts in', () => {
     expect(shouldCreateTerminalTabInRuntimeV2({ runtimeV2Enabled: false, terminalMode: 'default' })).toBe(false);
     expect(shouldCreateTerminalTabInRuntimeV2({ runtimeV2Enabled: true, terminalMode: 'off' })).toBe(false);

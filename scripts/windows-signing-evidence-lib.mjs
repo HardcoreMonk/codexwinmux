@@ -1,3 +1,5 @@
+import { hasWindowsSmartScreenPublicLaunchEvidence } from './windows-smartscreen-public-evidence-lib.mjs';
+
 const requiredArtifactIds = new Set(['installer', 'unpacked-exe']);
 
 const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -139,8 +141,21 @@ export const evaluateWindowsSigningEvidence = ({
       );
     }
   } else {
-    smartScreenOk = true;
-    checks.push(publicRelease ? 'windows-smartscreen-public-evidence-passed' : 'windows-smartscreen-evidence-passed');
+    if (publicRelease && !hasWindowsSmartScreenPublicLaunchEvidence(smartScreenEvidence)) {
+      blockers.push(
+        toBlocker(
+          'windows-smartscreen-public-launch-evidence-required',
+          'Public Windows release requires passed SmartScreen evidence from a clean Windows public launch smoke.',
+        ),
+      );
+    } else if (publicRelease) {
+      checks.push('windows-smartscreen-public-launch-evidence-present');
+      smartScreenOk = true;
+      checks.push('windows-smartscreen-public-evidence-passed');
+    } else {
+      smartScreenOk = true;
+      checks.push('windows-smartscreen-evidence-passed');
+    }
   }
 
   return {
@@ -162,6 +177,15 @@ export const evaluateWindowsSigningEvidence = ({
       publicRelease: publicRelease === true,
       checkedAt: smartScreenEvidence?.checkedAt || null,
       environment: smartScreenEvidence?.environment || null,
+      verificationMethod: smartScreenEvidence?.verificationMethod || null,
+      artifactSha256: normalizeText(smartScreenEvidence?.artifactSha256) || null,
+      downloadUrl: normalizeText(smartScreenEvidence?.download?.url) || null,
+      zoneId: Number.isFinite(Number(smartScreenEvidence?.download?.zoneId))
+        ? Number(smartScreenEvidence.download.zoneId)
+        : null,
+      launchExitCode: Number.isFinite(smartScreenEvidence?.launch?.exitCode)
+        ? smartScreenEvidence.launch.exitCode
+        : null,
     },
   };
 };

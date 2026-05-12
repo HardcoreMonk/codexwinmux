@@ -1,3 +1,5 @@
+import { hasOwnRuntimeOption, isRuntimeV2Enabled, readRuntimeEnvAlias } from '@/lib/runtime/env';
+
 export type TRuntimeStatusV2Mode = 'off' | 'shadow' | 'default';
 const defaultRuntimeStatusV2Mode: TRuntimeStatusV2Mode = 'default';
 
@@ -12,24 +14,34 @@ export const parseRuntimeStatusV2Mode = (value: unknown): TRuntimeStatusV2Mode =
   return 'off';
 };
 
-export const resolveRuntimeStatusV2Mode = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  statusMode = process.env.CODEXMUX_RUNTIME_STATUS_V2_MODE,
-}: IRuntimeStatusV2ModeOptions = {}): TRuntimeStatusV2Mode => {
+export const resolveRuntimeStatusV2Mode = (
+  options: IRuntimeStatusV2ModeOptions = {},
+): TRuntimeStatusV2Mode => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const statusMode = hasOwnRuntimeOption(options, 'statusMode')
+    ? options.statusMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE');
   if (statusMode === undefined && runtimeV2Enabled) return defaultRuntimeStatusV2Mode;
   return parseRuntimeStatusV2Mode(statusMode);
 };
 
 export const getRuntimeStatusV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeStatusV2Mode =>
   resolveRuntimeStatusV2Mode({
-    runtimeV2Enabled: env.CODEXMUX_RUNTIME_V2 === '1',
-    statusMode: env.CODEXMUX_RUNTIME_STATUS_V2_MODE,
+    runtimeV2Enabled: isRuntimeV2Enabled(env),
+    statusMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE'),
   });
 
-export const shouldUseRuntimeStatusV2Live = ({
-  runtimeV2Enabled = process.env.CODEXMUX_RUNTIME_V2 === '1',
-  statusMode = process.env.CODEXMUX_RUNTIME_STATUS_V2_MODE,
-}: IRuntimeStatusV2ModeOptions = {}): boolean => {
+export const shouldUseRuntimeStatusV2Live = (
+  options: IRuntimeStatusV2ModeOptions = {},
+): boolean => {
+  const runtimeV2Enabled = hasOwnRuntimeOption(options, 'runtimeV2Enabled')
+    ? options.runtimeV2Enabled
+    : isRuntimeV2Enabled();
+  const statusMode = hasOwnRuntimeOption(options, 'statusMode')
+    ? options.statusMode
+    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeStatusV2Mode({ runtimeV2Enabled, statusMode }) === 'default';
 };
