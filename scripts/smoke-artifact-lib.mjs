@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { readEnvAlias } from './env-alias-lib.mjs';
 
 const droppedKeyPattern = /^(homeDir|serverOutput|output|outputTail|logcat|cookie|token|password|sessionCookie|raw|stdout|stderr|sessionName|sessionId|workspaceId|tabId|jsonlPath|baseUrl|targetUrl|pageUrl|restoreUrl|devtools|adb|serial|serverPort|remoteDebuggingPort)$/i;
 const jsonlPathPattern = /(?:[A-Za-z]:)?[^"'\n\r\t ]*\.codex[\/\\]sessions[\/\\][^"'\n\r\t ]+/g;
@@ -41,7 +42,7 @@ export const writeSmokeArtifact = async ({
   endedAt = new Date().toISOString(),
   env = process.env,
 }) => {
-  const artifactDir = env.CODEXMUX_SMOKE_ARTIFACT_DIR;
+  const artifactDir = readEnvAlias(env, 'CODEXMUX_SMOKE_ARTIFACT_DIR');
   if (!artifactDir) return { skipped: true, path: null };
 
   const startMs = Date.parse(startedAt);

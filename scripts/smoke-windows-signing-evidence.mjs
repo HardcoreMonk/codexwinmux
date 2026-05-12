@@ -5,6 +5,7 @@ import fsp from 'fs/promises';
 import path from 'path';
 import { spawnSync } from 'child_process';
 import yaml from 'js-yaml';
+import { readEnvAlias } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 import {
   buildWindowsSigningEvidenceArtifactPayload,
@@ -21,7 +22,7 @@ const readJsonFile = async (filePath) => JSON.parse(await fsp.readFile(filePath,
 
 const runPowerShell = (command) => {
   const candidates = [
-    process.env.CODEXMUX_POWERSHELL_PATH,
+    readEnvAlias(process.env, 'CODEXMUX_POWERSHELL_PATH'),
     'pwsh.exe',
     'powershell.exe',
   ].filter(Boolean);
@@ -127,15 +128,18 @@ const collectArtifact = async ({ id, filePath }) => {
 };
 
 const readSmartScreenEvidence = async () => {
-  if (process.env.CODEXMUX_SMARTSCREEN_EVIDENCE_PATH) {
-    return readJsonFile(path.resolve(process.env.CODEXMUX_SMARTSCREEN_EVIDENCE_PATH));
+  const evidencePath = readEnvAlias(process.env, 'CODEXMUX_SMARTSCREEN_EVIDENCE_PATH');
+  const status = readEnvAlias(process.env, 'CODEXMUX_SMARTSCREEN_STATUS');
+
+  if (evidencePath) {
+    return readJsonFile(path.resolve(evidencePath));
   }
 
-  if (process.env.CODEXMUX_SMARTSCREEN_STATUS) {
+  if (status) {
     return {
-      status: process.env.CODEXMUX_SMARTSCREEN_STATUS,
-      checkedAt: process.env.CODEXMUX_SMARTSCREEN_CHECKED_AT || new Date().toISOString(),
-      environment: process.env.CODEXMUX_SMARTSCREEN_ENVIRONMENT || 'manual',
+      status,
+      checkedAt: readEnvAlias(process.env, 'CODEXMUX_SMARTSCREEN_CHECKED_AT') || new Date().toISOString(),
+      environment: readEnvAlias(process.env, 'CODEXMUX_SMARTSCREEN_ENVIRONMENT') || 'manual',
     };
   }
 
@@ -148,15 +152,17 @@ const resolveArtifactPaths = async () => {
   const builderConfig = fs.existsSync(builderConfigPath)
     ? yaml.load(await fsp.readFile(builderConfigPath, 'utf8'))
     : {};
-  const releaseDir = path.resolve(process.env.CODEXMUX_WINDOWS_RELEASE_DIR || builderConfig?.directories?.output || 'release');
+  const releaseDir = path.resolve(
+    readEnvAlias(process.env, 'CODEXMUX_WINDOWS_RELEASE_DIR') || builderConfig?.directories?.output || 'release',
+  );
   const productName = builderConfig?.productName || packageJson.name;
 
   return {
     installer:
-      process.env.CODEXMUX_WINDOWS_SIGNING_INSTALLER_PATH ||
+      readEnvAlias(process.env, 'CODEXMUX_WINDOWS_SIGNING_INSTALLER_PATH') ||
       path.join(releaseDir, `${productName}-Setup-${packageJson.version}.exe`),
     unpackedExe:
-      process.env.CODEXMUX_WINDOWS_SIGNING_UNPACKED_EXE_PATH ||
+      readEnvAlias(process.env, 'CODEXMUX_WINDOWS_SIGNING_UNPACKED_EXE_PATH') ||
       path.join(releaseDir, 'win-unpacked', `${productName}.exe`),
   };
 };

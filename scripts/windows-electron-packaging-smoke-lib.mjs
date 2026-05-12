@@ -94,6 +94,17 @@ export const validateWindowsElectronPackaging = ({
     );
   }
 
+  const signingHashAlgorithms = builderConfig?.win?.signtoolOptions?.signingHashAlgorithms;
+  if (Array.isArray(signingHashAlgorithms) && signingHashAlgorithms.includes('sha256')) {
+    checks.push('windows-code-signing-sha256-digest-configured');
+  } else {
+    addBlocker(
+      blockers,
+      'windows-code-signing-digest-missing',
+      'electron-builder win.signtoolOptions.signingHashAlgorithms must include sha256 so modern signtool emits /fd.',
+    );
+  }
+
   const nsis = builderConfig?.nsis;
   if (
     nsis?.oneClick === false
@@ -127,6 +138,16 @@ export const validateWindowsElectronPackaging = ({
       'windows-nsis-artifact-name-unstable',
       'electron-builder nsis.artifactName must match latest.yml updater metadata.',
     );
+  }
+
+  if (winTargets.includes('nsis-web')) {
+    addBlocker(
+      blockers,
+      'windows-nsis-web-installer-enabled',
+      'electron-builder win.target must not include nsis-web for the offline Windows installer contract.',
+    );
+  } else {
+    checks.push('windows-nsis-web-installer-disabled');
   }
 
   const nsisInclude = typeof nsis?.include === 'string'

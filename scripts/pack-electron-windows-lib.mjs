@@ -2,11 +2,27 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { readEnvAlias } from './env-alias-lib.mjs';
 
-export const buildElectronBuilderArgs = ({ dir = false, extraArgs = [] } = {}) => [
+export const buildElectronBuilderSigningArgs = ({ env = process.env } = {}) => {
+  const certificateSha1 = readEnvAlias(env, 'CODEXMUX_WINDOWS_CERTIFICATE_SHA1');
+  if (!certificateSha1) return [];
+  const publisherName = readEnvAlias(env, 'CODEXMUX_WINDOWS_PUBLISHER_NAME');
+
+  return [
+    `--config.win.signtoolOptions.certificateSha1=${certificateSha1}`,
+    ...(publisherName ? [`--config.win.signtoolOptions.publisherName=${publisherName}`] : []),
+    `--config.win.signtoolOptions.rfc3161TimeStampServer=${
+      readEnvAlias(env, 'CODEXMUX_WINDOWS_TIMESTAMP_SERVER') || 'http://timestamp.digicert.com'
+    }`,
+  ];
+};
+
+export const buildElectronBuilderArgs = ({ dir = false, extraArgs = [], env = process.env } = {}) => [
   '--win',
   ...(dir ? ['--dir'] : []),
   '--config.npmRebuild=false',
+  ...buildElectronBuilderSigningArgs({ env }),
   ...extraArgs,
 ];
 
@@ -102,7 +118,7 @@ export const runElectronBuilder = ({
 
     return new Promise((resolve) => {
       const builderCli = path.join(cwd, 'node_modules', 'electron-builder', 'cli.js');
-      const child = spawn(process.execPath, [builderCli, ...buildElectronBuilderArgs({ dir, extraArgs })], {
+      const child = spawn(process.execPath, [builderCli, ...buildElectronBuilderArgs({ dir, extraArgs, env })], {
         cwd,
         env: buildElectronBuilderEnv({ env, shimDir }),
         stdio,

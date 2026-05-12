@@ -16,6 +16,13 @@ describe('Electron runtime environment helpers', () => {
 
     expect(env.PATH).toBe('C:\\Windows\\System32;C:\\Program Files\\nodejs');
     expect(env.LANG).toBeUndefined();
+    expect(env.CODEXWINMUX_RUNTIME_V2).toBe('1');
+    expect(env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE).toBe('new-tabs');
+    expect(env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE).toBe('default');
+    expect(env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE).toBe('default');
+    expect(env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE).toBe('default');
+    expect(env.CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
+    expect(env.CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER).toBe('windows');
     expect(env.CODEXMUX_RUNTIME_V2).toBe('1');
     expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('new-tabs');
     expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('default');
@@ -42,6 +49,31 @@ describe('Electron runtime environment helpers', () => {
     expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
     expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
     expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
+  });
+
+  it('prefers CODEXWINMUX Windows runtime aliases and mirrors them for legacy internals', () => {
+    const env = buildElectronBootstrapEnv({
+      platform: 'win32',
+      env: {
+        CODEXWINMUX_RUNTIME_V2: '0',
+        CODEXMUX_RUNTIME_V2: '1',
+        CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_STORAGE_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_STATUS_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
+        CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+      },
+    });
+
+    expect(env.CODEXWINMUX_RUNTIME_V2).toBe('0');
+    expect(env.CODEXMUX_RUNTIME_V2).toBe('0');
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
+    expect(env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER).toBe('windows');
   });
 
   it('keeps macOS Finder launch PATH compatibility', () => {

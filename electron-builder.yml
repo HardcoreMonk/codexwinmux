@@ -24,6 +24,9 @@ mac:
 
 win:
   icon: build-resources/icon.ico
+  signtoolOptions:
+    signingHashAlgorithms:
+      - sha256
   target:
     - target: nsis
       arch:

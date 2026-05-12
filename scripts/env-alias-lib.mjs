@@ -1,0 +1,39 @@
+const hasEnvValue = (value) => value !== undefined && value !== null && String(value) !== '';
+
+export const preferredCodexwinmuxEnvKey = (legacyKey) =>
+  String(legacyKey).replace(/^CODEXMUX_/, 'CODEXWINMUX_');
+
+export const readEnvAlias = (env, legacyKey) => {
+  const preferredKey = preferredCodexwinmuxEnvKey(legacyKey);
+  if (hasEnvValue(env?.[preferredKey])) return env[preferredKey];
+  return env?.[legacyKey];
+};
+
+export const hasPreferredEnvAlias = (env, legacyKey) =>
+  hasEnvValue(env?.[preferredCodexwinmuxEnvKey(legacyKey)]);
+
+export const knownStrictIdentityLegacyEnvKeys = [
+  'CODEXMUX_SMOKE_ARTIFACT_DIR',
+  'CODEXMUX_SMARTSCREEN_EVIDENCE_PATH',
+  'CODEXMUX_SMARTSCREEN_STATUS',
+  'CODEXMUX_SMARTSCREEN_CHECKED_AT',
+  'CODEXMUX_SMARTSCREEN_ENVIRONMENT',
+  'CODEXMUX_WINDOWS_RELEASE_DIR',
+  'CODEXMUX_WINDOWS_CERTIFICATE_SHA1',
+  'CODEXMUX_WINDOWS_PUBLISHER_NAME',
+  'CODEXMUX_WINDOWS_TIMESTAMP_SERVER',
+  'CODEXMUX_WINDOWS_SIGNTOOL_PATH',
+  'CODEXMUX_WINDOWS_SIGNING_INSTALLER_PATH',
+  'CODEXMUX_WINDOWS_SIGNING_UNPACKED_EXE_PATH',
+  'CODEXMUX_POWERSHELL_PATH',
+  'CODEXMUX_ELECTRON_UPDATER_FEED_URL',
+  'CODEXMUX_ELECTRON_UPDATER_SMOKE',
+  'CODEXMUX_ELECTRON_UPDATER_SMOKE_STATUS_PATH',
+  'CODEXMUX_ELECTRON_UPDATER_SMOKE_AUTO_DOWNLOAD',
+  'CODEXMUX_ELECTRON_UPDATER_SMOKE_AUTO_INSTALL',
+  'CODEXMUX_ELECTRON_UPDATER_SMOKE_INSTALL_DIR',
+  'CODEXMUX_ELECTRON_UPDATER_DISABLE_DIFFERENTIAL',
+];
+
+export const collectStrictIdentityLegacyEnvKeys = (env) =>
+  knownStrictIdentityLegacyEnvKeys.filter((key) => hasEnvValue(env?.[key]));

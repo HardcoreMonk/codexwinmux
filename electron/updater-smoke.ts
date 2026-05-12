@@ -22,16 +22,25 @@ type TUpdaterSmokeEventPayload = {
 
 type TUpdaterSmokeEnv = Record<string, string | undefined>;
 
+const hasEnvValue = (value: string | undefined): value is string =>
+  value !== undefined && value !== '';
+
+const readCodexwinmuxEnvAlias = (env: TUpdaterSmokeEnv, legacyKey: string): string | undefined => {
+  const preferredKey = legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
+  if (hasEnvValue(env[preferredKey])) return env[preferredKey];
+  return env[legacyKey];
+};
+
 export const readUpdaterSmokeConfig = (env: TUpdaterSmokeEnv = process.env): IUpdaterSmokeConfig => {
-  const enabled = env.CODEXMUX_ELECTRON_UPDATER_SMOKE === '1';
+  const enabled = readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_SMOKE') === '1';
   return {
     enabled,
-    feedUrl: enabled ? env.CODEXMUX_ELECTRON_UPDATER_FEED_URL || null : null,
-    statusPath: enabled ? env.CODEXMUX_ELECTRON_UPDATER_SMOKE_STATUS_PATH || null : null,
-    autoDownload: enabled && env.CODEXMUX_ELECTRON_UPDATER_SMOKE_AUTO_DOWNLOAD === '1',
-    autoInstall: enabled && env.CODEXMUX_ELECTRON_UPDATER_SMOKE_AUTO_INSTALL === '1',
-    installDir: enabled ? env.CODEXMUX_ELECTRON_UPDATER_SMOKE_INSTALL_DIR || null : null,
-    disableDifferentialDownload: enabled && env.CODEXMUX_ELECTRON_UPDATER_DISABLE_DIFFERENTIAL === '1',
+    feedUrl: enabled ? readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_FEED_URL') || null : null,
+    statusPath: enabled ? readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_SMOKE_STATUS_PATH') || null : null,
+    autoDownload: enabled && readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_SMOKE_AUTO_DOWNLOAD') === '1',
+    autoInstall: enabled && readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_SMOKE_AUTO_INSTALL') === '1',
+    installDir: enabled ? readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_SMOKE_INSTALL_DIR') || null : null,
+    disableDifferentialDownload: enabled && readCodexwinmuxEnvAlias(env, 'CODEXMUX_ELECTRON_UPDATER_DISABLE_DIFFERENTIAL') === '1',
   };
 };
 

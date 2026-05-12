@@ -133,4 +133,38 @@ describe('Windows signing evidence helpers', () => {
       'windows-smartscreen-evidence-not-passed',
     ]);
   });
+
+  it('accepts internal-only SmartScreen evidence when artifacts are signed and timestamped', async () => {
+    const { evaluateWindowsSigningEvidence } = await loadLib();
+    const signedArtifacts = unsignedArtifacts.map((artifact) => ({
+      ...artifact,
+      signature: {
+        status: 'Valid',
+        statusMessage: 'Signature verified',
+        signatureType: 'Authenticode',
+        signerSubject: 'CN=PureCVisor Desktop Node Internal Code Signing',
+        signerThumbprint: 'ABCDEF',
+        timeStamperSubject: 'CN=Timestamp Authority',
+        timeStamperThumbprint: '123456',
+      },
+    }));
+
+    const result = evaluateWindowsSigningEvidence({
+      artifacts: signedArtifacts,
+      smartScreenEvidence: {
+        status: 'internal-not-required',
+        checkedAt: '2026-05-12T00:00:00.000Z',
+        environment: 'internal-trusted-root-distribution',
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.smartScreen).toMatchObject({
+      ok: true,
+      status: 'internal-not-required',
+      environment: 'internal-trusted-root-distribution',
+    });
+    expect(result.checks).toContain('windows-smartscreen-internal-scope-accepted');
+    expect(result.blockers).toEqual([]);
+  });
 });

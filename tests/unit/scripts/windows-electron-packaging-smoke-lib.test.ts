@@ -28,6 +28,7 @@ describe('Windows Electron packaging smoke helpers', () => {
       'pack-electron-default-not-windows',
       'pack-electron-dev-not-windows-dir',
       'windows-builder-target-missing',
+      'windows-code-signing-digest-missing',
       'windows-nsis-config-missing',
       'windows-nsis-run-after-finish-enabled',
       'windows-nsis-artifact-name-unstable',
@@ -53,6 +54,9 @@ describe('Windows Electron packaging smoke helpers', () => {
             { target: 'nsis', arch: ['x64'] },
             { target: 'zip', arch: ['x64'] },
           ],
+          signtoolOptions: {
+            signingHashAlgorithms: ['sha256'],
+          },
         },
         nsis: {
           oneClick: false,
@@ -82,9 +86,11 @@ describe('Windows Electron packaging smoke helpers', () => {
         'pack-electron-dev-windows-dir',
         'windows-builder-nsis-target',
         'windows-builder-zip-target',
+        'windows-code-signing-sha256-digest-configured',
         'windows-nsis-installer-options',
         'windows-nsis-run-after-finish-disabled',
         'windows-nsis-artifact-name-stable',
+        'windows-nsis-web-installer-disabled',
         'windows-nsis-install-details-visible',
         'windows-icon-present',
         'windows-tray-icon-resource-present',
@@ -109,6 +115,9 @@ describe('Windows Electron packaging smoke helpers', () => {
             { target: 'nsis', arch: ['x64'] },
             { target: 'zip', arch: ['x64'] },
           ],
+          signtoolOptions: {
+            signingHashAlgorithms: ['sha256'],
+          },
         },
         nsis: {
           oneClick: false,
@@ -134,7 +143,9 @@ describe('Windows Electron packaging smoke helpers', () => {
     expect(result.ok).toBe(true);
     expect(result.checks).toContain('pack-electron-default-windows');
     expect(result.checks).toContain('pack-electron-dev-windows-dir');
+    expect(result.checks).toContain('windows-code-signing-sha256-digest-configured');
     expect(result.checks).toContain('windows-nsis-artifact-name-stable');
+    expect(result.checks).toContain('windows-nsis-web-installer-disabled');
     expect(result.checks).toContain('windows-nsis-install-details-visible');
     expect(result.checks).toContain('windows-tray-icon-resource-present');
   });
@@ -155,6 +166,9 @@ describe('Windows Electron packaging smoke helpers', () => {
             { target: 'nsis', arch: ['x64'] },
             { target: 'zip', arch: ['x64'] },
           ],
+          signtoolOptions: {
+            signingHashAlgorithms: ['sha256'],
+          },
         },
         nsis: {
           oneClick: false,
@@ -173,6 +187,54 @@ describe('Windows Electron packaging smoke helpers', () => {
     expect(result.ok).toBe(false);
     expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toContain(
       'windows-nsis-install-details-hidden',
+    );
+  });
+
+  it('rejects the NSIS web installer target', async () => {
+    const { validateWindowsElectronPackaging } = await loadLib();
+    const result = validateWindowsElectronPackaging({
+      packageJson: {
+        scripts: {
+          'pack:electron': 'electron-builder --win',
+          'pack:electron:dev': 'electron-builder --win --dir',
+        },
+      },
+      builderConfig: {
+        win: {
+          icon: 'build-resources/icon.ico',
+          target: [
+            { target: 'nsis', arch: ['x64'] },
+            { target: 'nsis-web', arch: ['x64'] },
+            { target: 'zip', arch: ['x64'] },
+          ],
+          signtoolOptions: {
+            signingHashAlgorithms: ['sha256'],
+          },
+        },
+        nsis: {
+          oneClick: false,
+          perMachine: false,
+          allowToChangeInstallationDirectory: true,
+          runAfterFinish: false,
+          artifactName: '${productName}-Setup-${version}.${ext}',
+          include: 'build-resources/installer.nsh',
+        },
+        extraResources: [
+          { from: 'build-resources/icon.ico', to: 'icon.ico' },
+        ],
+      },
+      nsisIncludeText: `
+!macro customHeader
+  ShowInstDetails show
+  ShowUninstDetails show
+!macroend
+`,
+      resources: new Set(['build-resources/icon.ico', 'build-resources/installer.nsh']),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toContain(
+      'windows-nsis-web-installer-enabled',
     );
   });
 

@@ -19,6 +19,8 @@ const hasValidSignature = (signature) =>
   normalizeText(signature?.signatureType) === 'Authenticode' &&
   hasSigner(signature);
 
+const internalSmartScreenStatuses = new Set(['internal-not-required', 'internal-trusted-root']);
+
 const sanitizeArtifactForPayload = (artifact) => ({
   id: artifact.id,
   fileName: artifact.fileName,
@@ -112,12 +114,17 @@ export const evaluateWindowsSigningEvidence = ({ artifacts = [], smartScreenEvid
       ),
     );
   } else if (smartScreenStatus !== 'passed') {
-    blockers.push(
-      toBlocker(
-        'windows-smartscreen-evidence-not-passed',
-        'SmartScreen evidence must have status "passed" before public release.',
-      ),
-    );
+    if (internalSmartScreenStatuses.has(smartScreenStatus)) {
+      smartScreenOk = true;
+      checks.push('windows-smartscreen-internal-scope-accepted');
+    } else {
+      blockers.push(
+        toBlocker(
+          'windows-smartscreen-evidence-not-passed',
+          'SmartScreen evidence must have status "passed" for public release or "internal-not-required" for internal-only distribution.',
+        ),
+      );
+    }
   } else {
     smartScreenOk = true;
     checks.push('windows-smartscreen-evidence-passed');

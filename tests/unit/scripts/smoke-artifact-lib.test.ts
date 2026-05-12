@@ -77,6 +77,27 @@ describe('smoke artifact helpers', () => {
     expect(JSON.stringify(artifact)).not.toContain('secret.jsonl');
   });
 
+  it('prefers CODEXWINMUX_SMOKE_ARTIFACT_DIR while keeping legacy env compatibility', async () => {
+    const { writeSmokeArtifact } = await loadLib();
+    const preferredDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexwinmux-smoke-artifact-test-'));
+    const legacyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-smoke-artifact-test-'));
+
+    const result = await writeSmokeArtifact({
+      smokeName: 'strict-identity',
+      status: 'passed',
+      startedAt: '2026-05-05T00:00:00.000Z',
+      endedAt: '2026-05-05T00:00:01.000Z',
+      payload: { ok: true },
+      env: {
+        CODEXWINMUX_SMOKE_ARTIFACT_DIR: preferredDir,
+        CODEXMUX_SMOKE_ARTIFACT_DIR: legacyDir,
+      },
+    });
+
+    expect(result.skipped).toBe(false);
+    expect(result.path.startsWith(preferredDir)).toBe(true);
+  });
+
   it('builds stable artifact filenames from endedAt', async () => {
     const { buildSmokeArtifactFilename } = await loadLib();
 

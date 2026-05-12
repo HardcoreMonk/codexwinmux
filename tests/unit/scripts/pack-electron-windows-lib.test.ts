@@ -16,6 +16,25 @@ describe('Windows Electron package wrapper helpers', () => {
     ]);
   });
 
+  it('adds signtool config from preferred CODEXWINMUX signing env aliases', async () => {
+    const { buildElectronBuilderArgs } = await loadLib();
+
+    expect(buildElectronBuilderArgs({
+      env: {
+        CODEXWINMUX_WINDOWS_CERTIFICATE_SHA1: '8C5F3B5030D3A54B1150C2C30CFD9868800DF0C6',
+        CODEXWINMUX_WINDOWS_PUBLISHER_NAME: 'CN=Internal Publisher',
+        CODEXWINMUX_WINDOWS_TIMESTAMP_SERVER: 'http://timestamp.digicert.com',
+        CODEXMUX_WINDOWS_CERTIFICATE_SHA1: 'LEGACY',
+      },
+    })).toEqual([
+      '--win',
+      '--config.npmRebuild=false',
+      '--config.win.signtoolOptions.certificateSha1=8C5F3B5030D3A54B1150C2C30CFD9868800DF0C6',
+      '--config.win.signtoolOptions.publisherName=CN=Internal Publisher',
+      '--config.win.signtoolOptions.rfc3161TimeStampServer=http://timestamp.digicert.com',
+    ]);
+  });
+
   it('prepends a temporary pnpm shim directory to PATH', async () => {
     const { buildElectronBuilderEnv } = await loadLib();
 

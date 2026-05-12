@@ -3,6 +3,7 @@ import { applyResolvedShellEnv } from './shell-env';
 import { buildEngineUrl, createEngineController, probeEngineHealth } from './engine-controller';
 import { applyElectronBootstrapEnv, buildFileImportSpecifier, buildPackagedNodePath } from './runtime-env';
 import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smoke';
+import { applyAutoUpdaterRuntimeDefaults } from './updater-config';
 import { resolveTrayIconPath } from './tray-icon';
 import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog, Tray, nativeImage } from 'electron';
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
@@ -309,8 +310,7 @@ const setupAutoUpdater = () => {
     (autoUpdater as unknown as { installDirectory?: string }).installDirectory = updaterSmokeConfig.installDir;
   }
 
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = true;
+  applyAutoUpdaterRuntimeDefaults(autoUpdater);
 
   autoUpdater.on('checking-for-update', () => {
     appendUpdaterSmokeStatus(updaterSmokeConfig, 'checking-for-update');
