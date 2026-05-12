@@ -16,7 +16,7 @@ export const buildElectronBuilderEnv = ({ env = process.env, shimDir }) => {
 
   return {
     ...env,
-    [pathKey]: currentPath ? `${shimDir}${path.delimiter}${currentPath}` : shimDir,
+    [pathKey]: currentPath ? `${shimDir}${path.win32.delimiter}${currentPath}` : shimDir,
   };
 };
 
@@ -46,7 +46,7 @@ export const buildElectronNativePrebuildTasks = ({
 } = {}) => [
   {
     packageName: 'better-sqlite3',
-    cwd: path.join(cwd, '.next', 'standalone', 'node_modules', 'better-sqlite3'),
+    cwd: path.win32.join(cwd, '.next', 'standalone', 'node_modules', 'better-sqlite3'),
     args: [
       '--runtime',
       'electron',

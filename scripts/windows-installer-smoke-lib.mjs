@@ -19,7 +19,7 @@ export const findWindowsInstaller = (releaseDir) => {
 };
 
 export const resolveInstalledAppPaths = (installDir) => ({
-  appExe: path.join(installDir, 'codexwinmux.exe'),
-  appAsar: path.join(installDir, 'resources', 'app.asar'),
-  uninstaller: path.join(installDir, 'Uninstall codexwinmux.exe'),
+  appExe: path.win32.join(installDir, 'codexwinmux.exe'),
+  appAsar: path.win32.join(installDir, 'resources', 'app.asar'),
+  uninstaller: path.win32.join(installDir, 'Uninstall codexwinmux.exe'),
 });

@@ -90,5 +90,9 @@ export const buildPackagedNodePath = ({
     .filter((value): value is string => !!value)
     .join(pathDelimiterForPlatform(platform));
 
-export const buildFileImportSpecifier = (filePath: string): string =>
-  pathToFileURL(filePath).href;
+export const buildFileImportSpecifier = (filePath: string): string => {
+  if (/^[A-Za-z]:[\\/]/.test(filePath)) {
+    return `file:///${filePath.replace(/\\/g, '/')}`;
+  }
+  return pathToFileURL(filePath).href;
+};

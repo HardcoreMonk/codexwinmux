@@ -37,7 +37,7 @@ export const readUpdaterSmokeConfig = (env: TUpdaterSmokeEnv = process.env): IUp
 
 export const sanitizeUpdaterDownloadedFileName = (downloadedFile?: string): string | null => {
   if (!downloadedFile) return null;
-  return path.basename(downloadedFile);
+  return path.win32.basename(downloadedFile);
 };
 
 export const buildUpdaterSmokeStatusEvent = (
