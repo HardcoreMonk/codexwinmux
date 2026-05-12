@@ -72,7 +72,7 @@
     "changePasswordDescription": "New passwords are hashed with SHA-512 before saving.",
     "newPasswordPlaceholder": "Enter new password (min 4 chars)",
     "passwordPlaceholder": "Enter password (min 4 chars)",
-    "resetHint": "To reset, delete ~/.codexmux/config.json and {action}.",
+    "resetHint": "To reset, delete ~/.codexwinmux/config.json and {action}.",
     "restartServer": "restart the server",
     "restartApp": "quit and restart the app",
     "savedRestart": "Saved. Changes will apply after {action}.",
@@ -112,7 +112,7 @@
   },
   "system": {
     "networkAccess": "Network Access",
-    "networkAccessDescription": "Control which networks can reach codexmux. Takes effect after server restart.",
+    "networkAccessDescription": "Control which networks can reach codexwinmux. Takes effect after server restart.",
     "networkAccessLocked": "Controlled by the HOST environment variable.",
     "restartRequired": "Requires a server restart to take effect.",
     "networkAccessOptions": {
@@ -132,7 +132,7 @@
     "showResources": "Show System Resources",
     "showResourcesDescription": "Display CPU, memory, and tmux session usage in the header.",
     "attachedImages": "Attached Images",
-    "attachedImagesDescription": "Images attached to the input bar are stored under ~/.codexmux/uploads/. Files older than 24 hours are removed automatically on server start.",
+    "attachedImagesDescription": "Images attached to the input bar are stored under ~/.codexwinmux/uploads/. Files older than 24 hours are removed automatically on server start.",
     "cleanAttachedImages": "Clean now",
     "attachedImagesCleaned": "Removed {count} files",
     "attachedImagesNothing": "No images to remove",

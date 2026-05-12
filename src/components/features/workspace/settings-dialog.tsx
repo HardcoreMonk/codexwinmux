@@ -188,7 +188,7 @@ const GeneralTab = () => {
       </div>
 
       <a
-        href="https://github.com/subicura/codexmux/releases"
+        href="https://github.com/HardcoreMonk/codexwinmux/releases"
         target="_blank"
         rel="noopener noreferrer"
         className="text-xs text-muted-foreground/50 hover:text-muted-foreground hover:underline w-fit"

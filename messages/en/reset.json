@@ -1,5 +1,5 @@
 {
-  "pageTitle": "Reset - windows native codexmux",
+  "pageTitle": "Reset - codexwinmux",
   "title": "tmux Reset",
   "stepCleanup": "Cleaning up connections",
   "stepReset": "Stopping and resetting tmux server",

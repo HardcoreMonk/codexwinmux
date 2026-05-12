@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyCliToken } from '@/lib/cli-token';
 
-const GUIDE = `# codexmux CLI HTTP API
+const GUIDE = `# codexwinmux CLI HTTP API
 
-All endpoints require header \`x-cmux-token: <CMUX_TOKEN>\`.
+All endpoints require the compatibility header \`x-cmux-token: <CMUX_TOKEN>\`.
 
 ## Workspaces
 

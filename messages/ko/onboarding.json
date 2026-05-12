@@ -30,7 +30,7 @@
   "appearanceDescription": "앱 전체의 화면 테마를 선택합니다.",
   "skipPermissions": "권한 확인 건너뛰기",
   "skipPermissionsDescription": "설정 완료 후 설정 > Codex에서 Codex 기본값을 구성할 수 있습니다.",
-  "networkDescription": "어느 네트워크에서 codexmux에 접근할 수 있는지 선택합니다. 설정 > 시스템에서 나중에 변경할 수 있습니다.",
+  "networkDescription": "어느 네트워크에서 codexwinmux에 접근할 수 있는지 선택합니다. 설정 > 시스템에서 나중에 변경할 수 있습니다.",
   "networkFootnote": "리버스 프록시, 터널, Tailscale Serve를 거친다면 \"Localhost만\"으로 충분합니다.",
   "networkOptions": {
     "localhost": {

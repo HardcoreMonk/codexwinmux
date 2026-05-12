@@ -92,7 +92,7 @@ export const resolveWindowsServiceHostPlan = ({
     service: {
       name: serviceName,
       displayName: serviceName,
-      description: 'Runs the local codexmux Windows service host.',
+      description: 'Runs the local codexwinmux Windows service host.',
     },
     process: {
       command: 'corepack',

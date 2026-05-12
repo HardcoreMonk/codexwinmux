@@ -1,6 +1,6 @@
 {
   "title": "사용량 통계",
-  "pageTitle": "사용량 통계 — windows native codexmux",
+  "pageTitle": "사용량 통계 - codexwinmux",
   "dataLoadError": "데이터를 불러올 수 없습니다",
   "collectingInitial": "초기 데이터를 수집하고 있습니다",
   "collectingToday": "오늘 데이터를 수집하고 있습니다",

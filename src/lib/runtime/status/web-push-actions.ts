@@ -66,7 +66,7 @@ export const createStatusWebPushActions = (
       }
 
       const keys = await readVapidKeys();
-      setVapidDetails('mailto:noreply@codexmux.app', keys.publicKey, keys.privateKey);
+      setVapidDetails('mailto:noreply@codexwinmux.app', keys.publicKey, keys.privateKey);
 
       let sent = 0;
       let removed = 0;

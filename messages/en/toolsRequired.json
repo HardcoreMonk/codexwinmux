@@ -1,7 +1,7 @@
 {
-  "pageTitle": "Tools Required - windows native codexmux",
+  "pageTitle": "Tools Required - codexwinmux",
   "title": "Required tools are missing",
-  "description": "The following tools must be installed for codexmux to work.",
+  "description": "The following tools must be installed for codexwinmux to work.",
   "checking": "Checking tools...",
   "installTmux": "Install tmux",
   "upgradeTmux": "Upgrade tmux",

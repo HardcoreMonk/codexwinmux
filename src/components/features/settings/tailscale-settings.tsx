@@ -204,7 +204,7 @@ const TailscaleSettings = () => {
             </p>
             <div className="rounded-md bg-muted p-2.5 font-mono text-xs leading-relaxed">
               <p className="text-muted-foreground/60">{t('commentFixedPort', { port: DEFAULT_PORT })}</p>
-              <p>PORT={DEFAULT_PORT} codexmux</p>
+              <p>PORT={DEFAULT_PORT} codexwinmux</p>
               <p className="mt-1.5 text-muted-foreground/60">{t('commentOrTerminate', { port: DEFAULT_PORT })}</p>
             </div>
           </div>

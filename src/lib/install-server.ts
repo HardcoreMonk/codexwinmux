@@ -22,7 +22,7 @@ const MAC_INSTALL_COMMANDS: Record<string, string> = Object.freeze({
   'tmux-upgrade': 'brew upgrade tmux',
   git: 'brew install git',
   codex: 'npm install -g @openai/codex',
-  'codex-path': 'echo "Ensure the npm global bin directory is in PATH, then restart codexmux."; echo ""; codex --version',
+  'codex-path': 'echo "Ensure the npm global bin directory is in PATH, then restart codexwinmux."; echo ""; codex --version',
   'codex-login': 'codex login',
 });
 
@@ -31,7 +31,7 @@ const LINUX_INSTALL_COMMANDS: Record<string, string> = Object.freeze({
   'tmux-upgrade': 'echo "Upgrade tmux using your package manager:"; echo "  Ubuntu/Debian: sudo apt install --only-upgrade tmux"; echo "  Fedora: sudo dnf upgrade tmux"; echo "  Arch: sudo pacman -Syu tmux"; echo ""; echo "After upgrading, refresh this page."',
   git: 'echo "Install git using your package manager:"; echo "  Ubuntu/Debian: sudo apt install git"; echo "  Fedora: sudo dnf install git"; echo "  Arch: sudo pacman -S git"; echo ""; echo "After installing, refresh this page."',
   codex: 'npm install -g @openai/codex',
-  'codex-path': 'echo "Ensure the npm global bin directory is in PATH, then restart codexmux."; echo ""; codex --version',
+  'codex-path': 'echo "Ensure the npm global bin directory is in PATH, then restart codexwinmux."; echo ""; codex --version',
   'codex-login': 'codex login',
 });
 

@@ -30,7 +30,7 @@
   "appearanceDescription": "Select the app-wide display theme.",
   "skipPermissions": "Skip Permission Checks",
   "skipPermissionsDescription": "Configure Codex defaults after setup in Settings > Codex.",
-  "networkDescription": "Choose which networks can reach codexmux. You can change this later in Settings > System.",
+  "networkDescription": "Choose which networks can reach codexwinmux. You can change this later in Settings > System.",
   "networkFootnote": "If you go through a reverse proxy, tunnel, or Tailscale Serve, \"Localhost only\" is enough.",
   "networkOptions": {
     "localhost": {
