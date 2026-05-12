@@ -33,6 +33,7 @@ describe('release immutability helpers', () => {
 
     expect(result.ok).toBe(false);
     expect(result.blockers.map((blocker: { ruleId: string }) => blocker.ruleId)).toEqual([
+      'release-immutability-version-below-minimum',
       'release-immutability-local-tag-exists',
       'release-immutability-remote-tag-exists',
       'release-immutability-github-release-exists',

@@ -28,6 +28,7 @@ import {
   extractCookieHeader,
   resolveSmokeTerminalEndpoint,
 } from './runtime-v2-phase2-smoke-lib.mjs';
+import { buildEnvAlias } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const PASSWORD = 'electron-runtime-v2-smoke';
@@ -77,9 +78,9 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     HOME: homeDir,
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
-    CODEXMUX_RUNTIME_V2: '1',
-    CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'new-tabs',
-    CODEXMUX_RUNTIME_DB: dbPath,
+    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;

@@ -48,7 +48,7 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 
 예: `0.3.0`은 `versionName=0.3`, `versionCode=300`입니다. `0.3.1`은 `versionName=0.3.1`, `versionCode=301`입니다. CI나 수동 배포에서 `ANDROID_VERSION_CODE` 환경변수를 주면 `versionCode`만 override할 수 있습니다.
 
-현재 repo/release version은 `0.4.8`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.8`, `versionCode=408`입니다.
+현재 repo/release version은 `0.4.15`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.15`, `versionCode=415`입니다.
 
 버전 증가 규칙:
 
@@ -285,7 +285,7 @@ CODEXMUX_ANDROID_RESTART_APP=1 CODEXMUX_ANDROID_FOREGROUND_ROUNDS=0 corepack pnp
 
 정상 설치 시 `pm path`는 `/data/app/.../base.apk`를 반환하고, launcher activity는 `com.hardcoremonk.codexmux/.MainActivity`로 resolve됩니다.
 
-현재 `0.4.8` debug install은 `dumpsys package`에서 `versionName=0.4.8`, `versionCode=408`로 보여야 합니다.
+현재 `0.4.15` debug install은 `dumpsys package`에서 `versionName=0.4.15`, `versionCode=415`로 보여야 합니다.
 
 Signed release APK:
 

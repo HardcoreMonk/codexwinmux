@@ -45,6 +45,7 @@ import {
   extractCookieHeader,
   resolveSmokeTerminalEndpoint,
 } from './runtime-v2-phase2-smoke-lib.mjs';
+import { buildEnvAlias } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const PASSWORD = 'android-runtime-v2-smoke';
@@ -103,9 +104,9 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
     HOST: process.env.CODEXMUX_ANDROID_RUNTIME_V2_HOST || 'localhost,tailscale',
-    CODEXMUX_RUNTIME_V2: '1',
-    CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'new-tabs',
-    CODEXMUX_RUNTIME_DB: dbPath,
+    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;

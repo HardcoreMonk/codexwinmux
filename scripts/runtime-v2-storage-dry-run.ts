@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import { analyzeRuntimeStorageDryRun } from '@/lib/runtime/storage-dry-run';
 import type { ILayoutData, IWorkspacesData } from '@/types/terminal';
+import { readRuntimeEnvAlias } from './runtime-env-alias';
 
 const createEmptyWorkspacesData = (): IWorkspacesData => ({
   workspaces: [],
@@ -55,7 +56,7 @@ const readLayouts = async (
 };
 
 const main = async (): Promise<void> => {
-  const dataDir = process.env.CODEXMUX_RUNTIME_V2_STORAGE_DRY_RUN_DATA_DIR
+  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_DRY_RUN_DATA_DIR')
     || path.join(os.homedir(), '.codexwinmux');
   const workspacesData = await readWorkspacesData(dataDir);
   const layoutsByWorkspaceId = await readLayouts(dataDir, workspacesData);

@@ -249,8 +249,8 @@ artifact를 전제로 `internal-not-required` 또는 `internal-trusted-root` 상
 단순 `CODEXWINMUX_SMARTSCREEN_STATUS=passed` shorthand를 허용하지 않습니다.
 
 ```bash
-CODEXWINMUX_SMARTSCREEN_DOWNLOAD_URL=https://github.com/HardcoreMonk/codexwinmux/releases/download/v0.4.14/codexwinmux-Setup-0.4.14.exe CODEXWINMUX_SMARTSCREEN_EXPECTED_SHA256=<installer-sha256> CODEXWINMUX_SMARTSCREEN_PUBLIC_EVIDENCE_OUTPUT=artifacts/smartscreen-v0.4.14-public.json corepack pnpm smoke:windows:smartscreen-public-evidence
-CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1 CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH=artifacts/smartscreen-v0.4.14-public.json corepack pnpm smoke:windows:signing-evidence
+CODEXWINMUX_SMARTSCREEN_DOWNLOAD_URL=https://github.com/HardcoreMonk/codexwinmux/releases/download/v0.4.15/codexwinmux-Setup-0.4.15.exe CODEXWINMUX_SMARTSCREEN_EXPECTED_SHA256=<installer-sha256> CODEXWINMUX_SMARTSCREEN_PUBLIC_EVIDENCE_OUTPUT=artifacts/smartscreen-v0.4.15-public.json corepack pnpm smoke:windows:smartscreen-public-evidence
+CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1 CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH=artifacts/smartscreen-v0.4.15-public.json corepack pnpm smoke:windows:signing-evidence
 CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=internal-trusted-root-distribution corepack pnpm smoke:windows:signing-evidence
 ```
 
@@ -277,7 +277,7 @@ macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사
 ## 패키징 메모
 
 현재 패키징 metadata는 제품명, app id, data dir, executable/artifact name을
-`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.14`이며, 새
+`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.15`이며, 새
 published update evidence를 주장하려면 같은 버전의 `latest.yml`,
 `codexwinmux-Setup-<version>.exe`, matching `.blockmap`을 GitHub Release에 발행한 뒤
 published/updater smoke를 다시 실행해야 합니다.
@@ -296,6 +296,8 @@ trusted root distribution 범위의 SmartScreen evidence로 기록합니다. 외
 시작할 때만 public SmartScreen reputation을 별도 release blocker로 둡니다.
 `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1` strict mode는 이 내부 판정을 거부하고
 public launch evidence JSON 기반 `passed` evidence를 요구합니다.
+다음 공개/내부 릴리스는 `0.4.15` 이상으로 발행하며, `v0.4.14` tag와 asset은
+불변 historical evidence로 유지합니다.
 
 Windows packaging과 updater smoke child process에는 `NODE_OPTIONS`로 `DEP0176`,
 `DEP0190` warning suppression을 병합합니다. 두 warning은 현재 최신

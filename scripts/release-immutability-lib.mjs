@@ -1,10 +1,24 @@
 const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
+const DEFAULT_MINIMUM_PACKAGE_VERSION = '0.4.15';
 
 const toBlocker = (ruleId, message, extra = {}) => ({
   ruleId,
   message,
   ...extra,
 });
+
+const parseSemverCore = (value) => {
+  const match = normalizeText(value).match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
+  if (!match) return null;
+  return match.slice(1, 4).map((part) => Number(part));
+};
+
+const compareSemverCore = (left, right) => {
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] !== right[index]) return left[index] - right[index];
+  }
+  return 0;
+};
 
 export const buildReleaseTag = (packageVersion) => `v${normalizeText(packageVersion)}`;
 
@@ -13,16 +27,31 @@ export const evaluateReleaseImmutability = ({
   localTagCommit = null,
   remoteTagCommit = null,
   githubReleaseUrl = null,
+  minimumPackageVersion = DEFAULT_MINIMUM_PACKAGE_VERSION,
 } = {}) => {
   const tag = buildReleaseTag(packageVersion);
   const checks = [];
   const blockers = [];
+  const normalizedVersion = normalizeText(packageVersion);
+  const normalizedMinimum = normalizeText(minimumPackageVersion);
 
-  if (!normalizeText(packageVersion)) {
+  if (!normalizedVersion) {
     blockers.push(toBlocker(
       'release-immutability-version-missing',
       'package.json version is required before release publication.',
     ));
+  } else {
+    const versionParts = parseSemverCore(normalizedVersion);
+    const minimumParts = parseSemverCore(normalizedMinimum);
+    if (versionParts && minimumParts && compareSemverCore(versionParts, minimumParts) < 0) {
+      blockers.push(toBlocker(
+        'release-immutability-version-below-minimum',
+        `The next codexwinmux release must be ${normalizedMinimum} or newer; do not reuse v0.4.14 tags or assets.`,
+        { packageVersion: normalizedVersion, minimumPackageVersion: normalizedMinimum },
+      ));
+    } else if (minimumParts) {
+      checks.push('release-immutability-version-floor-satisfied');
+    }
   }
 
   if (normalizeText(localTagCommit)) {

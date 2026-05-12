@@ -39,6 +39,7 @@ import {
   normalizeAndroidForegroundRounds,
 } from './android-runtime-v2-smoke-lib.mjs';
 import { extractCookieHeader } from './runtime-v2-phase2-smoke-lib.mjs';
+import { buildEnvAlias } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const PASSWORD = 'android-timeline-foreground-smoke';
@@ -123,12 +124,12 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
     HOST: process.env.CODEXMUX_ANDROID_TIMELINE_FOREGROUND_HOST || 'localhost,tailscale',
-    CODEXMUX_RUNTIME_V2: '1',
-    CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_TIMELINE_V2_MODE: 'default',
-    CODEXMUX_RUNTIME_STATUS_V2_MODE: 'off',
-    CODEXMUX_RUNTIME_DB: dbPath,
+    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_STATUS_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;

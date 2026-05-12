@@ -5,6 +5,18 @@ import path from 'path';
 import { importLegacyStorageSnapshot } from '@/lib/runtime/storage-import';
 import { openRuntimeDatabase } from '@/lib/runtime/storage/schema';
 import type { ILayoutData, IWorkspacesData } from '@/types/terminal';
+import {
+  captureRuntimeEnvAliases,
+  restoreRuntimeEnvSnapshot,
+  writeRuntimeEnvAlias,
+} from './runtime-env-alias';
+
+const RUNTIME_ENV_KEYS = [
+  'CODEXMUX_RUNTIME_V2',
+  'CODEXMUX_RUNTIME_STORAGE_V2_MODE',
+  'CODEXMUX_RUNTIME_DB',
+  'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR',
+];
 
 const assert = (condition: unknown, message: string): void => {
   if (!condition) throw new Error(message);
@@ -14,9 +26,7 @@ const main = async (): Promise<void> => {
   const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-runtime-v2-storage-default-'));
   const originalEnv = {
     HOME: process.env.HOME,
-    CODEXMUX_RUNTIME_V2: process.env.CODEXMUX_RUNTIME_V2,
-    CODEXMUX_RUNTIME_STORAGE_V2_MODE: process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE,
-    CODEXMUX_RUNTIME_DB: process.env.CODEXMUX_RUNTIME_DB,
+    ...captureRuntimeEnvAliases(process.env, RUNTIME_ENV_KEYS),
   };
 
   try {
@@ -78,9 +88,10 @@ const main = async (): Promise<void> => {
     }
 
     process.env.HOME = homeDir;
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    process.env.CODEXMUX_RUNTIME_DB = dbPath;
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2', '1');
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'default');
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_DB', dbPath);
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR', dataDir);
 
     await fs.rm(path.join(dataDir, 'workspaces.json'), { force: true });
     await fs.rm(layoutPath, { force: true });
@@ -144,10 +155,10 @@ const main = async (): Promise<void> => {
     const addedHistory = await addMessageHistory('ws-default', 'runtime history');
     const updatedHistory = await readMessageHistory('ws-default');
     assert(updatedHistory[0]?.id === addedHistory.id, 'default write did not update SQLite message history');
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'off';
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off');
     const fallbackHistory = await readMessageHistory('ws-default');
     assert(fallbackHistory[0]?.id === addedHistory.id, 'default write did not mirror message history JSON fallback');
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'default');
     await deleteMessageHistory('ws-default', addedHistory.id);
     const deletedHistory = await readMessageHistory('ws-default');
     assert(deletedHistory.every((entry) => entry.id !== addedHistory.id), 'default delete did not update SQLite message history');
@@ -168,10 +179,7 @@ const main = async (): Promise<void> => {
       ],
     }, null, 2));
   } finally {
-    process.env.HOME = originalEnv.HOME;
-    process.env.CODEXMUX_RUNTIME_V2 = originalEnv.CODEXMUX_RUNTIME_V2;
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = originalEnv.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
-    process.env.CODEXMUX_RUNTIME_DB = originalEnv.CODEXMUX_RUNTIME_DB;
+    restoreRuntimeEnvSnapshot(process.env, originalEnv);
     await fs.rm(homeDir, { recursive: true, force: true });
   }
 };

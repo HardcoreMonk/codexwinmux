@@ -155,6 +155,19 @@ terminal attach, updater local feed를 실제 Windows host에서 다시 검증�
 | Upstream warning cleanup | 통과 | packaging/package-gate/updater smoke child process env에 `--disable-warning=DEP0176`, `--disable-warning=DEP0190`를 중복 없이 병합한다. electron-builder/electron-updater 최신 버전은 각각 `26.8.1`, `6.8.3`로 추가 upgrade 경로가 없다 |
 | Legacy CLI alias sunset | 통과 | `package.json` bin에서 `codexmux`/`cmux` alias를 제거하고 `codexwinmux`/`cwmux`만 유지했다. `CODEXWINMUX_LEGACY_SUNSET=1` strict identity smoke가 legacy CLI alias 제거를 검증한다 |
 
+### 2026-05-13 release floor / runtime env alias follow-up
+
+Public SmartScreen 재검증 전제와 다음 릴리스 불변성, runtime env alias migration을
+추가 정리했다.
+
+| 항목 | 상태 | 근거 |
+| --- | --- | --- |
+| 다음 릴리스 하한 | 반영 | `package.json`을 `0.4.15`로 올리고 `smoke:release-immutability`가 `0.4.15` 미만 package version을 차단하도록 했다. `v0.4.14` tag와 asset은 historical evidence로 불변 유지한다 |
+| Storage utility alias | 반영 | `runtime-v2:storage-dry-run`, `runtime-v2:storage-backup`, `runtime-v2:storage-import` entrypoint가 preferred `CODEXWINMUX_RUNTIME_*` 입력을 먼저 읽고 기존 `CODEXMUX_RUNTIME_*`는 fallback으로만 해석한다 |
+| Storage/timeline smoke fixture alias | 반영 | storage write/default/shadow, timeline shadow/live/resume/session-changed/websocket smoke가 서버 child env와 test process env를 alias helper로 설정한다 |
+| Public SmartScreen smoke | 대기 | public `v0.4.15+` HTTPS installer asset, SHA-256, 실제 reputation 확보가 아직 없으므로 `smoke:windows:smartscreen-public-evidence`는 통과 evidence를 만들 수 없다. 해당 artifact가 준비된 뒤 clean Windows 환경에서 재실행한다 |
+| Legacy fallback 제거 | 대기 | 남은 unit fixture와 runtime fallback test를 preferred `CODEXWINMUX_RUNTIME_*` 기준으로 재작성한 뒤 `src/lib/runtime/env.ts`와 script helper의 fallback branch를 제거한다 |
+
 ### 2026-05-05 P2 -> P3 runtime v2 storage preflight
 
 P2 terminal gate evidence를 보강하고 P3 storage default rollout 전 preflight를 실제

@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import { buildEnvAlias } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const startedAt = new Date().toISOString();
@@ -52,7 +53,7 @@ const main = async () => {
 
   if (process.env.CODEXMUX_OPS_SMOKE_RUNTIME_URL) {
     rows.push(await run('runtime-v2-phase6-default-gate', ['smoke:runtime-v2:phase6-default-gate'], {
-      CODEXMUX_RUNTIME_V2_SMOKE_URL: process.env.CODEXMUX_OPS_SMOKE_RUNTIME_URL,
+      ...buildEnvAlias('CODEXMUX_RUNTIME_V2_SMOKE_URL', process.env.CODEXMUX_OPS_SMOKE_RUNTIME_URL),
     }));
   } else {
     rows.push({

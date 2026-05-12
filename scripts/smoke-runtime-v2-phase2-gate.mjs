@@ -17,6 +17,7 @@ import {
   extractCookieHeader,
   resolveSmokeTerminalEndpoint,
 } from './runtime-v2-phase2-smoke-lib.mjs';
+import { buildEnvAlias } from './env-alias-lib.mjs';
 
 const PASSWORD = 'runtime-v2-phase2-smoke';
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -79,9 +80,9 @@ const startServer = async ({ homeDir, dbPath, port, terminalMode }) => {
     ...process.env,
     HOME: homeDir,
     SHELL: '/bin/sh',
-    CODEXMUX_RUNTIME_V2: '1',
-    CODEXMUX_RUNTIME_TERMINAL_V2_MODE: terminalMode,
-    CODEXMUX_RUNTIME_DB: dbPath,
+    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', terminalMode),
+    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;

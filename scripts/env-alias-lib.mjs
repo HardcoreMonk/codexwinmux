@@ -9,6 +9,11 @@ export const readEnvAlias = (env, legacyKey) => {
   return env?.[legacyKey];
 };
 
+export const buildEnvAlias = (legacyKey, value) => ({
+  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+  [legacyKey]: value,
+});
+
 export const hasPreferredEnvAlias = (env, legacyKey) =>
   hasEnvValue(env?.[preferredCodexwinmuxEnvKey(legacyKey)]);
 
