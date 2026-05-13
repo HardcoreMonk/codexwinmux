@@ -24,6 +24,7 @@ import {
   type IStatusWebPushActions,
 } from '@/lib/runtime/status/web-push-actions';
 import { StatusManager } from '@/lib/status-manager';
+import { patchRuntimeTabStatusMetadata } from '@/lib/runtime/storage-read-owner';
 import type { IClientTabStatusEntry, IStatusUpdateMessage, IStatusHookEventMessage, IRateLimitsUpdateMessage } from '@/types/status';
 import type { ISessionHistoryUpdateMessage } from '@/types/status';
 import { markDeviceHidden, markDeviceVisible } from '@/lib/push-subscriptions';
@@ -114,6 +115,13 @@ export const createStatusWorkerService = (options: ICreateStatusWorkerServiceOpt
     liveManager ??= options.createLiveManager?.(emitStatusBroadcast) ?? new StatusManager({
       broadcast: emitStatusBroadcast,
       useRuntimeAdapters: false,
+      persistTabCliStatus: (entry) => {
+        patchRuntimeTabStatusMetadata({
+          sessionName: entry.tmuxSession,
+          cliState: entry.cliState,
+          dismissedAt: entry.dismissedAt ?? null,
+        });
+      },
     });
     return liveManager;
   };

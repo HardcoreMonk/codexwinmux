@@ -4,6 +4,7 @@ import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { parseRuntimeApiBody, sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { broadcastSync } from '@/lib/sync-server';
 
 const querySchema = z.object({
   workspaceId: z.string().min(1),
@@ -28,6 +29,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const supervisor = getRuntimeSupervisor();
     await supervisor.ensureStarted();
     const result = await supervisor.deleteWorkspace(workspaceId);
+    if (result.deleted) broadcastSync({ type: 'workspace' });
     return res.status(200).json(result);
   } catch (err) {
     return sendRuntimeApiError(res, err);

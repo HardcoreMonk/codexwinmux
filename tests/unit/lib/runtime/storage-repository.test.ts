@@ -157,6 +157,224 @@ describe('runtime storage repository', () => {
     ]);
   });
 
+  it('renames workspaces in SQLite and records a mutation event', () => {
+    const db = openTestDatabase(path.join(dir, 'runtime-v2', 'state.db'));
+    const repo = createStorageRepository(db);
+
+    const workspace = repo.createWorkspace({ name: 'Runtime', defaultCwd: dir });
+
+    const renamed = repo.renameWorkspace({ workspaceId: workspace.id, name: '  Core owner  ' });
+
+    expect(renamed).toEqual(expect.objectContaining({
+      id: workspace.id,
+      name: 'Core owner',
+      defaultCwd: dir,
+    }));
+    expect(repo.listWorkspaces()).toEqual([
+      expect.objectContaining({ id: workspace.id, name: 'Core owner' }),
+    ]);
+    expect(repo.renameWorkspace({ workspaceId: 'ws-missing', name: 'Missing' })).toBeNull();
+    expect(repo.listMutationEvents()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ entityType: 'workspace', entityId: workspace.id, eventType: 'workspace.renamed' }),
+    ]));
+  });
+
+  it('owns workspace groups and workspace ordering in SQLite', () => {
+    const db = openTestDatabase(path.join(dir, 'runtime-v2', 'state.db'));
+    const repo = createStorageRepository(db);
+
+    const first = repo.createWorkspace({ name: 'First', defaultCwd: dir });
+    const second = repo.createWorkspace({ name: 'Second', defaultCwd: dir });
+    const group = repo.createWorkspaceGroup({ name: '  Core group  ' });
+    const otherGroup = repo.createWorkspaceGroup({ name: 'Other group' });
+
+    expect(group).toEqual(expect.objectContaining({ id: expect.stringMatching(/^grp-/), name: 'Core group', collapsed: false }));
+    expect(repo.setWorkspaceGroup({ workspaceId: first.id, groupId: group.id })).toBe(true);
+    expect(repo.reorderWorkspaces({
+      items: [
+        { id: second.id, groupId: otherGroup.id },
+        { id: first.id, groupId: group.id },
+      ],
+    })).toBe(true);
+    expect(repo.reorderWorkspaceGroups({ groupIds: [otherGroup.id, group.id] })).toBe(true);
+
+    let snapshot = repo.getWorkspaceSnapshot();
+    expect(snapshot.groups?.map((item) => item.id)).toEqual([otherGroup.id, group.id]);
+    expect(snapshot.workspaces.map((item) => ({ id: item.id, groupId: item.groupId }))).toEqual([
+      { id: second.id, groupId: otherGroup.id },
+      { id: first.id, groupId: group.id },
+    ]);
+
+    expect(repo.renameWorkspaceGroup({ groupId: group.id, name: 'Renamed group' })).toEqual({
+      id: group.id,
+      name: 'Renamed group',
+      collapsed: false,
+    });
+    expect(repo.setWorkspaceGroupCollapsed({ groupId: group.id, collapsed: true })).toBe(true);
+    expect(repo.deleteWorkspaceGroup({ groupId: otherGroup.id })).toBe(true);
+
+    snapshot = repo.getWorkspaceSnapshot();
+    expect(snapshot.groups).toEqual([
+      { id: group.id, name: 'Renamed group', collapsed: true },
+    ]);
+    expect(snapshot.workspaces.find((item) => item.id === second.id)?.groupId).toBeUndefined();
+    expect(repo.reorderWorkspaces({ items: [{ id: first.id }] })).toBe(false);
+    expect(repo.reorderWorkspaceGroups({ groupIds: [group.id, 'grp-missing'] })).toBe(false);
+  });
+
+  it('owns layout pane split, tab reorder, tab move, pane patch, tab patch, and pane close in SQLite', () => {
+    const db = openTestDatabase(path.join(dir, 'runtime-v2', 'state.db'));
+    const repo = createStorageRepository(db);
+
+    const workspace = repo.createWorkspace({ name: 'Runtime', defaultCwd: dir });
+    const firstPending = repo.createPendingTerminalTab({
+      id: 'tab-first',
+      workspaceId: workspace.id,
+      paneId: workspace.rootPaneId,
+      sessionName: `rtv2-${workspace.id}-${workspace.rootPaneId}-tab-first`,
+      cwd: dir,
+    });
+    repo.finalizeTerminalTab({ id: firstPending.id });
+
+    const split = repo.splitPane({
+      workspaceId: workspace.id,
+      sourcePaneId: workspace.rootPaneId,
+      newPaneId: 'pane-second',
+      orientation: 'horizontal',
+      tab: {
+        id: 'tab-second',
+        sessionName: `rtv2-${workspace.id}-pane-second-tab-second`,
+        name: 'Second',
+        cwd: dir,
+        panelType: 'terminal',
+      },
+    });
+
+    expect(split?.activePaneId).toBe('pane-second');
+    expect(split?.root.type).toBe('split');
+
+    const thirdPending = repo.createPendingTerminalTab({
+      id: 'tab-third',
+      workspaceId: workspace.id,
+      paneId: workspace.rootPaneId,
+      sessionName: `rtv2-${workspace.id}-${workspace.rootPaneId}-tab-third`,
+      cwd: dir,
+    });
+    repo.finalizeTerminalTab({ id: thirdPending.id });
+
+    expect(repo.reorderTabs({ workspaceId: workspace.id, paneId: workspace.rootPaneId, tabIds: ['tab-third', 'tab-first'] })?.root)
+      .toEqual(expect.any(Object));
+    expect(repo.moveTab({
+      workspaceId: workspace.id,
+      tabId: 'tab-third',
+      fromPaneId: workspace.rootPaneId,
+      toPaneId: 'pane-second',
+      toIndex: 1,
+    })?.activePaneId).toBe('pane-second');
+    expect(repo.patchPane({ workspaceId: workspace.id, paneId: 'pane-second', activeTabId: 'tab-third' })?.root)
+      .toEqual(expect.any(Object));
+    expect(repo.patchTab({
+      workspaceId: workspace.id,
+      paneId: 'pane-second',
+      tabId: 'tab-third',
+      patch: {
+        name: 'Patched',
+        title: 'Patched title',
+        cwd: `${dir}\\nested`,
+        lastCommand: 'codex',
+        terminalRatio: 42,
+        terminalCollapsed: true,
+      },
+    })?.root).toEqual(expect.any(Object));
+    expect(repo.patchLayout({ workspaceId: workspace.id, activePaneId: workspace.rootPaneId, ratioUpdate: { path: [], ratio: 67 } })?.activePaneId)
+      .toBe(workspace.rootPaneId);
+
+    const layout = repo.getWorkspaceLayout(workspace.id);
+    expect(layout?.root.type).toBe('split');
+    if (layout?.root.type === 'split') {
+      expect(layout.root.ratio).toBe(67);
+      const left = layout.root.children[0];
+      const right = layout.root.children[1];
+      expect(left.type).toBe('pane');
+      expect(right.type).toBe('pane');
+      if (left.type === 'pane' && right.type === 'pane') {
+        expect(left.tabs.map((tab) => ({ id: tab.id, order: tab.order }))).toEqual([{ id: 'tab-first', order: 0 }]);
+        expect(right.activeTabId).toBe('tab-third');
+        expect(right.tabs.map((tab) => ({ id: tab.id, order: tab.order }))).toEqual([
+          { id: 'tab-second', order: 0 },
+          { id: 'tab-third', order: 1 },
+        ]);
+        expect(right.tabs[1]).toEqual(expect.objectContaining({
+          name: 'Patched',
+          title: 'Patched title',
+          cwd: `${dir}\\nested`,
+          lastCommand: 'codex',
+          terminalRatio: 42,
+          terminalCollapsed: true,
+        }));
+      }
+    }
+
+    const closed = repo.closePane({ workspaceId: workspace.id, paneId: 'pane-second' });
+    expect(closed).toEqual({
+      layout: expect.objectContaining({ activePaneId: workspace.rootPaneId }),
+      sessions: [
+        { sessionName: `rtv2-${workspace.id}-pane-second-tab-second` },
+        { sessionName: `rtv2-${workspace.id}-${workspace.rootPaneId}-tab-third` },
+      ],
+    });
+    expect(repo.getWorkspaceLayout(workspace.id)?.root.type).toBe('pane');
+  });
+
+  it('updates tab status and timeline metadata by session name in SQLite', () => {
+    const db = openTestDatabase(path.join(dir, 'runtime-v2', 'state.db'));
+    const repo = createStorageRepository(db);
+    const workspace = repo.createWorkspace({ name: 'Runtime', defaultCwd: dir });
+    const sessionName = `rtv2-${workspace.id}-${workspace.rootPaneId}-tab-status`;
+    repo.createPendingTerminalTab({
+      id: 'tab-status',
+      workspaceId: workspace.id,
+      paneId: workspace.rootPaneId,
+      sessionName,
+      cwd: dir,
+    });
+    repo.finalizeTerminalTab({ id: 'tab-status' });
+
+    expect(repo.patchTabStatusMetadata({
+      sessionName,
+      agentSessionId: 'agent-a',
+      agentJsonlPath: '/tmp/agent-a.jsonl',
+      agentSummary: 'summary',
+      lastUserMessage: '작업 시작',
+      cliState: 'needs-input',
+      dismissedAt: 123,
+    })).toEqual({ updated: true, workspaceId: workspace.id, tabId: 'tab-status' });
+
+    expect(repo.getTabStatusMetadataBySession(sessionName)).toEqual(expect.objectContaining({
+      workspaceId: workspace.id,
+      tabId: 'tab-status',
+      agentSessionId: 'agent-a',
+      agentJsonlPath: '/tmp/agent-a.jsonl',
+      agentSummary: 'summary',
+      lastUserMessage: '작업 시작',
+      cliState: 'needs-input',
+      dismissedAt: 123,
+    }));
+
+    const layout = repo.getWorkspaceLayout(workspace.id);
+    expect(layout?.root.type).toBe('pane');
+    if (layout?.root.type === 'pane') {
+      expect(layout.root.tabs[0]).toEqual(expect.objectContaining({
+        agentSessionId: 'agent-a',
+        agentJsonlPath: '/tmp/agent-a.jsonl',
+        agentSummary: 'summary',
+        lastUserMessage: '작업 시작',
+        cliState: 'needs-input',
+        dismissedAt: 123,
+      }));
+    }
+  });
+
   it('marks pending terminal tabs failed for reconciliation', () => {
     const db = openTestDatabase(path.join(dir, 'runtime-v2', 'state.db'));
     const repo = createStorageRepository(db);
@@ -288,6 +506,7 @@ describe('runtime storage repository', () => {
 
     expect(repo.deleteTerminalTab({ id: secondPending.id })).toEqual({
       deleted: true,
+      workspaceId: workspace.id,
       session: { sessionName: secondPending.sessionName },
     });
 
@@ -321,6 +540,7 @@ describe('runtime storage repository', () => {
 
     expect(repo.deleteTerminalTab({ id: failedPending.id })).toEqual({
       deleted: true,
+      workspaceId: workspace.id,
       session: null,
     });
     expect(repo.deleteTerminalTab({ id: 'tab-missing' })).toEqual({

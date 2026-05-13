@@ -422,6 +422,7 @@ export interface IStatusManagerOptions {
   broadcast?: (event: object, exclude?: WebSocket) => void;
   enableRateLimits?: boolean;
   useRuntimeAdapters?: boolean;
+  persistTabCliStatus?: (entry: ITabStatusEntry) => Promise<void> | void;
 }
 
 export class StatusManager {
@@ -1496,7 +1497,11 @@ export class StatusManager {
   }
 
   private persistToLayout(entry: ITabStatusEntry): void {
-    updateTabCliStatus(entry.tmuxSession, entry.cliState, entry.dismissedAt).catch(() => {});
+    Promise.resolve(
+      this.options.persistTabCliStatus
+        ? this.options.persistTabCliStatus(entry)
+        : updateTabCliStatus(entry.tmuxSession, entry.cliState, entry.dismissedAt),
+    ).catch(() => {});
   }
 
   private broadcastUpdate(tabId: string, entry: ITabStatusEntry, exclude?: WebSocket): void {

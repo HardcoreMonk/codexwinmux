@@ -25,6 +25,9 @@ import type {
   IRuntimeStatusLiveRemoveTabInput,
   IRuntimeStatusLiveSyncPayload,
   IRuntimeStatusUpdateSessionHistoryDismissedAtInput,
+  IRuntimeTabStatusMetadata,
+  IRuntimeTabStatusMetadataPatchInput,
+  IRuntimeTabStatusMetadataResult,
   TRuntimeStatusClientEventInput,
   TRuntimeStatusClientEventIntent,
   IRuntimeStatusLiveEvent,
@@ -57,7 +60,18 @@ import type {
   TRuntimeStatusDecision,
   TRuntimeStatusHookDecision,
   TRuntimeStatusHookStateInput,
+  IRuntimeCreateWorkspaceGroupInput,
+  IRuntimeDeleteWorkspaceGroupInput,
+  IRuntimeDeleteWorkspaceGroupResult,
+  IRuntimeRenameWorkspaceGroupInput,
+  IRuntimeRenameWorkspaceInput,
+  IRuntimeReorderWorkspaceGroupsInput,
+  IRuntimeReorderWorkspacesInput,
+  IRuntimeSetWorkspaceGroupCollapsedInput,
+  IRuntimeSetWorkspaceGroupInput,
   IRuntimeWorkspace,
+  IRuntimeWorkspaceGroup,
+  IRuntimeWorkspaceMutationOk,
   TRuntimeLayout,
 } from '@/lib/runtime/contracts';
 import { createRuntimeId, createRuntimeSessionName, parseRuntimeSessionName } from '@/lib/runtime/session-name';
@@ -78,6 +92,38 @@ export interface IRuntimeSupervisor {
   health(): Promise<IRuntimeHealth>;
   listWorkspaces(): Promise<IRuntimeWorkspace[]>;
   createWorkspace(input: { name: string; defaultCwd: string }): Promise<IRuntimeCreateWorkspaceResult>;
+  renameWorkspace(input: IRuntimeRenameWorkspaceInput): Promise<IRuntimeWorkspace | null>;
+  createWorkspaceGroup(input: IRuntimeCreateWorkspaceGroupInput): Promise<IRuntimeWorkspaceGroup>;
+  renameWorkspaceGroup(input: IRuntimeRenameWorkspaceGroupInput): Promise<IRuntimeWorkspaceGroup | null>;
+  setWorkspaceGroupCollapsed(input: IRuntimeSetWorkspaceGroupCollapsedInput): Promise<IRuntimeWorkspaceMutationOk>;
+  deleteWorkspaceGroup(input: IRuntimeDeleteWorkspaceGroupInput): Promise<IRuntimeDeleteWorkspaceGroupResult>;
+  reorderWorkspaceGroups(input: IRuntimeReorderWorkspaceGroupsInput): Promise<IRuntimeWorkspaceMutationOk>;
+  setWorkspaceGroup(input: IRuntimeSetWorkspaceGroupInput): Promise<IRuntimeWorkspaceMutationOk>;
+  reorderWorkspaces(input: IRuntimeReorderWorkspacesInput): Promise<IRuntimeWorkspaceMutationOk>;
+  splitPane(input: {
+    workspaceId: string;
+    sourcePaneId: string;
+    orientation: 'horizontal' | 'vertical';
+    cwd?: string;
+    panelType?: 'terminal' | 'codex' | 'web-browser' | 'diff';
+    name?: string;
+  }): Promise<TRuntimeLayout>;
+  closePane(input: {
+    workspaceId: string;
+    paneId: string;
+  }): Promise<{ layout: TRuntimeLayout; killedSessions: string[]; failedKills: Array<{ sessionName: string; error: string }> } | null>;
+  patchLayout(input: { workspaceId: string; activePaneId?: string; ratioUpdate?: { path: number[]; ratio: number }; equalize?: boolean }): Promise<TRuntimeLayout>;
+  patchPane(input: { workspaceId: string; paneId: string; activeTabId?: string }): Promise<TRuntimeLayout>;
+  reorderTabs(input: { workspaceId: string; paneId: string; tabIds: string[] }): Promise<TRuntimeLayout>;
+  moveTab(input: { workspaceId: string; tabId: string; fromPaneId: string; toPaneId: string; toIndex: number }): Promise<TRuntimeLayout>;
+  patchTab(input: {
+    workspaceId: string;
+    paneId: string;
+    tabId: string;
+    patch: Record<string, unknown>;
+  }): Promise<TRuntimeLayout>;
+  patchTabStatusMetadata(input: IRuntimeTabStatusMetadataPatchInput): Promise<IRuntimeTabStatusMetadataResult>;
+  getTabStatusMetadata(input: { sessionName: string }): Promise<IRuntimeTabStatusMetadata | null>;
   deleteWorkspace(workspaceId: string): Promise<IRuntimeDeleteWorkspaceResult>;
   deleteTerminalTab(tabId: string): Promise<IRuntimeDeleteTerminalTabResult>;
   listTimelineSessions(input: IRuntimeTimelineSessionListInput): Promise<IRuntimeTimelineSessionPage>;
@@ -635,6 +681,176 @@ export const createRuntimeSupervisorForTest = (
       return getClients().storage.request<typeof input, IRuntimeCreateWorkspaceResult>('storage.create-workspace', input);
     },
 
+    async renameWorkspace(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeRenameWorkspaceInput, IRuntimeWorkspace | null>(
+        'storage.rename-workspace',
+        input,
+      );
+    },
+
+    async createWorkspaceGroup(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeCreateWorkspaceGroupInput, IRuntimeWorkspaceGroup>(
+        'storage.create-workspace-group',
+        input,
+      );
+    },
+
+    async renameWorkspaceGroup(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeRenameWorkspaceGroupInput, IRuntimeWorkspaceGroup | null>(
+        'storage.rename-workspace-group',
+        input,
+      );
+    },
+
+    async setWorkspaceGroupCollapsed(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeSetWorkspaceGroupCollapsedInput, IRuntimeWorkspaceMutationOk>(
+        'storage.set-workspace-group-collapsed',
+        input,
+      );
+    },
+
+    async deleteWorkspaceGroup(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeDeleteWorkspaceGroupInput, IRuntimeDeleteWorkspaceGroupResult>(
+        'storage.delete-workspace-group',
+        input,
+      );
+    },
+
+    async reorderWorkspaceGroups(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeReorderWorkspaceGroupsInput, IRuntimeWorkspaceMutationOk>(
+        'storage.reorder-workspace-groups',
+        input,
+      );
+    },
+
+    async setWorkspaceGroup(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeSetWorkspaceGroupInput, IRuntimeWorkspaceMutationOk>(
+        'storage.set-workspace-group',
+        input,
+      );
+    },
+
+    async reorderWorkspaces(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeReorderWorkspacesInput, IRuntimeWorkspaceMutationOk>(
+        'storage.reorder-workspaces',
+        input,
+      );
+    },
+
+    async splitPane(input) {
+      await this.ensureStarted();
+      const { storage, terminal } = getClients();
+      const nextPaneId = createRuntimeId('pane');
+      const nextTabId = tabId();
+      const sessionName = sessionNameFor(input.workspaceId, nextPaneId, nextTabId);
+      const panelType = input.panelType ?? 'terminal';
+      if (panelType !== 'web-browser') {
+        await terminal.request('terminal.create-session', {
+          sessionName,
+          cols: 80,
+          rows: 24,
+          cwd: input.cwd,
+        });
+      }
+      try {
+        return await storage.request('storage.split-pane', {
+          workspaceId: input.workspaceId,
+          sourcePaneId: input.sourcePaneId,
+          newPaneId: nextPaneId,
+          orientation: input.orientation,
+          tab: {
+            id: nextTabId,
+            sessionName,
+            name: input.name ?? (panelType === 'web-browser' ? 'Web Browser' : ''),
+            ...(input.cwd ? { cwd: input.cwd } : {}),
+            panelType,
+          },
+        });
+      } catch (err) {
+        if (panelType !== 'web-browser') {
+          await terminal.request('terminal.kill-session', { sessionName }).catch(() => undefined);
+        }
+        throw err;
+      }
+    },
+
+    async closePane(input) {
+      await this.ensureStarted();
+      const { storage, terminal } = getClients();
+      const result = await storage.request<typeof input, { layout: TRuntimeLayout; sessions: Array<{ sessionName: string }> } | null>(
+        'storage.close-pane',
+        input,
+      );
+      if (!result) return null;
+      const killedSessions: string[] = [];
+      const failedKills: Array<{ sessionName: string; error: string }> = [];
+      for (const session of result.sessions) {
+        const sessionName = parseRuntimeSessionNameOrNull(session.sessionName);
+        if (!sessionName) {
+          failedKills.push({ sessionName: session.sessionName, error: 'invalid runtime session name' });
+          continue;
+        }
+        closeTerminalSubscribers(sessionName, 1000, 'Pane closed');
+        await waitForTerminalAttachAttempt(sessionName);
+        try {
+          await terminal.request('terminal.kill-session', { sessionName });
+          killedSessions.push(sessionName);
+        } catch (err) {
+          failedKills.push({ sessionName, error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+      return { layout: result.layout, killedSessions, failedKills };
+    },
+
+    async patchLayout(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<typeof input, TRuntimeLayout>('storage.patch-layout', input);
+    },
+
+    async patchPane(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<typeof input, TRuntimeLayout>('storage.patch-pane', input);
+    },
+
+    async reorderTabs(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<typeof input, TRuntimeLayout>('storage.reorder-tabs', input);
+    },
+
+    async moveTab(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<typeof input, TRuntimeLayout>('storage.move-tab', input);
+    },
+
+    async patchTab(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<typeof input, TRuntimeLayout>('storage.patch-tab', input);
+    },
+
+    async patchTabStatusMetadata(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<IRuntimeTabStatusMetadataPatchInput, IRuntimeTabStatusMetadataResult>(
+        'storage.patch-tab-status-metadata',
+        input,
+      );
+    },
+
+    async getTabStatusMetadata(input) {
+      await this.ensureStarted();
+      return getClients().storage.request<typeof input, IRuntimeTabStatusMetadata | null>(
+        'storage.get-tab-status-metadata',
+        input,
+      );
+    },
+
     async deleteWorkspace(workspaceId) {
       await this.ensureStarted();
       const { storage, terminal } = getClients();
@@ -674,13 +890,14 @@ export const createRuntimeSupervisorForTest = (
         { id: tabId },
       );
       if (!result.deleted || !result.session) {
-        return { deleted: result.deleted, killedSession: null, failedKill: null };
+        return { deleted: result.deleted, workspaceId: result.workspaceId ?? null, killedSession: null, failedKill: null };
       }
 
       const sessionName = parseRuntimeSessionNameOrNull(result.session.sessionName);
       if (!sessionName) {
         return {
           deleted: true,
+          workspaceId: result.workspaceId ?? null,
           killedSession: null,
           failedKill: {
             sessionName: result.session.sessionName,
@@ -693,10 +910,11 @@ export const createRuntimeSupervisorForTest = (
       await waitForTerminalAttachAttempt(sessionName);
       try {
         await terminal.request('terminal.kill-session', { sessionName });
-        return { deleted: true, killedSession: sessionName, failedKill: null };
+        return { deleted: true, workspaceId: result.workspaceId ?? null, killedSession: sessionName, failedKill: null };
       } catch (err) {
         return {
           deleted: true,
+          workspaceId: result.workspaceId ?? null,
           killedSession: null,
           failedKill: {
             sessionName,

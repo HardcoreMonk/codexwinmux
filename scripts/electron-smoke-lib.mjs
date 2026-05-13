@@ -87,12 +87,22 @@ export const buildElectronSmokeLaunchCommand = ({
     };
   }
 
+  const cliArgs = ['pnpm', 'exec', 'electron', ...buildElectronSmokeArgs({
+    remoteDebuggingPort,
+    appPath: normalizedAppPath,
+  })];
+
+  if (platform === 'win32') {
+    return {
+      command: 'cmd.exe',
+      args: ['/d', '/s', '/c', ['corepack', ...cliArgs].join(' ')],
+      mode: 'electron-cli',
+    };
+  }
+
   return {
     command: 'corepack',
-    args: ['pnpm', 'exec', 'electron', ...buildElectronSmokeArgs({
-      remoteDebuggingPort,
-      appPath: normalizedAppPath,
-    })],
+    args: cliArgs,
     mode: 'electron-cli',
   };
 };

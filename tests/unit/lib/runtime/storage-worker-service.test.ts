@@ -50,6 +50,250 @@ describe('storage worker service', () => {
     expect(created.payload).toEqual(expect.objectContaining({ id: expect.stringMatching(/^ws-/) }));
   });
 
+  it('handles workspace rename commands through storage ownership', async () => {
+    const service = createTestStorageWorkerService({ dbPath: path.join(dir, 'runtime-v2', 'state.db') });
+    const created = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-workspace',
+      payload: { name: 'Runtime', defaultCwd: dir },
+    }));
+    const workspace = created.payload as { id: string };
+
+    const renamed = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.rename-workspace',
+      payload: { workspaceId: workspace.id, name: '  Worker owned  ' },
+    }));
+
+    expect(renamed.ok).toBe(true);
+    expect(renamed.payload).toEqual(expect.objectContaining({
+      id: workspace.id,
+      name: 'Worker owned',
+      defaultCwd: dir,
+    }));
+
+    const missing = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.rename-workspace',
+      payload: { workspaceId: 'ws-missing', name: 'Missing' },
+    }));
+    expect(missing.ok).toBe(true);
+    expect(missing.payload).toBeNull();
+  });
+
+  it('handles workspace group and order commands through storage ownership', async () => {
+    const service = createTestStorageWorkerService({ dbPath: path.join(dir, 'runtime-v2', 'state.db') });
+    const firstReply = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-workspace',
+      payload: { name: 'First', defaultCwd: dir },
+    }));
+    const secondReply = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-workspace',
+      payload: { name: 'Second', defaultCwd: dir },
+    }));
+    const first = firstReply.payload as { id: string };
+    const second = secondReply.payload as { id: string };
+
+    const createdGroup = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-workspace-group',
+      payload: { name: 'Runtime group' },
+    }));
+    const group = createdGroup.payload as { id: string };
+
+    expect(createdGroup.ok).toBe(true);
+    expect(createdGroup.payload).toEqual(expect.objectContaining({ name: 'Runtime group', collapsed: false }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.set-workspace-group',
+      payload: { workspaceId: first.id, groupId: group.id },
+    }))).resolves.toEqual(expect.objectContaining({ ok: true, payload: { ok: true } }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.reorder-workspaces',
+      payload: { items: [{ id: second.id }, { id: first.id, groupId: group.id }] },
+    }))).resolves.toEqual(expect.objectContaining({ ok: true, payload: { ok: true } }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.rename-workspace-group',
+      payload: { groupId: group.id, name: 'Renamed group' },
+    }))).resolves.toEqual(expect.objectContaining({
+      ok: true,
+      payload: { id: group.id, name: 'Renamed group', collapsed: false },
+    }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.set-workspace-group-collapsed',
+      payload: { groupId: group.id, collapsed: true },
+    }))).resolves.toEqual(expect.objectContaining({ ok: true, payload: { ok: true } }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.delete-workspace-group',
+      payload: { groupId: group.id },
+    }))).resolves.toEqual(expect.objectContaining({ ok: true, payload: { deleted: true } }));
+  });
+
+  it('handles layout mutation commands through storage ownership', async () => {
+    const service = createTestStorageWorkerService({ dbPath: path.join(dir, 'runtime-v2', 'state.db') });
+    const created = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-workspace',
+      payload: { name: 'Runtime', defaultCwd: dir },
+    }));
+    const workspace = created.payload as { id: string; rootPaneId: string };
+    await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-pending-terminal-tab',
+      payload: {
+        id: 'tab-first',
+        workspaceId: workspace.id,
+        paneId: workspace.rootPaneId,
+        sessionName: `rtv2-${workspace.id}-${workspace.rootPaneId}-tab-first`,
+        cwd: dir,
+      },
+    }));
+    await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.finalize-terminal-tab',
+      payload: { id: 'tab-first' },
+    }));
+
+    const split = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.split-pane',
+      payload: {
+        workspaceId: workspace.id,
+        sourcePaneId: workspace.rootPaneId,
+        newPaneId: 'pane-second',
+        orientation: 'vertical',
+        tab: {
+          id: 'tab-second',
+          sessionName: `rtv2-${workspace.id}-pane-second-tab-second`,
+          name: 'Second',
+          cwd: dir,
+          panelType: 'terminal',
+        },
+      },
+    }));
+    expect(split.ok).toBe(true);
+    expect(split.payload).toEqual(expect.objectContaining({ activePaneId: 'pane-second' }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.patch-tab',
+      payload: {
+        workspaceId: workspace.id,
+        paneId: 'pane-second',
+        tabId: 'tab-second',
+        patch: { name: 'Patched', terminalCollapsed: true },
+      },
+    }))).resolves.toEqual(expect.objectContaining({ ok: true }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.patch-layout',
+      payload: { workspaceId: workspace.id, activePaneId: workspace.rootPaneId, ratioUpdate: { path: [], ratio: 60 } },
+    }))).resolves.toEqual(expect.objectContaining({ ok: true }));
+
+    const closed = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.close-pane',
+      payload: { workspaceId: workspace.id, paneId: 'pane-second' },
+    }));
+    expect(closed.ok).toBe(true);
+    expect(closed.payload).toEqual(expect.objectContaining({
+      sessions: [{ sessionName: `rtv2-${workspace.id}-pane-second-tab-second` }],
+    }));
+  });
+
+  it('handles tab status metadata commands through storage ownership', async () => {
+    const service = createTestStorageWorkerService({ dbPath: path.join(dir, 'runtime-v2', 'state.db') });
+    const created = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-workspace',
+      payload: { name: 'Runtime', defaultCwd: dir },
+    }));
+    const workspace = created.payload as { id: string; rootPaneId: string };
+    const sessionName = `rtv2-${workspace.id}-${workspace.rootPaneId}-tab-status`;
+    await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.create-pending-terminal-tab',
+      payload: {
+        id: 'tab-status',
+        workspaceId: workspace.id,
+        paneId: workspace.rootPaneId,
+        sessionName,
+        cwd: dir,
+      },
+    }));
+    await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.finalize-terminal-tab',
+      payload: { id: 'tab-status' },
+    }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.patch-tab-status-metadata',
+      payload: {
+        sessionName,
+        agentSessionId: 'agent-a',
+        agentJsonlPath: '/tmp/agent-a.jsonl',
+        agentSummary: 'summary',
+        lastUserMessage: '작업 시작',
+        cliState: 'needs-input',
+        dismissedAt: 123,
+      },
+    }))).resolves.toEqual(expect.objectContaining({
+      ok: true,
+      payload: { updated: true, workspaceId: workspace.id, tabId: 'tab-status' },
+    }));
+
+    await expect(service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'storage',
+      type: 'storage.get-tab-status-metadata',
+      payload: { sessionName },
+    }))).resolves.toEqual(expect.objectContaining({
+      ok: true,
+      payload: expect.objectContaining({
+        workspaceId: workspace.id,
+        tabId: 'tab-status',
+        agentJsonlPath: '/tmp/agent-a.jsonl',
+        cliState: 'needs-input',
+      }),
+    }));
+  });
+
   it('returns structured errors for invalid worker commands', async () => {
     const service = createTestStorageWorkerService({ dbPath: path.join(dir, 'runtime-v2', 'state.db') });
     const unknown = await service.handleCommand(createRuntimeCommand({
@@ -299,6 +543,7 @@ describe('storage worker service', () => {
     expect(deleted.ok).toBe(true);
     expect(deleted.payload).toEqual({
       deleted: true,
+      workspaceId: workspace.id,
       session: { sessionName },
     });
 

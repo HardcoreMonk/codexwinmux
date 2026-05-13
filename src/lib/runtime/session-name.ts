@@ -29,7 +29,7 @@ export const runtimeSessionNameSchema = z.string()
     'runtime v2 terminal session names must be tmux-safe and start with rtv2-',
   );
 
-export const createRuntimeId = (prefix: 'ws' | 'pane' | 'tab' | 'evt' | 'sub' | 'msg'): string =>
+export const createRuntimeId = (prefix: 'ws' | 'pane' | 'tab' | 'evt' | 'sub' | 'msg' | 'grp'): string =>
   `${prefix}-${runtimeSafeId()}`;
 
 export const parseRuntimeSessionName = (sessionName: string): string =>

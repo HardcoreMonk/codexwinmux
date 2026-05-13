@@ -60,6 +60,74 @@ export const createStorageWorkerService = (options: IStorageWorkerServiceOptions
           const input = parseRuntimeCommandPayload('storage.create-workspace', command.payload);
           return ok(command, repo.createWorkspace(input));
         }
+        if (command.type === 'storage.rename-workspace') {
+          const input = parseRuntimeCommandPayload('storage.rename-workspace', command.payload);
+          return ok(command, repo.renameWorkspace(input));
+        }
+        if (command.type === 'storage.create-workspace-group') {
+          const input = parseRuntimeCommandPayload('storage.create-workspace-group', command.payload);
+          return ok(command, repo.createWorkspaceGroup(input));
+        }
+        if (command.type === 'storage.rename-workspace-group') {
+          const input = parseRuntimeCommandPayload('storage.rename-workspace-group', command.payload);
+          return ok(command, repo.renameWorkspaceGroup(input));
+        }
+        if (command.type === 'storage.set-workspace-group-collapsed') {
+          const input = parseRuntimeCommandPayload('storage.set-workspace-group-collapsed', command.payload);
+          return ok(command, { ok: repo.setWorkspaceGroupCollapsed(input) });
+        }
+        if (command.type === 'storage.delete-workspace-group') {
+          const input = parseRuntimeCommandPayload('storage.delete-workspace-group', command.payload);
+          return ok(command, { deleted: repo.deleteWorkspaceGroup(input) });
+        }
+        if (command.type === 'storage.reorder-workspace-groups') {
+          const input = parseRuntimeCommandPayload('storage.reorder-workspace-groups', command.payload);
+          return ok(command, { ok: repo.reorderWorkspaceGroups(input) });
+        }
+        if (command.type === 'storage.set-workspace-group') {
+          const input = parseRuntimeCommandPayload('storage.set-workspace-group', command.payload);
+          return ok(command, { ok: repo.setWorkspaceGroup(input) });
+        }
+        if (command.type === 'storage.reorder-workspaces') {
+          const input = parseRuntimeCommandPayload('storage.reorder-workspaces', command.payload);
+          return ok(command, { ok: repo.reorderWorkspaces(input) });
+        }
+        if (command.type === 'storage.split-pane') {
+          const input = parseRuntimeCommandPayload('storage.split-pane', command.payload);
+          return ok(command, repo.splitPane(input));
+        }
+        if (command.type === 'storage.close-pane') {
+          const input = parseRuntimeCommandPayload('storage.close-pane', command.payload);
+          return ok(command, repo.closePane(input));
+        }
+        if (command.type === 'storage.patch-layout') {
+          const input = parseRuntimeCommandPayload('storage.patch-layout', command.payload);
+          return ok(command, repo.patchLayout(input));
+        }
+        if (command.type === 'storage.patch-pane') {
+          const input = parseRuntimeCommandPayload('storage.patch-pane', command.payload);
+          return ok(command, repo.patchPane(input));
+        }
+        if (command.type === 'storage.reorder-tabs') {
+          const input = parseRuntimeCommandPayload('storage.reorder-tabs', command.payload);
+          return ok(command, repo.reorderTabs(input));
+        }
+        if (command.type === 'storage.move-tab') {
+          const input = parseRuntimeCommandPayload('storage.move-tab', command.payload);
+          return ok(command, repo.moveTab(input));
+        }
+        if (command.type === 'storage.patch-tab') {
+          const input = parseRuntimeCommandPayload('storage.patch-tab', command.payload);
+          return ok(command, repo.patchTab(input));
+        }
+        if (command.type === 'storage.patch-tab-status-metadata') {
+          const input = parseRuntimeCommandPayload('storage.patch-tab-status-metadata', command.payload);
+          return ok(command, repo.patchTabStatusMetadata(input));
+        }
+        if (command.type === 'storage.get-tab-status-metadata') {
+          const input = parseRuntimeCommandPayload('storage.get-tab-status-metadata', command.payload);
+          return ok(command, repo.getTabStatusMetadataBySession(input.sessionName));
+        }
         if (command.type === 'storage.ensure-workspace-pane') {
           const input = parseRuntimeCommandPayload('storage.ensure-workspace-pane', command.payload);
           return ok(command, repo.ensureWorkspacePane(input));

@@ -6,6 +6,7 @@ import {
   resetAllKeybindings,
 } from '@/lib/keybindings-store';
 import { ACTIONS } from '@/lib/keyboard-shortcuts';
+import { broadcastSync } from '@/lib/sync-server';
 
 const isKnownActionId = (id: string): boolean =>
   Object.prototype.hasOwnProperty.call(ACTIONS, id);
@@ -28,6 +29,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'key must be string or null' });
     }
     const data = await setKeybinding(id, key);
+    broadcastSync({ type: 'config' });
     return res.status(200).json(data);
   }
 
@@ -38,9 +40,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(400).json({ error: 'unknown action id' });
       }
       const data = await resetKeybinding(id);
+      broadcastSync({ type: 'config' });
       return res.status(200).json(data);
     }
     const data = await resetAllKeybindings();
+    broadcastSync({ type: 'config' });
     return res.status(200).json(data);
   }
 

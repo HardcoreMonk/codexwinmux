@@ -70,6 +70,20 @@ describe('Electron smoke helpers', () => {
     });
   });
 
+  it('uses cmd.exe when building an Electron CLI launch command on Windows', async () => {
+    const { buildElectronSmokeLaunchCommand } = await loadLib();
+
+    expect(buildElectronSmokeLaunchCommand({
+      remoteDebuggingPort: 9222,
+      appPath: '.',
+      platform: 'win32',
+    })).toEqual(expect.objectContaining({
+      command: 'cmd.exe',
+      args: ['/d', '/s', '/c', 'corepack pnpm exec electron --remote-debugging-port=9222 --disable-gpu --no-sandbox .'],
+      mode: 'electron-cli',
+    }));
+  });
+
   it('builds a packaged macOS app launch command from a .app bundle', async () => {
     const { buildElectronSmokeLaunchCommand } = await loadLib();
     const appDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-smoke-app-'));

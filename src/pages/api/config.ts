@@ -7,6 +7,7 @@ import { isValidEditorPreset } from '@/lib/editor-url';
 import { isValidToastPosition } from '@/lib/toast-position';
 import { CODEX_APPROVAL_POLICIES, CODEX_SANDBOX_MODES } from '@/lib/codex-command';
 import { isSupportedLocale, normalizeLocale } from '@/lib/locales';
+import { broadcastSync } from '@/lib/sync-server';
 
 const ALLOWED_FIELDS: (keyof Omit<IConfigData, 'updatedAt' | 'authSecret'>)[] = [
   'appTheme', 'terminalTheme', 'customCSS', 'dangerouslySkipPermissions', 'codexModel', 'codexSandbox', 'codexApprovalPolicy', 'codexSearchEnabled', 'codexShowTerminal', 'editorUrl', 'editorPreset', 'authPassword', 'notificationsEnabled', 'soundOnCompleteEnabled', 'toastOnCompleteEnabled', 'toastDuration', 'toastPositionDesktop', 'toastPositionMobile', 'locale', 'fontSize', 'systemResourcesEnabled', 'networkAccess',
@@ -122,6 +123,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       updateAccessFromConfig(updates.networkAccess as TNetworkAccess);
     }
 
+    broadcastSync({ type: 'config' });
     return res.status(200).json({ ok: true });
   }
 

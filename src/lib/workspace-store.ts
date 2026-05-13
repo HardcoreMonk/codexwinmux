@@ -114,6 +114,48 @@ const deleteRuntimeWorkspace = async (workspaceId: string): Promise<boolean> => 
   return result.deleted;
 };
 
+const renameRuntimeWorkspace = async (workspaceId: string, name: string): Promise<IWorkspace | null> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  const supervisor = getRuntimeSupervisor();
+  const workspace = await supervisor.renameWorkspace({ workspaceId, name });
+  return workspace ? mapRuntimeWorkspace(workspace) : null;
+};
+
+const createRuntimeWorkspaceGroup = async (name: string): Promise<IWorkspaceGroup> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return getRuntimeSupervisor().createWorkspaceGroup({ name });
+};
+
+const renameRuntimeWorkspaceGroup = async (groupId: string, name: string): Promise<IWorkspaceGroup | null> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return getRuntimeSupervisor().renameWorkspaceGroup({ groupId, name });
+};
+
+const setRuntimeWorkspaceGroupCollapsed = async (groupId: string, collapsed: boolean): Promise<boolean> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return (await getRuntimeSupervisor().setWorkspaceGroupCollapsed({ groupId, collapsed })).ok;
+};
+
+const deleteRuntimeWorkspaceGroup = async (groupId: string): Promise<boolean> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return (await getRuntimeSupervisor().deleteWorkspaceGroup({ groupId })).deleted;
+};
+
+const reorderRuntimeWorkspaceGroups = async (groupIds: string[]): Promise<boolean> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return (await getRuntimeSupervisor().reorderWorkspaceGroups({ groupIds })).ok;
+};
+
+const setRuntimeWorkspaceGroup = async (workspaceId: string, groupId: string | null): Promise<boolean> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return (await getRuntimeSupervisor().setWorkspaceGroup({ workspaceId, groupId })).ok;
+};
+
+const reorderRuntimeWorkspaces = async (items: IReorderItem[]): Promise<boolean> => {
+  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
+  return (await getRuntimeSupervisor().reorderWorkspaces({ items })).ok;
+};
+
 const ensureGroups = (data: IWorkspacesData): IWorkspaceGroup[] => {
   if (!data.groups) data.groups = [];
   return data.groups;
@@ -434,13 +476,21 @@ export const deleteWorkspace = async (workspaceId: string): Promise<boolean> =>
 
 export const renameWorkspace = async (workspaceId: string, name: string): Promise<IWorkspace | null> =>
   withLock(async () => {
+    const trimmed = name.trim();
+    if (shouldReadRuntimeStorageV2()) {
+      const workspace = trimmed
+        ? await renameRuntimeWorkspace(workspaceId, trimmed)
+        : await getWorkspaceById(workspaceId) ?? null;
+      if (workspace) broadcastSync({ type: 'workspace' });
+      return workspace;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return null;
 
     const ws = data.workspaces.find((w) => w.id === workspaceId);
     if (!ws) return null;
 
-    const trimmed = name.trim();
     if (!trimmed) return { ...ws };
 
     ws.name = trimmed;
@@ -489,6 +539,12 @@ export interface IReorderItem {
 
 export const reorderWorkspaces = async (items: IReorderItem[]): Promise<boolean> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const ok = await reorderRuntimeWorkspaces(items);
+      if (ok) broadcastSync({ type: 'workspace' });
+      return ok;
+    }
+
     const data = (await readWorkspacesFile()) ?? emptyState();
     const byId = new Map(data.workspaces.map((w) => [w.id, w]));
     const validGroupIds = new Set((data.groups ?? []).map((g) => g.id));
@@ -512,6 +568,12 @@ export const reorderWorkspaces = async (items: IReorderItem[]): Promise<boolean>
 
 export const createGroup = async (name: string): Promise<IWorkspaceGroup> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const group = await createRuntimeWorkspaceGroup(name);
+      broadcastSync({ type: 'workspace' });
+      return group;
+    }
+
     const data = (await readWorkspacesFile()) ?? emptyState();
     const groups = ensureGroups(data);
     const trimmed = name.trim() || `Group ${groups.length + 1}`;
@@ -528,6 +590,15 @@ export const createGroup = async (name: string): Promise<IWorkspaceGroup> =>
 
 export const renameGroup = async (groupId: string, name: string): Promise<IWorkspaceGroup | null> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const trimmed = name.trim();
+      const group = trimmed
+        ? await renameRuntimeWorkspaceGroup(groupId, trimmed)
+        : (await getWorkspaces()).groups.find((item) => item.id === groupId) ?? null;
+      if (group) broadcastSync({ type: 'workspace' });
+      return group;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return null;
     const group = (data.groups ?? []).find((g) => g.id === groupId);
@@ -541,6 +612,12 @@ export const renameGroup = async (groupId: string, name: string): Promise<IWorks
 
 export const setGroupCollapsed = async (groupId: string, collapsed: boolean): Promise<boolean> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const ok = await setRuntimeWorkspaceGroupCollapsed(groupId, collapsed);
+      if (ok) broadcastSync({ type: 'workspace' });
+      return ok;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return false;
     const group = (data.groups ?? []).find((g) => g.id === groupId);
@@ -553,6 +630,12 @@ export const setGroupCollapsed = async (groupId: string, collapsed: boolean): Pr
 
 export const ungroupGroup = async (groupId: string): Promise<boolean> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const ok = await deleteRuntimeWorkspaceGroup(groupId);
+      if (ok) broadcastSync({ type: 'workspace' });
+      return ok;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return false;
     const groups = ensureGroups(data);
@@ -569,6 +652,12 @@ export const ungroupGroup = async (groupId: string): Promise<boolean> =>
 
 export const reorderGroups = async (groupIds: string[]): Promise<boolean> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const ok = await reorderRuntimeWorkspaceGroups(groupIds);
+      if (ok) broadcastSync({ type: 'workspace' });
+      return ok;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return false;
     const groups = ensureGroups(data);
@@ -587,6 +676,12 @@ export const reorderGroups = async (groupIds: string[]): Promise<boolean> =>
 
 export const setWorkspaceGroup = async (workspaceId: string, groupId: string | null): Promise<boolean> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      const ok = await setRuntimeWorkspaceGroup(workspaceId, groupId);
+      if (ok) broadcastSync({ type: 'workspace' });
+      return ok;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return false;
     const ws = data.workspaces.find((w) => w.id === workspaceId);

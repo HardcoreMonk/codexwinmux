@@ -4,6 +4,7 @@ import {
   parseRuntimeStorageV2Mode,
   shouldMirrorLegacyStorageToRuntimeV2,
 } from '@/lib/runtime/storage-mode';
+import { shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
 
 describe('runtime storage v2 mode', () => {
   it('parses only supported storage mode values', () => {
@@ -73,6 +74,17 @@ describe('runtime storage v2 mode', () => {
       if (originalMode === undefined) delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
       else process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = originalMode;
     }
+  });
+
+  it('uses the phase 6 fallback for storage read ownership', () => {
+    expect(shouldReadRuntimeStorageV2({
+      runtimeV2Enabled: true,
+      storageMode: undefined,
+    })).toBe(true);
+    expect(shouldReadRuntimeStorageV2({
+      runtimeV2Enabled: true,
+      storageMode: 'off',
+    })).toBe(false);
   });
 
   it('reads storage mode from an explicit env object', () => {

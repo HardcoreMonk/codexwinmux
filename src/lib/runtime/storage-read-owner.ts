@@ -7,9 +7,10 @@ import {
   readRuntimeEnvAlias,
   readRuntimeStorageMirrorDataDirEnv,
 } from '@/lib/runtime/env';
-import { parseRuntimeStorageV2Mode } from '@/lib/runtime/storage-mode';
+import { resolveRuntimeStorageV2Mode } from '@/lib/runtime/storage-mode';
 import { createStorageRepository } from '@/lib/runtime/storage/repository';
 import { openRuntimeDatabase } from '@/lib/runtime/storage/schema';
+import type { IRuntimeTabStatusMetadataPatchInput, IRuntimeTabStatusMetadataResult } from '@/lib/runtime/contracts';
 import type { IHistoryEntry } from '@/types/message-history';
 import type { ILayoutData, IWorkspacesData } from '@/types/terminal';
 
@@ -32,7 +33,7 @@ export const shouldReadRuntimeStorageV2 = ({
   runtimeV2Enabled = isRuntimeV2Enabled(),
   storageMode = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE'),
 }: IRuntimeStorageReadOwnerOptions = {}): boolean =>
-  runtimeV2Enabled && parseRuntimeStorageV2Mode(storageMode) === 'default';
+  runtimeV2Enabled && resolveRuntimeStorageV2Mode({ runtimeV2Enabled, storageMode }) === 'default';
 
 export const readRuntimeStorageWorkspaces = (): IWorkspacesData | null => {
   if (!shouldReadRuntimeStorageV2()) return null;
@@ -118,6 +119,23 @@ export const replaceRuntimeMessageHistory = (
   } catch (err) {
     log.warn(`runtime v2 message history write failed: ${err instanceof Error ? err.message : err}`);
     return false;
+  } finally {
+    db?.close();
+  }
+};
+
+export const patchRuntimeTabStatusMetadata = (
+  input: IRuntimeTabStatusMetadataPatchInput,
+): IRuntimeTabStatusMetadataResult | null => {
+  if (!shouldReadRuntimeStorageV2()) return null;
+
+  let db: ReturnType<typeof openRuntimeDatabase> | null = null;
+  try {
+    db = openRuntimeDatabase(getDefaultDbPath());
+    return createStorageRepository(db).patchTabStatusMetadata(input);
+  } catch (err) {
+    log.warn(`runtime v2 tab status metadata write failed: ${err instanceof Error ? err.message : err}`);
+    return null;
   } finally {
     db?.close();
   }

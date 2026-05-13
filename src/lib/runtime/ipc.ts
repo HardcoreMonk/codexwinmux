@@ -172,6 +172,11 @@ const runtimeWorkspaceSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+const runtimeWorkspaceGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  collapsed: z.boolean(),
+});
 const runtimeCreateWorkspaceResultSchema = z.object({
   id: z.string(),
   rootPaneId: z.string(),
@@ -208,6 +213,7 @@ const runtimeDeleteWorkspaceStorageResultSchema = z.object({
 });
 const runtimeDeleteTerminalTabStorageResultSchema = z.object({
   deleted: z.boolean(),
+  workspaceId: z.string().nullable().optional(),
   session: rawTerminalSessionSchema.nullable(),
 });
 const runtimeLayoutTabSchema = z.object({
@@ -271,6 +277,138 @@ const createWorkspacePayloadSchema = z.object({
   name: z.string().min(1),
   defaultCwd: z.string().min(1),
 });
+const renameWorkspacePayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  name: z.string().min(1),
+}).strict();
+const createWorkspaceGroupPayloadSchema = z.object({
+  name: z.string(),
+}).strict();
+const renameWorkspaceGroupPayloadSchema = z.object({
+  groupId: z.string().min(1),
+  name: z.string().min(1),
+}).strict();
+const setWorkspaceGroupCollapsedPayloadSchema = z.object({
+  groupId: z.string().min(1),
+  collapsed: z.boolean(),
+}).strict();
+const workspaceGroupIdPayloadSchema = z.object({
+  groupId: z.string().min(1),
+}).strict();
+const setWorkspaceGroupPayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  groupId: z.string().min(1).nullable(),
+}).strict();
+const reorderWorkspacesPayloadSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().min(1),
+    groupId: z.string().min(1).nullable().optional(),
+  }).strict()).min(1),
+}).strict();
+const reorderWorkspaceGroupsPayloadSchema = z.object({
+  groupIds: z.array(z.string().min(1)),
+}).strict();
+const runtimeLayoutPanelTypeSchema = z.union([
+  z.literal('terminal'),
+  z.literal('codex'),
+  z.literal('web-browser'),
+  z.literal('diff'),
+]);
+const runtimeLayoutTabInputSchema = z.object({
+  id: z.string().min(1),
+  sessionName: runtimeSessionNameSchema,
+  name: z.string().optional(),
+  title: z.string().nullable().optional(),
+  cwd: z.string().nullable().optional(),
+  panelType: runtimeLayoutPanelTypeSchema.optional(),
+  webUrl: z.string().nullable().optional(),
+  lastCommand: z.string().nullable().optional(),
+  terminalRatio: z.number().nullable().optional(),
+  terminalCollapsed: z.boolean().optional(),
+}).strict();
+const splitPanePayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  sourcePaneId: z.string().min(1),
+  newPaneId: z.string().min(1),
+  orientation: z.union([z.literal('horizontal'), z.literal('vertical')]),
+  tab: runtimeLayoutTabInputSchema,
+}).strict();
+const closePanePayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  paneId: z.string().min(1),
+}).strict();
+const closePaneResultSchema = z.object({
+  layout: runtimeLayoutSchema,
+  sessions: z.array(rawTerminalSessionSchema),
+});
+const patchLayoutPayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  activePaneId: z.string().min(1).optional(),
+  ratioUpdate: z.object({
+    path: z.array(z.number().int().min(0).max(1)),
+    ratio: z.number(),
+  }).strict().optional(),
+  equalize: z.boolean().optional(),
+}).strict();
+const patchPanePayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  paneId: z.string().min(1),
+  activeTabId: z.string().min(1).optional(),
+}).strict();
+const reorderTabsPayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  paneId: z.string().min(1),
+  tabIds: z.array(z.string().min(1)),
+}).strict();
+const moveTabPayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  tabId: z.string().min(1),
+  fromPaneId: z.string().min(1),
+  toPaneId: z.string().min(1),
+  toIndex: z.number().int().nonnegative(),
+}).strict();
+const patchTabPayloadSchema = z.object({
+  workspaceId: z.string().min(1),
+  paneId: z.string().min(1),
+  tabId: z.string().min(1),
+  patch: z.object({
+    name: z.string().optional(),
+    panelType: runtimeLayoutPanelTypeSchema.optional(),
+    title: z.string().nullable().optional(),
+    cwd: z.string().nullable().optional(),
+    lastCommand: z.string().nullable().optional(),
+    webUrl: z.string().nullable().optional(),
+    terminalRatio: z.number().optional(),
+    terminalCollapsed: z.boolean().optional(),
+  }).strict(),
+}).strict();
+const tabStatusMetadataPatchPayloadSchema = z.object({
+  sessionName: z.string().min(1),
+  agentSessionId: z.string().nullable().optional(),
+  agentJsonlPath: z.string().nullable().optional(),
+  agentSummary: z.string().nullable().optional(),
+  lastUserMessage: z.string().nullable().optional(),
+  cliState: cliStateSchema.optional(),
+  dismissedAt: z.number().nullable().optional(),
+}).strict();
+const tabStatusMetadataPayloadSchema = z.object({
+  sessionName: z.string().min(1),
+}).strict();
+const tabStatusMetadataResultSchema = z.object({
+  updated: z.boolean(),
+  workspaceId: z.string().nullable(),
+  tabId: z.string().nullable(),
+}).strict();
+const tabStatusMetadataSchema = z.object({
+  workspaceId: z.string().min(1),
+  tabId: z.string().min(1),
+  agentSessionId: z.string().nullable(),
+  agentJsonlPath: z.string().nullable(),
+  agentSummary: z.string().nullable(),
+  lastUserMessage: z.string().nullable(),
+  cliState: cliStateSchema.nullable(),
+  dismissedAt: z.number().nullable(),
+}).strict();
 const ensureWorkspacePanePayloadSchema = z.object({
   workspaceId: z.string().min(1),
   paneId: z.string().min(1),
@@ -595,6 +733,23 @@ const statusLivePollResultSchema = z.object({
 export const runtimeCommandRegistry = {
   'storage.health': { payload: emptyPayloadSchema, reply: runtimeHealthReplySchema },
   'storage.create-workspace': { payload: createWorkspacePayloadSchema, reply: runtimeCreateWorkspaceResultSchema },
+  'storage.rename-workspace': { payload: renameWorkspacePayloadSchema, reply: runtimeWorkspaceSchema.nullable() },
+  'storage.create-workspace-group': { payload: createWorkspaceGroupPayloadSchema, reply: runtimeWorkspaceGroupSchema },
+  'storage.rename-workspace-group': { payload: renameWorkspaceGroupPayloadSchema, reply: runtimeWorkspaceGroupSchema.nullable() },
+  'storage.set-workspace-group-collapsed': { payload: setWorkspaceGroupCollapsedPayloadSchema, reply: z.object({ ok: z.boolean() }) },
+  'storage.delete-workspace-group': { payload: workspaceGroupIdPayloadSchema, reply: z.object({ deleted: z.boolean() }) },
+  'storage.reorder-workspace-groups': { payload: reorderWorkspaceGroupsPayloadSchema, reply: z.object({ ok: z.boolean() }) },
+  'storage.set-workspace-group': { payload: setWorkspaceGroupPayloadSchema, reply: z.object({ ok: z.boolean() }) },
+  'storage.reorder-workspaces': { payload: reorderWorkspacesPayloadSchema, reply: z.object({ ok: z.boolean() }) },
+  'storage.split-pane': { payload: splitPanePayloadSchema, reply: runtimeLayoutSchema },
+  'storage.close-pane': { payload: closePanePayloadSchema, reply: closePaneResultSchema.nullable() },
+  'storage.patch-layout': { payload: patchLayoutPayloadSchema, reply: runtimeLayoutSchema },
+  'storage.patch-pane': { payload: patchPanePayloadSchema, reply: runtimeLayoutSchema },
+  'storage.reorder-tabs': { payload: reorderTabsPayloadSchema, reply: runtimeLayoutSchema },
+  'storage.move-tab': { payload: moveTabPayloadSchema, reply: runtimeLayoutSchema },
+  'storage.patch-tab': { payload: patchTabPayloadSchema, reply: runtimeLayoutSchema },
+  'storage.patch-tab-status-metadata': { payload: tabStatusMetadataPatchPayloadSchema, reply: tabStatusMetadataResultSchema },
+  'storage.get-tab-status-metadata': { payload: tabStatusMetadataPayloadSchema, reply: tabStatusMetadataSchema.nullable() },
   'storage.ensure-workspace-pane': {
     payload: ensureWorkspacePanePayloadSchema,
     reply: ensureWorkspacePanePayloadSchema.pick({ workspaceId: true, paneId: true }),

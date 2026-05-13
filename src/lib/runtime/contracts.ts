@@ -1,5 +1,5 @@
 import type { ILayoutData } from '@/types/terminal';
-import type { IChunkReadResult, ISessionInfo, ISessionMeta, ITimelineAppendMessage, ITimelineErrorMessage, ITimelineInitMessage } from '@/types/timeline';
+import type { IChunkReadResult, ISessionInfo, ISessionMeta, ITimelineAppendMessage, ITimelineErrorMessage, ITimelineInitMessage, TCliState } from '@/types/timeline';
 import type { IMessageCountResult } from '@/lib/timeline-message-counts';
 import type { ICodexStateInput, IHookStateDecision, IHookStateInput, IStateDecision } from '@/lib/status-state-machine';
 import type { IStatusClientEventIntent, IStatusClientEventPolicyInput } from '@/lib/status-client-event-policy';
@@ -34,6 +34,61 @@ export interface IRuntimeWorkspace {
 export interface IRuntimeCreateWorkspaceResult {
   id: string;
   rootPaneId: string;
+}
+
+export interface IRuntimeRenameWorkspaceInput {
+  workspaceId: string;
+  name: string;
+}
+
+export interface IRuntimeWorkspaceGroup {
+  id: string;
+  name: string;
+  collapsed: boolean;
+}
+
+export interface IRuntimeWorkspaceMutationOk {
+  ok: boolean;
+}
+
+export interface IRuntimeCreateWorkspaceGroupInput {
+  name: string;
+}
+
+export interface IRuntimeRenameWorkspaceGroupInput {
+  groupId: string;
+  name: string;
+}
+
+export interface IRuntimeSetWorkspaceGroupCollapsedInput {
+  groupId: string;
+  collapsed: boolean;
+}
+
+export interface IRuntimeDeleteWorkspaceGroupInput {
+  groupId: string;
+}
+
+export interface IRuntimeDeleteWorkspaceGroupResult {
+  deleted: boolean;
+}
+
+export interface IRuntimeSetWorkspaceGroupInput {
+  workspaceId: string;
+  groupId: string | null;
+}
+
+export interface IRuntimeReorderWorkspaceItem {
+  id: string;
+  groupId?: string | null;
+}
+
+export interface IRuntimeReorderWorkspacesInput {
+  items: IRuntimeReorderWorkspaceItem[];
+}
+
+export interface IRuntimeReorderWorkspaceGroupsInput {
+  groupIds: string[];
 }
 
 export interface IRuntimeEnsureWorkspacePaneInput {
@@ -74,13 +129,42 @@ export interface IRuntimeDeleteWorkspaceResult {
 
 export interface IRuntimeDeleteTerminalTabStorageResult {
   deleted: boolean;
+  workspaceId?: string | null;
   session: IRuntimeWorkspaceTerminalSession | null;
 }
 
 export interface IRuntimeDeleteTerminalTabResult {
   deleted: boolean;
+  workspaceId?: string | null;
   killedSession: string | null;
   failedKill: { sessionName: string; error: string } | null;
+}
+
+export interface IRuntimeTabStatusMetadataPatchInput {
+  sessionName: string;
+  agentSessionId?: string | null;
+  agentJsonlPath?: string | null;
+  agentSummary?: string | null;
+  lastUserMessage?: string | null;
+  cliState?: TCliState;
+  dismissedAt?: number | null;
+}
+
+export interface IRuntimeTabStatusMetadataResult {
+  updated: boolean;
+  workspaceId: string | null;
+  tabId: string | null;
+}
+
+export interface IRuntimeTabStatusMetadata {
+  workspaceId: string;
+  tabId: string;
+  agentSessionId: string | null;
+  agentJsonlPath: string | null;
+  agentSummary: string | null;
+  lastUserMessage: string | null;
+  cliState: TCliState | null;
+  dismissedAt: number | null;
 }
 
 export interface IRuntimeTerminalTab {

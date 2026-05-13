@@ -174,4 +174,90 @@ describe('workspace store', () => {
     await expect(deleteWorkspace('ws-runtime')).resolves.toBe(true);
     expect(deleteRuntimeWorkspace).toHaveBeenCalledWith('ws-runtime');
   });
+
+  it('renames workspaces through runtime v2 storage default', async () => {
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    const renameRuntimeWorkspace = vi.fn().mockResolvedValue({
+      id: 'ws-runtime',
+      name: 'Runtime renamed',
+      defaultCwd: homeDir,
+      active: 1,
+      groupId: null,
+      orderIndex: 0,
+      createdAt: new Date(0).toISOString(),
+      updatedAt: new Date(1).toISOString(),
+    });
+
+    vi.doMock('@/lib/runtime/supervisor', () => ({
+      getRuntimeSupervisor: () => ({
+        renameWorkspace: renameRuntimeWorkspace,
+      }),
+    }));
+    vi.resetModules();
+
+    const { renameWorkspace } = await import('@/lib/workspace-store');
+
+    await expect(renameWorkspace('ws-runtime', '  Runtime renamed  ')).resolves.toEqual({
+      id: 'ws-runtime',
+      name: 'Runtime renamed',
+      directories: [homeDir],
+      groupId: null,
+    });
+    expect(renameRuntimeWorkspace).toHaveBeenCalledWith({
+      workspaceId: 'ws-runtime',
+      name: 'Runtime renamed',
+    });
+  });
+
+  it('uses runtime v2 storage default for workspace group and order mutations', async () => {
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    const createWorkspaceGroup = vi.fn().mockResolvedValue({ id: 'grp-runtime', name: 'Runtime group', collapsed: false });
+    const renameWorkspaceGroup = vi.fn().mockResolvedValue({ id: 'grp-runtime', name: 'Renamed group', collapsed: false });
+    const setWorkspaceGroupCollapsed = vi.fn().mockResolvedValue({ ok: true });
+    const setWorkspaceGroup = vi.fn().mockResolvedValue({ ok: true });
+    const reorderWorkspaces = vi.fn().mockResolvedValue({ ok: true });
+    const reorderWorkspaceGroups = vi.fn().mockResolvedValue({ ok: true });
+    const deleteWorkspaceGroup = vi.fn().mockResolvedValue({ deleted: true });
+
+    vi.doMock('@/lib/runtime/supervisor', () => ({
+      getRuntimeSupervisor: () => ({
+        createWorkspaceGroup,
+        renameWorkspaceGroup,
+        setWorkspaceGroupCollapsed,
+        setWorkspaceGroup,
+        reorderWorkspaces,
+        reorderWorkspaceGroups,
+        deleteWorkspaceGroup,
+      }),
+    }));
+    vi.resetModules();
+
+    const {
+      createGroup,
+      renameGroup,
+      setGroupCollapsed,
+      setWorkspaceGroup: assignWorkspaceGroup,
+      reorderWorkspaces: reorderWorkspaceStore,
+      reorderGroups,
+      ungroupGroup,
+    } = await import('@/lib/workspace-store');
+
+    await expect(createGroup('Runtime group')).resolves.toEqual({ id: 'grp-runtime', name: 'Runtime group', collapsed: false });
+    await expect(renameGroup('grp-runtime', 'Renamed group')).resolves.toEqual({ id: 'grp-runtime', name: 'Renamed group', collapsed: false });
+    await expect(setGroupCollapsed('grp-runtime', true)).resolves.toBe(true);
+    await expect(assignWorkspaceGroup('ws-runtime', 'grp-runtime')).resolves.toBe(true);
+    await expect(reorderWorkspaceStore([{ id: 'ws-b' }, { id: 'ws-runtime', groupId: 'grp-runtime' }])).resolves.toBe(true);
+    await expect(reorderGroups(['grp-runtime'])).resolves.toBe(true);
+    await expect(ungroupGroup('grp-runtime')).resolves.toBe(true);
+
+    expect(createWorkspaceGroup).toHaveBeenCalledWith({ name: 'Runtime group' });
+    expect(renameWorkspaceGroup).toHaveBeenCalledWith({ groupId: 'grp-runtime', name: 'Renamed group' });
+    expect(setWorkspaceGroupCollapsed).toHaveBeenCalledWith({ groupId: 'grp-runtime', collapsed: true });
+    expect(setWorkspaceGroup).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', groupId: 'grp-runtime' });
+    expect(reorderWorkspaces).toHaveBeenCalledWith({ items: [{ id: 'ws-b' }, { id: 'ws-runtime', groupId: 'grp-runtime' }] });
+    expect(reorderWorkspaceGroups).toHaveBeenCalledWith({ groupIds: ['grp-runtime'] });
+    expect(deleteWorkspaceGroup).toHaveBeenCalledWith({ groupId: 'grp-runtime' });
+  });
 });

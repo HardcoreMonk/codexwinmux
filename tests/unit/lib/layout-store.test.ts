@@ -16,6 +16,15 @@ const runtimeMocks = vi.hoisted(() => ({
     ensureStarted: vi.fn(),
     restartTerminalTab: vi.fn(),
     deleteTerminalTab: vi.fn(),
+    splitPane: vi.fn(),
+    closePane: vi.fn(),
+    patchLayout: vi.fn(),
+    patchPane: vi.fn(),
+    reorderTabs: vi.fn(),
+    moveTab: vi.fn(),
+    patchTab: vi.fn(),
+    patchTabStatusMetadata: vi.fn(),
+    getTabStatusMetadata: vi.fn(),
   },
   getRuntimeSupervisor: vi.fn(),
 }));
@@ -41,12 +50,29 @@ import {
   addExistingTabToPane,
   createDefaultLayout,
   getLayout,
+  splitPaneInLayout,
+  closePaneInLayout,
+  patchLayout,
+  patchPane,
+  reorderTabsInPane,
+  moveTabBetweenPanes,
+  patchTab,
+  readTabAgentJsonlPath,
   readLayoutFile,
   restartTabSession,
   resolveLayoutDir,
   resolveLayoutFile,
+  updateTabAgentJsonlPath,
+  updateTabAgentSessionId,
+  updateTabAgentSummary,
+  updateTabCliStatus,
+  updateTabLastUserMessage,
   writeLayoutFile,
 } from '@/lib/layout-store';
+import { broadcastSync } from '@/lib/sync-server';
+import type { IAgentProvider } from '@/lib/providers';
+
+const broadcastSyncMock = vi.mocked(broadcastSync);
 
 describe('layout store normalization', () => {
   beforeEach(() => {
@@ -71,6 +97,43 @@ describe('layout store normalization', () => {
       lifecycleState: 'ready',
     });
     runtimeMocks.supervisor.deleteTerminalTab.mockClear();
+    runtimeMocks.supervisor.splitPane.mockReset();
+    runtimeMocks.supervisor.closePane.mockReset();
+    runtimeMocks.supervisor.patchLayout.mockReset();
+    runtimeMocks.supervisor.patchPane.mockReset();
+    runtimeMocks.supervisor.reorderTabs.mockReset();
+    runtimeMocks.supervisor.moveTab.mockReset();
+    runtimeMocks.supervisor.patchTab.mockReset();
+    runtimeMocks.supervisor.patchTabStatusMetadata.mockReset();
+    runtimeMocks.supervisor.getTabStatusMetadata.mockReset();
+    broadcastSyncMock.mockClear();
+    const runtimeLayout = {
+      root: { type: 'pane' as const, id: 'pane-runtime', tabs: [], activeTabId: null },
+      activePaneId: 'pane-runtime',
+      updatedAt: new Date(0).toISOString(),
+    };
+    runtimeMocks.supervisor.splitPane.mockResolvedValue(runtimeLayout);
+    runtimeMocks.supervisor.closePane.mockResolvedValue({ layout: runtimeLayout, killedSessions: [], failedKills: [] });
+    runtimeMocks.supervisor.patchLayout.mockResolvedValue(runtimeLayout);
+    runtimeMocks.supervisor.patchPane.mockResolvedValue(runtimeLayout);
+    runtimeMocks.supervisor.reorderTabs.mockResolvedValue(runtimeLayout);
+    runtimeMocks.supervisor.moveTab.mockResolvedValue(runtimeLayout);
+    runtimeMocks.supervisor.patchTab.mockResolvedValue(runtimeLayout);
+    runtimeMocks.supervisor.patchTabStatusMetadata.mockResolvedValue({
+      updated: true,
+      workspaceId: 'ws-runtime',
+      tabId: 'tab-a',
+    });
+    runtimeMocks.supervisor.getTabStatusMetadata.mockResolvedValue({
+      workspaceId: 'ws-runtime',
+      tabId: 'tab-a',
+      agentSessionId: 'agent-a',
+      agentJsonlPath: '/tmp/agent-a.jsonl',
+      agentSummary: 'summary',
+      lastUserMessage: '작업 시작',
+      cliState: 'needs-input',
+      dismissedAt: 123,
+    });
   });
 
   it('marks newly created legacy terminal tabs as runtime 1', async () => {
@@ -241,6 +304,108 @@ describe('layout store normalization', () => {
       if (previousRuntimeDb === undefined) delete process.env.CODEXWINMUX_RUNTIME_DB;
       else process.env.CODEXWINMUX_RUNTIME_DB = previousRuntimeDb;
       await fs.rm(runtimeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('routes layout mutations through runtime supervisor in storage default mode', async () => {
+    const previousRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+    const previousStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+
+    try {
+      await expect(splitPaneInLayout('ws-runtime', 'pane-a', 'horizontal', '/repo', 'terminal')).resolves.toEqual(
+        expect.objectContaining({ activePaneId: 'pane-runtime' }),
+      );
+      await expect(closePaneInLayout('ws-runtime', 'pane-b')).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
+      await expect(patchLayout('ws-runtime', { activePaneId: 'pane-a' })).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
+      await expect(patchPane('ws-runtime', 'pane-a', { activeTabId: 'tab-a' })).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
+      await expect(reorderTabsInPane('ws-runtime', 'pane-a', ['tab-b', 'tab-a'])).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
+      await expect(moveTabBetweenPanes('ws-runtime', 'tab-a', 'pane-a', 'pane-b', 0)).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
+      await expect(patchTab('ws-runtime', 'pane-a', 'tab-a', { name: 'patched', terminalCollapsed: true })).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
+
+      expect(runtimeMocks.supervisor.splitPane).toHaveBeenCalledWith({
+        workspaceId: 'ws-runtime',
+        sourcePaneId: 'pane-a',
+        orientation: 'horizontal',
+        cwd: '/repo',
+        panelType: 'terminal',
+      });
+      expect(runtimeMocks.supervisor.closePane).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-b' });
+      expect(runtimeMocks.supervisor.patchLayout).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', activePaneId: 'pane-a' });
+      expect(runtimeMocks.supervisor.patchPane).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-a', activeTabId: 'tab-a' });
+      expect(runtimeMocks.supervisor.reorderTabs).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-a', tabIds: ['tab-b', 'tab-a'] });
+      expect(runtimeMocks.supervisor.moveTab).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', tabId: 'tab-a', fromPaneId: 'pane-a', toPaneId: 'pane-b', toIndex: 0 });
+      expect(runtimeMocks.supervisor.patchTab).toHaveBeenCalledWith({
+        workspaceId: 'ws-runtime',
+        paneId: 'pane-a',
+        tabId: 'tab-a',
+        patch: { name: 'patched', terminalCollapsed: true },
+      });
+      expect(broadcastSyncMock).toHaveBeenCalledWith({ type: 'layout', workspaceId: 'ws-runtime' });
+      expect(tmuxMocks.createSession).not.toHaveBeenCalled();
+    } finally {
+      if (previousRuntimeV2 === undefined) delete process.env.CODEXWINMUX_RUNTIME_V2;
+      else process.env.CODEXWINMUX_RUNTIME_V2 = previousRuntimeV2;
+      if (previousStorageMode === undefined) delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+      else process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = previousStorageMode;
+    }
+  });
+
+  it('routes status and timeline metadata through runtime supervisor in storage default mode', async () => {
+    const previousRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+    const previousStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    const provider = {
+      readSessionId: vi.fn(),
+      writeSessionId: vi.fn(),
+      readJsonlPath: vi.fn(),
+      writeJsonlPath: vi.fn(),
+      readSummary: vi.fn(),
+      writeSummary: vi.fn(),
+    } as unknown as IAgentProvider;
+
+    try {
+      await updateTabAgentSessionId('rtv2-ws-runtime-pane-a-tab-a', provider, 'agent-a');
+      await updateTabAgentJsonlPath('rtv2-ws-runtime-pane-a-tab-a', provider, '/tmp/agent-a.jsonl');
+      await updateTabAgentSummary('rtv2-ws-runtime-pane-a-tab-a', provider, 'summary');
+      await updateTabLastUserMessage('rtv2-ws-runtime-pane-a-tab-a', '작업 시작');
+      await updateTabCliStatus('rtv2-ws-runtime-pane-a-tab-a', 'needs-input', 123);
+      await expect(readTabAgentJsonlPath('rtv2-ws-runtime-pane-a-tab-a', provider)).resolves.toBe('/tmp/agent-a.jsonl');
+
+      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+        sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
+        agentSessionId: 'agent-a',
+      });
+      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+        sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
+        agentJsonlPath: '/tmp/agent-a.jsonl',
+      });
+      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+        sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
+        agentSummary: 'summary',
+      });
+      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+        sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
+        lastUserMessage: '작업 시작',
+      });
+      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+        sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
+        cliState: 'needs-input',
+        dismissedAt: 123,
+      });
+      expect(runtimeMocks.supervisor.getTabStatusMetadata).toHaveBeenCalledWith({
+        sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
+      });
+      expect(provider.writeSessionId).not.toHaveBeenCalled();
+      expect(provider.writeJsonlPath).not.toHaveBeenCalled();
+      expect(provider.writeSummary).not.toHaveBeenCalled();
+    } finally {
+      if (previousRuntimeV2 === undefined) delete process.env.CODEXWINMUX_RUNTIME_V2;
+      else process.env.CODEXWINMUX_RUNTIME_V2 = previousRuntimeV2;
+      if (previousStorageMode === undefined) delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+      else process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = previousStorageMode;
     }
   });
 });

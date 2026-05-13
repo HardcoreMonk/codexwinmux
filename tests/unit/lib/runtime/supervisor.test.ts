@@ -43,6 +43,44 @@ const createWorkers = () => {
   storage.replies.set('storage.list-pending-terminal-tabs', []);
   storage.replies.set('storage.list-ready-terminal-tabs', []);
   storage.replies.set('storage.list-workspaces', []);
+  storage.replies.set('storage.rename-workspace', {
+    id: 'ws-a',
+    name: 'Renamed',
+    defaultCwd: '/repo',
+    active: 1,
+    groupId: null,
+    orderIndex: 0,
+    createdAt: new Date(0).toISOString(),
+    updatedAt: new Date(1).toISOString(),
+  });
+  storage.replies.set('storage.create-workspace-group', { id: 'grp-a', name: 'Group A', collapsed: false });
+  storage.replies.set('storage.rename-workspace-group', { id: 'grp-a', name: 'Renamed', collapsed: false });
+  storage.replies.set('storage.set-workspace-group-collapsed', { ok: true });
+  storage.replies.set('storage.delete-workspace-group', { deleted: true });
+  storage.replies.set('storage.reorder-workspace-groups', { ok: true });
+  storage.replies.set('storage.set-workspace-group', { ok: true });
+  storage.replies.set('storage.reorder-workspaces', { ok: true });
+  storage.replies.set('storage.split-pane', { root: { type: 'pane', id: 'pane-new', tabs: [], activeTabId: null }, activePaneId: 'pane-new', updatedAt: new Date(0).toISOString() });
+  storage.replies.set('storage.close-pane', {
+    layout: { root: { type: 'pane', id: 'pane-a', tabs: [], activeTabId: null }, activePaneId: 'pane-a', updatedAt: new Date(0).toISOString() },
+    sessions: [{ sessionName: 'rtv2-ws-a-pane-b-tab-c' }],
+  });
+  storage.replies.set('storage.patch-layout', { root: { type: 'pane', id: 'pane-a', tabs: [], activeTabId: null }, activePaneId: 'pane-a', updatedAt: new Date(0).toISOString() });
+  storage.replies.set('storage.patch-pane', { root: { type: 'pane', id: 'pane-a', tabs: [], activeTabId: 'tab-a' }, activePaneId: 'pane-a', updatedAt: new Date(0).toISOString() });
+  storage.replies.set('storage.reorder-tabs', { root: { type: 'pane', id: 'pane-a', tabs: [], activeTabId: null }, activePaneId: 'pane-a', updatedAt: new Date(0).toISOString() });
+  storage.replies.set('storage.move-tab', { root: { type: 'pane', id: 'pane-b', tabs: [], activeTabId: 'tab-a' }, activePaneId: 'pane-b', updatedAt: new Date(0).toISOString() });
+  storage.replies.set('storage.patch-tab', { root: { type: 'pane', id: 'pane-a', tabs: [], activeTabId: 'tab-a' }, activePaneId: 'pane-a', updatedAt: new Date(0).toISOString() });
+  storage.replies.set('storage.patch-tab-status-metadata', { updated: true, workspaceId: 'ws-a', tabId: 'tab-a' });
+  storage.replies.set('storage.get-tab-status-metadata', {
+    workspaceId: 'ws-a',
+    tabId: 'tab-a',
+    agentSessionId: 'agent-a',
+    agentJsonlPath: '/tmp/agent-a.jsonl',
+    agentSummary: 'summary',
+    lastUserMessage: '작업 시작',
+    cliState: 'needs-input',
+    dismissedAt: 123,
+  });
   storage.replies.set('storage.get-ready-terminal-tab-by-session', {
     id: 'tab-a',
     sessionName: 'rtv2-ws-a-pane-b-tab-c',
@@ -64,6 +102,7 @@ const createWorkers = () => {
   storage.replies.set('storage.fail-ready-terminal-tab', { ok: true });
   storage.replies.set('storage.delete-terminal-tab', {
     deleted: true,
+    workspaceId: 'ws-a',
     session: { sessionName: 'rtv2-ws-a-pane-b-tab-c' },
   });
   terminal.replies.set('terminal.health', { ok: true });
@@ -244,6 +283,119 @@ describe('runtime supervisor', () => {
       {
         type: 'timeline.message-counts',
         payload: { jsonlPath: `${os.homedir()}/.codex/sessions/session.jsonl` },
+      },
+    ]));
+  });
+
+  it('renames workspaces through the storage worker', async () => {
+    const { storage, terminal, timeline, status } = createWorkers();
+    const supervisor = createRuntimeSupervisorForTest({ storage, terminal, timeline, status });
+
+    await expect(supervisor.renameWorkspace({ workspaceId: 'ws-a', name: 'Renamed' })).resolves.toEqual(
+      expect.objectContaining({ id: 'ws-a', name: 'Renamed' }),
+    );
+
+    expect(storage.commands).toEqual(expect.arrayContaining([
+      {
+        type: 'storage.rename-workspace',
+        payload: { workspaceId: 'ws-a', name: 'Renamed' },
+      },
+    ]));
+  });
+
+  it('proxies workspace group and order commands through the storage worker', async () => {
+    const { storage, terminal, timeline, status } = createWorkers();
+    const supervisor = createRuntimeSupervisorForTest({ storage, terminal, timeline, status });
+
+    await expect(supervisor.createWorkspaceGroup({ name: 'Group A' })).resolves.toEqual({ id: 'grp-a', name: 'Group A', collapsed: false });
+    await expect(supervisor.renameWorkspaceGroup({ groupId: 'grp-a', name: 'Renamed' })).resolves.toEqual({ id: 'grp-a', name: 'Renamed', collapsed: false });
+    await expect(supervisor.setWorkspaceGroupCollapsed({ groupId: 'grp-a', collapsed: true })).resolves.toEqual({ ok: true });
+    await expect(supervisor.setWorkspaceGroup({ workspaceId: 'ws-a', groupId: 'grp-a' })).resolves.toEqual({ ok: true });
+    await expect(supervisor.reorderWorkspaces({ items: [{ id: 'ws-b' }, { id: 'ws-a', groupId: 'grp-a' }] })).resolves.toEqual({ ok: true });
+    await expect(supervisor.reorderWorkspaceGroups({ groupIds: ['grp-a'] })).resolves.toEqual({ ok: true });
+    await expect(supervisor.deleteWorkspaceGroup({ groupId: 'grp-a' })).resolves.toEqual({ deleted: true });
+
+    expect(storage.commands).toEqual(expect.arrayContaining([
+      { type: 'storage.create-workspace-group', payload: { name: 'Group A' } },
+      { type: 'storage.rename-workspace-group', payload: { groupId: 'grp-a', name: 'Renamed' } },
+      { type: 'storage.set-workspace-group-collapsed', payload: { groupId: 'grp-a', collapsed: true } },
+      { type: 'storage.set-workspace-group', payload: { workspaceId: 'ws-a', groupId: 'grp-a' } },
+      { type: 'storage.reorder-workspaces', payload: { items: [{ id: 'ws-b' }, { id: 'ws-a', groupId: 'grp-a' }] } },
+      { type: 'storage.reorder-workspace-groups', payload: { groupIds: ['grp-a'] } },
+      { type: 'storage.delete-workspace-group', payload: { groupId: 'grp-a' } },
+    ]));
+  });
+
+  it('coordinates layout mutations through storage and terminal workers', async () => {
+    const { storage, terminal, timeline, status } = createWorkers();
+    const supervisor = createRuntimeSupervisorForTest({ storage, terminal, timeline, status });
+
+    await expect(supervisor.splitPane({
+      workspaceId: 'ws-a',
+      sourcePaneId: 'pane-a',
+      orientation: 'horizontal',
+      cwd: '/repo',
+      panelType: 'terminal',
+    })).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-new' }));
+    await expect(supervisor.patchLayout({ workspaceId: 'ws-a', activePaneId: 'pane-a' })).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-a' }));
+    await expect(supervisor.patchPane({ workspaceId: 'ws-a', paneId: 'pane-a', activeTabId: 'tab-a' })).resolves.toEqual(expect.any(Object));
+    await expect(supervisor.reorderTabs({ workspaceId: 'ws-a', paneId: 'pane-a', tabIds: ['tab-a'] })).resolves.toEqual(expect.any(Object));
+    await expect(supervisor.moveTab({ workspaceId: 'ws-a', tabId: 'tab-a', fromPaneId: 'pane-a', toPaneId: 'pane-b', toIndex: 0 })).resolves.toEqual(expect.any(Object));
+    await expect(supervisor.patchTab({ workspaceId: 'ws-a', paneId: 'pane-a', tabId: 'tab-a', patch: { name: 'patched' } })).resolves.toEqual(expect.any(Object));
+    await expect(supervisor.closePane({ workspaceId: 'ws-a', paneId: 'pane-b' })).resolves.toEqual(expect.objectContaining({
+      layout: expect.objectContaining({ activePaneId: 'pane-a' }),
+      killedSessions: ['rtv2-ws-a-pane-b-tab-c'],
+      failedKills: [],
+    }));
+
+    expect(terminal.commands.map((command) => command.type)).toContain('terminal.create-session');
+    expect(terminal.commands).toEqual(expect.arrayContaining([
+      { type: 'terminal.kill-session', payload: { sessionName: 'rtv2-ws-a-pane-b-tab-c' } },
+    ]));
+    expect(storage.commands.map((command) => command.type)).toEqual(expect.arrayContaining([
+      'storage.split-pane',
+      'storage.patch-layout',
+      'storage.patch-pane',
+      'storage.reorder-tabs',
+      'storage.move-tab',
+      'storage.patch-tab',
+      'storage.close-pane',
+    ]));
+  });
+
+  it('proxies tab status metadata through the storage worker', async () => {
+    const { storage, terminal, timeline, status } = createWorkers();
+    const supervisor = createRuntimeSupervisorForTest({ storage, terminal, timeline, status });
+
+    await expect(supervisor.patchTabStatusMetadata({
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
+      agentSessionId: 'agent-a',
+      agentJsonlPath: '/tmp/agent-a.jsonl',
+      agentSummary: 'summary',
+      lastUserMessage: '작업 시작',
+      cliState: 'needs-input',
+      dismissedAt: 123,
+    })).resolves.toEqual({ updated: true, workspaceId: 'ws-a', tabId: 'tab-a' });
+    await expect(supervisor.getTabStatusMetadata({ sessionName: 'rtv2-ws-a-pane-a-tab-a' })).resolves.toEqual(
+      expect.objectContaining({ agentJsonlPath: '/tmp/agent-a.jsonl', cliState: 'needs-input' }),
+    );
+
+    expect(storage.commands).toEqual(expect.arrayContaining([
+      {
+        type: 'storage.patch-tab-status-metadata',
+        payload: {
+          sessionName: 'rtv2-ws-a-pane-a-tab-a',
+          agentSessionId: 'agent-a',
+          agentJsonlPath: '/tmp/agent-a.jsonl',
+          agentSummary: 'summary',
+          lastUserMessage: '작업 시작',
+          cliState: 'needs-input',
+          dismissedAt: 123,
+        },
+      },
+      {
+        type: 'storage.get-tab-status-metadata',
+        payload: { sessionName: 'rtv2-ws-a-pane-a-tab-a' },
       },
     ]));
   });
@@ -922,6 +1074,7 @@ describe('runtime supervisor', () => {
     });
     await expect(supervisor.deleteTerminalTab('tab-a')).resolves.toEqual({
       deleted: true,
+      workspaceId: 'ws-a',
       killedSession: 'rtv2-ws-a-pane-b-tab-c',
       failedKill: null,
     });
@@ -943,6 +1096,7 @@ describe('runtime supervisor', () => {
 
     await expect(supervisor.deleteTerminalTab('tab-missing')).resolves.toEqual({
       deleted: false,
+      workspaceId: null,
       killedSession: null,
       failedKill: null,
     });
@@ -959,6 +1113,7 @@ describe('runtime supervisor', () => {
 
     await expect(supervisor.deleteTerminalTab('tab-a')).resolves.toEqual({
       deleted: true,
+      workspaceId: null,
       killedSession: null,
       failedKill: {
         sessionName: 'pt-legacy-session',

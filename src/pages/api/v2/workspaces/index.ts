@@ -5,6 +5,7 @@ import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { parseRuntimeApiBody, sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { broadcastSync } from '@/lib/sync-server';
 
 const createWorkspaceBodySchema = z.object({
   name: z.string().trim().min(1).optional(),
@@ -38,6 +39,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       name: body.name ?? 'Runtime Workspace',
       defaultCwd: body.defaultCwd ?? os.homedir(),
     });
+    broadcastSync({ type: 'workspace' });
     return res.status(200).json(workspace);
   } catch (err) {
     return sendRuntimeApiError(res, err);

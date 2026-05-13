@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => {
   };
   return {
     auth: vi.fn(),
+    broadcastSync: vi.fn(),
     getRuntimeSupervisor: vi.fn(() => supervisor),
     supervisor,
   };
@@ -29,6 +30,10 @@ vi.mock('@/lib/runtime/api-auth', () => ({
 
 vi.mock('@/lib/runtime/supervisor', () => ({
   getRuntimeSupervisor: mocks.getRuntimeSupervisor,
+}));
+
+vi.mock('@/lib/sync-server', () => ({
+  broadcastSync: mocks.broadcastSync,
 }));
 
 import healthHandler from '@/pages/api/v2/runtime/health';
@@ -98,6 +103,7 @@ describe('runtime v2 api routes', () => {
     delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
     delete process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE;
     mocks.auth.mockReset();
+    mocks.broadcastSync.mockClear();
     mocks.getRuntimeSupervisor.mockClear();
     Object.values(mocks.supervisor).forEach((mock) => mock.mockReset());
     mocks.auth.mockResolvedValue(true);
@@ -106,7 +112,7 @@ describe('runtime v2 api routes', () => {
     mocks.supervisor.listWorkspaces.mockResolvedValue([{ id: 'ws-a', name: 'Runtime', defaultCwd: '/tmp', active: 1, orderIndex: 0, createdAt: 'now', updatedAt: 'now' }]);
     mocks.supervisor.createWorkspace.mockResolvedValue({ id: 'ws-a', rootPaneId: 'pane-a' });
     mocks.supervisor.deleteWorkspace.mockResolvedValue({ deleted: true, killedSessions: ['rtv2-ws-a-pane-a-tab-a'], failedKills: [] });
-    mocks.supervisor.deleteTerminalTab.mockResolvedValue({ deleted: true, killedSession: 'rtv2-ws-a-pane-a-tab-a', failedKill: null });
+    mocks.supervisor.deleteTerminalTab.mockResolvedValue({ deleted: true, workspaceId: 'ws-a', killedSession: 'rtv2-ws-a-pane-a-tab-a', failedKill: null });
     mocks.supervisor.getLayout.mockResolvedValue({ root: { type: 'pane', id: 'pane-a', tabs: [] }, activePaneId: 'pane-a', updatedAt: 'now' });
     mocks.supervisor.createTerminalTab.mockResolvedValue({ id: 'tab-a', sessionName: 'rtv2-ws-a-pane-a-tab-a', name: '', order: 0, cwd: '/tmp', panelType: 'terminal', lifecycleState: 'ready', runtimeVersion: 2 });
     mocks.supervisor.listTimelineSessions.mockResolvedValue({ sessions: [], total: 0, hasMore: false });
@@ -263,6 +269,15 @@ describe('runtime v2 api routes', () => {
   });
 
   it('creates terminal tabs and deletes tabs and workspaces', async () => {
+    mocks.supervisor.createWorkspace.mockResolvedValueOnce({ id: 'ws-created', rootPaneId: 'pane-created' });
+    const workspaceResponse = createResponse();
+    await workspacesHandler(createRequest({
+      method: 'POST',
+      body: { name: 'Runtime', defaultCwd: '/tmp' },
+    }), workspaceResponse.res);
+    expect(workspaceResponse.statusCode).toBe(200);
+    expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'workspace' });
+
     const tabResponse = createResponse();
     await tabsHandler(createRequest({
       method: 'POST',
@@ -270,6 +285,7 @@ describe('runtime v2 api routes', () => {
     }), tabResponse.res);
     expect(tabResponse.statusCode).toBe(200);
     expect(tabResponse.body).toMatchObject({ sessionName: 'rtv2-ws-a-pane-a-tab-a', runtimeVersion: 2 });
+    expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'layout', workspaceId: 'ws-a' });
 
     const tabDeleteResponse = createResponse();
     await tabHandler(createRequest({
@@ -279,6 +295,7 @@ describe('runtime v2 api routes', () => {
     expect(tabDeleteResponse.statusCode).toBe(200);
     expect(tabDeleteResponse.body).toMatchObject({ deleted: true, killedSession: 'rtv2-ws-a-pane-a-tab-a' });
     expect(mocks.supervisor.deleteTerminalTab).toHaveBeenCalledWith('tab-a');
+    expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'layout', workspaceId: 'ws-a' });
 
     const deleteResponse = createResponse();
     await workspaceCleanupHandler(createRequest({
@@ -288,6 +305,7 @@ describe('runtime v2 api routes', () => {
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toMatchObject({ deleted: true });
     expect(mocks.supervisor.deleteWorkspace).toHaveBeenCalledWith('ws-a');
+    expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'workspace' });
   });
 
   it('maps worker and domain failures', async () => {
