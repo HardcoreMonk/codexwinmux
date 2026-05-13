@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import { spawn } from 'child_process';
-import { buildEnvAlias } from './env-alias-lib.mjs';
+import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 
 const child = spawn('node', ['scripts/smoke-permission-prompt.mjs'], {
   cwd: process.cwd(),
   env: {
-    ...process.env,
-    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_STATUS_V2_MODE', 'default'),
+    ...stripLegacyRuntimeEnv(process.env),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_STATUS_V2_MODE', 'default'),
+    ...(process.platform === 'win32' ? buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
     CODEXMUX_PERMISSION_SMOKE_EXPECT_STATUS_MODE: 'default',
   },
   stdio: 'inherit',

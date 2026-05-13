@@ -39,7 +39,7 @@ import {
   normalizeAndroidForegroundRounds,
 } from './android-runtime-v2-smoke-lib.mjs';
 import { extractCookieHeader } from './runtime-v2-phase2-smoke-lib.mjs';
-import { buildEnvAlias } from './env-alias-lib.mjs';
+import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const PASSWORD = 'android-timeline-foreground-smoke';
@@ -119,7 +119,7 @@ const jsonRequest = async (baseUrl, pathname, cookie, init = {}) => {
 
 const startServer = async ({ homeDir, dbPath, port }) => {
   const env = {
-    ...process.env,
+    ...stripLegacyRuntimeEnv(process.env),
     PATH: process.env.PATH || process.env.Path,
     HOME: homeDir,
     ...(process.platform === 'win32' ? {
@@ -130,14 +130,14 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
     HOST: process.env.CODEXMUX_ANDROID_TIMELINE_FOREGROUND_HOST || 'localhost,tailscale',
-    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
 
-    ...(process.platform === 'win32' ? buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_STATUS_V2_MODE', 'off'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
+    ...(process.platform === 'win32' ? buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_STATUS_V2_MODE', 'off'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;

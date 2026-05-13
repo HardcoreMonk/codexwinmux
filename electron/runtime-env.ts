@@ -46,33 +46,41 @@ const preferredWindowsRuntimeAlias = (legacyKey: string): string =>
 const isRuntimeLegacyKey = (legacyKey: string): boolean =>
   legacyKey.startsWith('CODEXMUX_RUNTIME_');
 
+const isRuntimePreferredKey = (key: string): boolean =>
+  key.startsWith('CODEXWINMUX_RUNTIME_');
+
+const legacyWindowsRuntimeAlias = (preferredKey: string): string =>
+  preferredKey.replace(/^CODEXWINMUX_/, 'CODEXMUX_');
+
 const applyAliasedDefault = (
   env: Record<string, string | undefined>,
   legacyKey: string,
   value: string,
 ): void => {
   const preferredKey = preferredWindowsRuntimeAlias(legacyKey);
+  const legacyRuntimeKey = legacyWindowsRuntimeAlias(preferredKey);
+  const isRuntimeKey = isRuntimeLegacyKey(legacyKey) || isRuntimePreferredKey(preferredKey);
   const nextValue = hasEnvValue(env[preferredKey])
     ? env[preferredKey]
-    : !isRuntimeLegacyKey(legacyKey) && hasEnvValue(env[legacyKey])
+    : !isRuntimeKey && hasEnvValue(env[legacyKey])
       ? env[legacyKey]
       : value;
 
   env[preferredKey] = nextValue;
-  if (isRuntimeLegacyKey(legacyKey)) {
-    delete env[legacyKey];
+  if (isRuntimeKey) {
+    delete env[legacyRuntimeKey];
   } else {
     env[legacyKey] = nextValue;
   }
 };
 
 const applyWindowsRuntimeDefaults = (env: Record<string, string | undefined>): void => {
-  applyAliasedDefault(env, 'CODEXMUX_RUNTIME_V2', '1');
-  applyAliasedDefault(env, 'CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs');
-  applyAliasedDefault(env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'default');
-  applyAliasedDefault(env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'default');
-  applyAliasedDefault(env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE', 'default');
-  applyAliasedDefault(env, 'CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows');
+  applyAliasedDefault(env, 'CODEXWINMUX_RUNTIME_V2', '1');
+  applyAliasedDefault(env, 'CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs');
+  applyAliasedDefault(env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'default');
+  applyAliasedDefault(env, 'CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE', 'default');
+  applyAliasedDefault(env, 'CODEXWINMUX_RUNTIME_STATUS_V2_MODE', 'default');
+  applyAliasedDefault(env, 'CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows');
   applyAliasedDefault(env, 'CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows');
 };
 

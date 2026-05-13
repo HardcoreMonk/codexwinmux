@@ -237,7 +237,7 @@ export class RuntimeWorkerClient {
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: {
         ...process.env,
-        ...(runtimeDbPath ? buildRuntimeEnvAliasRecord('CODEXMUX_RUNTIME_DB', runtimeDbPath) : {}),
+        ...(runtimeDbPath ? buildRuntimeEnvAliasRecord('CODEXWINMUX_RUNTIME_DB', runtimeDbPath) : {}),
       },
     });
   }

@@ -17,7 +17,7 @@ import {
   extractCookieHeader,
   resolveSmokeTerminalEndpoint,
 } from './runtime-v2-phase2-smoke-lib.mjs';
-import { buildEnvAlias } from './env-alias-lib.mjs';
+import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 
 const PASSWORD = 'runtime-v2-phase2-smoke';
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -77,7 +77,7 @@ const jsonRequest = async (baseUrl, pathname, cookie, init = {}) => {
 
 const startServer = async ({ homeDir, dbPath, port, terminalMode }) => {
   const env = {
-    ...process.env,
+    ...stripLegacyRuntimeEnv(process.env),
     PATH: process.env.PATH || process.env.Path,
     HOME: homeDir,
     ...(process.platform === 'win32' ? {
@@ -86,11 +86,11 @@ const startServer = async ({ homeDir, dbPath, port, terminalMode }) => {
       LOCALAPPDATA: path.join(homeDir, 'AppData', 'Local'),
     } : {}),
     SHELL: '/bin/sh',
-    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', terminalMode),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', terminalMode),
 
-    ...(process.platform === 'win32' ? buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
+    ...(process.platform === 'win32' ? buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;

@@ -22,7 +22,7 @@ export const resolveRuntimeStatusV2Mode = (
     : isRuntimeV2Enabled();
   const statusMode = hasOwnRuntimeOption(options, 'statusMode')
     ? options.statusMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STATUS_V2_MODE');
   if (statusMode === undefined && runtimeV2Enabled) return defaultRuntimeStatusV2Mode;
   return parseRuntimeStatusV2Mode(statusMode);
 };
@@ -30,7 +30,7 @@ export const resolveRuntimeStatusV2Mode = (
 export const getRuntimeStatusV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeStatusV2Mode =>
   resolveRuntimeStatusV2Mode({
     runtimeV2Enabled: isRuntimeV2Enabled(env),
-    statusMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE'),
+    statusMode: readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_STATUS_V2_MODE'),
   });
 
 export const shouldUseRuntimeStatusV2Live = (
@@ -41,7 +41,7 @@ export const shouldUseRuntimeStatusV2Live = (
     : isRuntimeV2Enabled();
   const statusMode = hasOwnRuntimeOption(options, 'statusMode')
     ? options.statusMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STATUS_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STATUS_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeStatusV2Mode({ runtimeV2Enabled, statusMode }) === 'default';
 };

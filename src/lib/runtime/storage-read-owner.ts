@@ -30,7 +30,7 @@ const getDefaultDbPath = (dataDir = getDefaultDataDir()): string =>
 
 export const shouldReadRuntimeStorageV2 = ({
   runtimeV2Enabled = isRuntimeV2Enabled(),
-  storageMode = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE'),
+  storageMode = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE'),
 }: IRuntimeStorageReadOwnerOptions = {}): boolean =>
   runtimeV2Enabled && parseRuntimeStorageV2Mode(storageMode) === 'default';
 

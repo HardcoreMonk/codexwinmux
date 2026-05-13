@@ -24,6 +24,11 @@ const buildEnvAlias = (legacyKey: string, value: string): Record<string, string>
   ...(legacyKey.startsWith('CODEXMUX_RUNTIME_') ? {} : { [legacyKey]: value }),
 });
 
+const stripLegacyRuntimeEnv = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv =>
+  Object.fromEntries(
+    Object.entries(env).filter(([key]) => !key.startsWith('CODEXMUX_RUNTIME_')),
+  ) as NodeJS.ProcessEnv;
+
 export const createWindowsRuntimeV2TerminalSmokeEnv = ({
   env = process.env,
   homeDir,
@@ -31,12 +36,12 @@ export const createWindowsRuntimeV2TerminalSmokeEnv = ({
   shell,
 }: IWindowsRuntimeV2TerminalSmokeEnvInput): NodeJS.ProcessEnv => {
   const nextEnv: NodeJS.ProcessEnv = {
-    ...env,
+    ...stripLegacyRuntimeEnv(env),
     HOME: homeDir,
     USERPROFILE: homeDir,
-    ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
-    ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_DB', dbPath),
+    ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
     CODEXMUX_WINDOWS_SHELL: shell,
   };
   nextEnv.__CMUX_PRISTINE_ENV = JSON.stringify(nextEnv);

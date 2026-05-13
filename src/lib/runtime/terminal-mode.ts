@@ -24,7 +24,7 @@ export const resolveRuntimeTerminalV2Mode = (
     : isRuntimeV2Enabled();
   const terminalMode = hasOwnRuntimeOption(options, 'terminalMode')
     ? options.terminalMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TERMINAL_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE');
   if (terminalMode === undefined && runtimeV2Enabled) return defaultRuntimeTerminalV2Mode;
   return parseRuntimeTerminalV2Mode(terminalMode);
 };
@@ -32,7 +32,7 @@ export const resolveRuntimeTerminalV2Mode = (
 export const getRuntimeTerminalV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeTerminalV2Mode =>
   resolveRuntimeTerminalV2Mode({
     runtimeV2Enabled: isRuntimeV2Enabled(env),
-    terminalMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_TERMINAL_V2_MODE'),
+    terminalMode: readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE'),
   });
 
 export const shouldCreateTerminalTabInRuntimeV2 = (
@@ -43,7 +43,7 @@ export const shouldCreateTerminalTabInRuntimeV2 = (
     : isRuntimeV2Enabled();
   const terminalMode = hasOwnRuntimeOption(options, 'terminalMode')
     ? options.terminalMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TERMINAL_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE');
   const explicitOptIn = options.explicitOptIn ?? false;
   if (!runtimeV2Enabled) return false;
   const mode = resolveRuntimeTerminalV2Mode({ runtimeV2Enabled, terminalMode });

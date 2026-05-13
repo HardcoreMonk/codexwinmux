@@ -22,7 +22,7 @@ export const resolveRuntimeStorageV2Mode = (
     : isRuntimeV2Enabled();
   const storageMode = hasOwnRuntimeOption(options, 'storageMode')
     ? options.storageMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE');
   if (storageMode === undefined && runtimeV2Enabled) return defaultRuntimeStorageV2Mode;
   return parseRuntimeStorageV2Mode(storageMode);
 };
@@ -30,7 +30,7 @@ export const resolveRuntimeStorageV2Mode = (
 export const getRuntimeStorageV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeStorageV2Mode =>
   resolveRuntimeStorageV2Mode({
     runtimeV2Enabled: isRuntimeV2Enabled(env),
-    storageMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE'),
+    storageMode: readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE'),
   });
 
 export const shouldMirrorLegacyStorageToRuntimeV2 = (
@@ -41,7 +41,7 @@ export const shouldMirrorLegacyStorageToRuntimeV2 = (
     : isRuntimeV2Enabled();
   const storageMode = hasOwnRuntimeOption(options, 'storageMode')
     ? options.storageMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   const mode = resolveRuntimeStorageV2Mode({ runtimeV2Enabled, storageMode });
   return mode === 'write' || mode === 'default';

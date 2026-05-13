@@ -100,8 +100,8 @@ export const resolveWindowsServiceHostPlan = ({
       args: ['pnpm', 'start'],
       cwd: appDir,
       env: {
-        ...buildRuntimeEnvAliasRecord('CODEXMUX_RUNTIME_V2', '1'),
-        ...buildRuntimeEnvAliasRecord('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+        ...buildRuntimeEnvAliasRecord('CODEXWINMUX_RUNTIME_V2', '1'),
+        ...buildRuntimeEnvAliasRecord('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
         ...buildRuntimeEnvAliasRecord('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
         HOST: host,
         PORT: port,

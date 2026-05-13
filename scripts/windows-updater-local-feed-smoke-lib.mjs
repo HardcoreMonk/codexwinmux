@@ -1,5 +1,5 @@
 import path from 'path';
-import { preferredCodexwinmuxEnvKey } from './env-alias-lib.mjs';
+import { preferredCodexwinmuxEnvKey, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 
 const requiredInstallEvents = [
   {
@@ -70,7 +70,7 @@ export const buildWindowsUpdaterSmokeEnv = ({
   installDir,
   homeDir,
 }) => ({
-  ...Object.fromEntries(Object.entries(env).filter(([key]) => key !== 'NODE_OPTIONS')),
+  ...Object.fromEntries(Object.entries(stripLegacyRuntimeEnv(env)).filter(([key]) => key !== 'NODE_OPTIONS')),
   HOME: homeDir,
   USERPROFILE: homeDir,
   APPDATA: path.win32.join(homeDir, 'AppData', 'Roaming'),
@@ -80,9 +80,9 @@ export const buildWindowsUpdaterSmokeEnv = ({
   NODE_NO_WARNINGS: '1',
   NEXT_TELEMETRY_DISABLED: '1',
   NO_AT_BRIDGE: '1',
-  ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
-  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+  ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+  ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+  ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
   ...buildEnvAlias('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
   CODEXMUX_ELECTRON_UPDATER_FEED_URL: feedUrl,
   CODEXMUX_ELECTRON_UPDATER_SMOKE: '1',

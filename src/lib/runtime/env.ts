@@ -52,19 +52,19 @@ export const buildRuntimeEnvAliasRecord = (
 
 export const isRuntimeV2Enabled = (
   env: TRuntimeEnv = process.env,
-): boolean => readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_V2') === '1';
+): boolean => readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_V2') === '1';
 
 export const readRuntimeDbPathEnv = (
   env: TRuntimeEnv = process.env,
-): string | undefined => readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_DB');
+): string | undefined => readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_DB');
 
 export const readRuntimeStorageMirrorDataDirEnv = (
   env: TRuntimeEnv = process.env,
-): string | undefined => readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR');
+): string | undefined => readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR');
 
 export const shouldResetRuntimeV2Env = (
   env: TRuntimeEnv = process.env,
-): boolean => readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_V2_RESET') === '1';
+): boolean => readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_V2_RESET') === '1';
 
 export const hasOwnRuntimeOption = (options: object, key: string): boolean =>
   Object.prototype.hasOwnProperty.call(options, key);

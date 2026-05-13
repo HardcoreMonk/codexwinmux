@@ -22,7 +22,11 @@ describe('Windows runtime v2 terminal smoke helpers', () => {
   it('builds a Windows runtime v2 smoke environment', async () => {
     const { createWindowsRuntimeV2TerminalSmokeEnv } = await loadLib();
     const env = createWindowsRuntimeV2TerminalSmokeEnv({
-      env: { PATH: 'C:\\Windows\\System32' },
+      env: {
+        PATH: 'C:\\Windows\\System32',
+        CODEXMUX_RUNTIME_V2: '1',
+        CODEXMUX_RUNTIME_DB: 'C:\\legacy\\state.db',
+      },
       homeDir: 'C:\\Temp\\codexmux-home',
       dbPath: 'C:\\Temp\\codexmux-home\\runtime-v2\\state.db',
       shell: 'C:\\Windows\\System32\\cmd.exe',
@@ -40,5 +44,7 @@ describe('Windows runtime v2 terminal smoke helpers', () => {
     expect(JSON.parse(env.__CMUX_PRISTINE_ENV)).toMatchObject({
       CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
     });
+    expect(env.CODEXMUX_RUNTIME_V2).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_DB).toBeUndefined();
   });
 });

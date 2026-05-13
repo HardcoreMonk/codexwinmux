@@ -34,7 +34,7 @@ const createUnsupportedTerminalAdapterError = (value: string): Error & {
 export const resolveTerminalRuntimeAdapterKind = ({
   env = process.env,
 }: IResolveTerminalRuntimeAdapterKindOptions = {}): TTerminalRuntimeAdapterKind => {
-  const value = readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_TERMINAL_ADAPTER')?.trim().toLowerCase();
+  const value = readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER')?.trim().toLowerCase();
   if (!value || value === 'tmux') return 'tmux';
   if (value === 'windows') return 'windows';
   throw createUnsupportedTerminalAdapterError(value);

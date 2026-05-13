@@ -54,7 +54,12 @@ describe('Windows updater local feed smoke helpers', () => {
     const { buildWindowsUpdaterSmokeEnv } = await loadLib();
 
     const env = buildWindowsUpdaterSmokeEnv({
-      env: { PATH: 'C:\\Windows' },
+      env: {
+        PATH: 'C:\\Windows',
+        NODE_OPTIONS: '--require old-hook',
+        CODEXMUX_RUNTIME_V2: '1',
+        CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'tmux',
+      },
       feedUrl: 'http://127.0.0.1:8123/',
       statusPath: 'C:\\tmp\\updater-status.jsonl',
       installDir: 'C:\\tmp\\codexmux-app',
@@ -79,6 +84,8 @@ describe('Windows updater local feed smoke helpers', () => {
       NODE_NO_WARNINGS: '1',
     });
     expect(env.NODE_OPTIONS).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_V2).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBeUndefined();
   });
 
   it('summarizes updater status events into checks', async () => {

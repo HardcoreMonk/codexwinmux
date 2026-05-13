@@ -559,7 +559,7 @@ export const createRuntimeSupervisorForTest = (
 
   const startInternal = async (): Promise<void> => {
     if (started) return;
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_DB', prepareRuntimeDbPath());
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_DB', prepareRuntimeDbPath());
     const { storage, terminal, timeline, status } = getClients();
     try {
       storage.start();

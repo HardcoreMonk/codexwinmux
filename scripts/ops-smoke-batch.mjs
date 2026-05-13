@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { buildEnvAlias } from './env-alias-lib.mjs';
+import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const startedAt = new Date().toISOString();
@@ -33,10 +33,10 @@ const run = (name, args, env = {}) => new Promise((resolve) => {
   const child = spawn(invocation.command, invocation.args, {
     cwd: process.cwd(),
     env: {
-      ...process.env,
+      ...stripLegacyRuntimeEnv(process.env),
       PATH: process.env.PATH || process.env.Path,
       CODEXMUX_SMOKE_ARTIFACT_DIR: artifactRoot,
-      ...env,
+      ...stripLegacyRuntimeEnv(env),
     },
     stdio: ['ignore', 'ignore', 'ignore'],
   });
@@ -73,7 +73,7 @@ const main = async () => {
 
   if (process.env.CODEXMUX_OPS_SMOKE_RUNTIME_URL) {
     rows.push(await run('runtime-v2-phase6-default-gate', ['smoke:runtime-v2:phase6-default-gate'], {
-      ...buildEnvAlias('CODEXMUX_RUNTIME_V2_SMOKE_URL', process.env.CODEXMUX_OPS_SMOKE_RUNTIME_URL),
+      ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2_SMOKE_URL', process.env.CODEXMUX_OPS_SMOKE_RUNTIME_URL),
     }));
   } else {
     rows.push({
@@ -105,7 +105,7 @@ const main = async () => {
     status: failed ? 'failed' : 'passed',
     startedAt,
     payload,
-    env: { ...process.env, CODEXMUX_SMOKE_ARTIFACT_DIR: artifactRoot },
+    env: { ...stripLegacyRuntimeEnv(process.env), CODEXMUX_SMOKE_ARTIFACT_DIR: artifactRoot },
   });
   console.log(JSON.stringify(payload, null, 2));
   process.exit(failed ? 1 : 0);

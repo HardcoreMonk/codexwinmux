@@ -545,8 +545,8 @@ const launchEngineProcess = () => {
     env: {
       ...process.env,
       CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
-      ...buildCodexwinmuxAliasEnv('CODEXMUX_RUNTIME_V2', '1'),
-      ...buildCodexwinmuxAliasEnv('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+      ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_V2', '1'),
+      ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
       ...buildCodexwinmuxAliasEnv('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
       CODEXMUX_RESERVED_PORTS: buildReservedPortsEnv(),
       HOST: '127.0.0.1',

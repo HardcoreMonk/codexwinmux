@@ -31,7 +31,7 @@ import {
 } from './runtime-v2-phase2-smoke-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 import { buildWindowsPackagedLaunchArtifactPayload } from './windows-package-smoke-artifact-lib.mjs';
-import { preferredCodexwinmuxEnvKey, readEnvAlias } from './env-alias-lib.mjs';
+import { preferredCodexwinmuxEnvKey, readEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 const PASSWORD = 'windows-packaged-runtime-v2-smoke';
@@ -76,7 +76,7 @@ const buildEnvAlias = (legacyKey, value) => ({
 });
 
 const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
-  ...process.env,
+  ...stripLegacyRuntimeEnv(process.env),
   HOME: homeDir,
   USERPROFILE: homeDir,
   APPDATA: path.join(homeDir, 'AppData', 'Roaming'),
@@ -84,9 +84,9 @@ const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
   ELECTRON_DISABLE_SECURITY_WARNINGS: '1',
   NEXT_TELEMETRY_DISABLED: '1',
   NO_AT_BRIDGE: '1',
-  ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
-  ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+  ...buildEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+  ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+  ...buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
   ...buildEnvAlias('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
   CODEXMUX_RESERVED_PORTS: reservedPorts.filter(Number.isFinite).join(','),
 });
@@ -293,7 +293,7 @@ const listWindowsAppProcessIds = async (appPath) => {
   const output = await new Promise((resolve) => {
     const child = spawn('powershell.exe', ['-NoProfile', '-Command', script], {
       env: {
-        ...process.env,
+        ...stripLegacyRuntimeEnv(process.env),
         CODEXMUX_SMOKE_APP_PATH: appPath,
       },
       stdio: ['ignore', 'pipe', 'ignore'],

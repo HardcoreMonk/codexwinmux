@@ -22,6 +22,11 @@ export const buildEnvAlias = (legacyKey, value) => (
     }
 );
 
+export const stripLegacyRuntimeEnv = (env = {}) =>
+  Object.fromEntries(
+    Object.entries(env).filter(([key]) => !String(key).startsWith('CODEXMUX_RUNTIME_')),
+  );
+
 export const hasPreferredEnvAlias = (env, legacyKey) =>
   hasEnvValue(env?.[preferredCodexwinmuxEnvKey(legacyKey)]);
 

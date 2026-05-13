@@ -22,7 +22,7 @@ export const resolveRuntimeTimelineV2Mode = (
     : isRuntimeV2Enabled();
   const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
     ? options.timelineMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE');
   if (timelineMode === undefined && runtimeV2Enabled) return defaultRuntimeTimelineV2Mode;
   return parseRuntimeTimelineV2Mode(timelineMode);
 };
@@ -30,7 +30,7 @@ export const resolveRuntimeTimelineV2Mode = (
 export const getRuntimeTimelineV2Mode = (env: NodeJS.ProcessEnv = process.env): TRuntimeTimelineV2Mode =>
   resolveRuntimeTimelineV2Mode({
     runtimeV2Enabled: isRuntimeV2Enabled(env),
-    timelineMode: readRuntimeEnvAlias(env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE'),
+    timelineMode: readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE'),
   });
 
 export const shouldUseRuntimeTimelineV2Live = (
@@ -41,7 +41,7 @@ export const shouldUseRuntimeTimelineV2Live = (
     : isRuntimeV2Enabled();
   const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
     ? options.timelineMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeTimelineV2Mode({ runtimeV2Enabled, timelineMode }) === 'default';
 };
@@ -54,7 +54,7 @@ export const shouldUseRuntimeTimelineV2Reads = (
     : isRuntimeV2Enabled();
   const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
     ? options.timelineMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeTimelineV2Mode({ runtimeV2Enabled, timelineMode }) === 'default';
 };
@@ -67,7 +67,7 @@ export const shouldRunRuntimeTimelineV2Shadow = (
     : isRuntimeV2Enabled();
   const timelineMode = hasOwnRuntimeOption(options, 'timelineMode')
     ? options.timelineMode
-    : readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_TIMELINE_V2_MODE');
+    : readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE');
   if (!runtimeV2Enabled) return false;
   return resolveRuntimeTimelineV2Mode({ runtimeV2Enabled, timelineMode }) === 'shadow';
 };

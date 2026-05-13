@@ -64,7 +64,7 @@ const main = async (): Promise<void> => {
   const configuredHomeDir = readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME');
   const homeDir = configuredHomeDir
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-windows-terminal-smoke-'));
-  const dbPath = readCodexwinmuxAlias('CODEXMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
+  const dbPath = readCodexwinmuxAlias('CODEXWINMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
 
   const env = createWindowsRuntimeV2TerminalSmokeEnv({
