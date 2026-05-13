@@ -101,9 +101,11 @@ Runtime v2 low-level terminal smoke:
 corepack pnpm smoke:runtime-v2
 ```
 
-기본 명령은 temp HOME/DB 서버를 `CODEXWINMUX_RUNTIME_V2=1`과 surface mode `off`로 띄운 뒤
-기존 low-level target smoke를 실행한다. 이미 떠 있는 runtime v2 서버를 직접 검증하려면
-target URL을 지정한다.
+POSIX 기본 명령은 temp HOME/DB 서버를 `CODEXWINMUX_RUNTIME_V2=1`과 surface mode `off`로
+띄운 뒤 기존 low-level target smoke를 실행한다. Windows 기본 명령은 POSIX shell/tmux
+전제를 피하기 위해 `smoke:runtime-v2:terminal-windows`로 위임한다. 이미 떠 있는 runtime v2
+서버를 직접 검증하려면 target URL을 지정하며, 이 경우 Windows에서도 target smoke를
+실행한다.
 
 ```bash
 CODEXWINMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8121 corepack pnpm smoke:runtime-v2
@@ -160,10 +162,14 @@ Storage shadow compare smoke:
 corepack pnpm smoke:runtime-v2:storage-shadow
 ```
 
-이 smoke는 temp HOME/DB 서버에서 legacy workspace/layout route로 workspace를 만들고 runtime
-v2 plain terminal tab을 생성한 뒤, legacy JSON layout에 mirror된 `runtimeVersion: 2` tab과
-SQLite runtime layout projection을 read-only로 비교한다. 이 first slice는 v2 tab subset의
-상대 순서를 비교하며, cwd 값은 mismatch output에 직접 출력하지 않는다.
+이 smoke는 POSIX에서 temp HOME/DB 서버의 legacy workspace/layout route로 workspace를 만들고
+runtime v2 plain terminal tab을 생성한 뒤, legacy JSON layout에 mirror된 `runtimeVersion: 2`
+tab과 SQLite runtime layout projection을 read-only로 비교한다. Windows에서는 legacy tmux
+workspace fixture를 피하고 `/api/v2/workspaces`, `/api/v2/tabs`,
+`/api/v2/workspaces/:id/layout` fixture로 runtime v2 tab을 만든 뒤 SQLite storage shadow를
+확인한다. 필요하면 `CODEXWINMUX_RUNTIME_V2_STORAGE_SHADOW_FIXTURE=legacy-shadow` 또는
+`runtime-v2-api`로 fixture mode를 명시할 수 있다. 이 smoke는 v2 tab subset의 상대 순서를
+비교하며, cwd 값은 mismatch output에 직접 출력하지 않는다.
 
 Timeline shadow compare smoke:
 

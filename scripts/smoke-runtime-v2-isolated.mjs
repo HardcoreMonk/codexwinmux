@@ -5,6 +5,7 @@ import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
 import { preferredCodexwinmuxEnvKey, readEnvAlias } from './env-alias-lib.mjs';
+import { resolveRuntimeV2IsolatedSmokePlan } from './runtime-v2-smoke-lib.mjs';
 
 const rootDir = process.cwd();
 const targetScript = path.join(rootDir, 'scripts', 'smoke-runtime-v2.mjs');
@@ -69,6 +70,31 @@ const runTargetSmoke = ({ baseUrl, homeDir, token }) =>
         return;
       }
       reject(new Error(`runtime v2 target smoke exited with ${signal ?? code}`));
+    });
+  });
+
+const runWindowsTerminalSmoke = () =>
+  new Promise((resolve, reject) => {
+    const child = spawn(
+      'cmd.exe',
+      ['/d', '/s', '/c', 'corepack pnpm smoke:runtime-v2:terminal-windows'],
+      {
+        cwd: rootDir,
+        env: {
+          ...process.env,
+          PATH: process.env.PATH || process.env.Path,
+        },
+        stdio: 'inherit',
+      },
+    );
+
+    child.on('error', reject);
+    child.on('exit', (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`Windows runtime v2 terminal smoke exited with ${signal ?? code}`));
     });
   });
 
@@ -151,8 +177,13 @@ const startServer = async ({ homeDir, dbPath, port }) => {
 
 const main = async () => {
   const targetUrl = readEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_SMOKE_URL')?.trim();
-  if (targetUrl) {
-    await runTargetSmoke({ baseUrl: targetUrl });
+  const plan = resolveRuntimeV2IsolatedSmokePlan({ platform: process.platform, targetUrl });
+  if (plan.kind === 'windows-terminal') {
+    await runWindowsTerminalSmoke();
+    return;
+  }
+  if (plan.kind === 'target-url') {
+    await runTargetSmoke({ baseUrl: plan.targetUrl });
     return;
   }
 

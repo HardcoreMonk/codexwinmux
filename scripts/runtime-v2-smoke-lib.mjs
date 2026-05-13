@@ -39,6 +39,18 @@ export const runtimeV2SmokeWsUrl = (baseUrl, sessionName, { cols = 80, rows = 24
   return url;
 };
 
+export const resolveRuntimeV2IsolatedSmokePlan = ({
+  platform = process.platform,
+  targetUrl = '',
+} = {}) => {
+  const normalizedTargetUrl = String(targetUrl || '').trim();
+  if (normalizedTargetUrl) {
+    return { kind: 'target-url', targetUrl: normalizedTargetUrl };
+  }
+  if (platform === 'win32') return { kind: 'windows-terminal' };
+  return { kind: 'isolated-server' };
+};
+
 export const toRuntimeV2SmokeBuffer = (data) => {
   if (Buffer.isBuffer(data)) return data;
   if (data instanceof ArrayBuffer) return Buffer.from(data);
@@ -64,13 +76,25 @@ export const appendRuntimeV2SmokeFrame = (output, data) => {
   return `${output}${frame.payload.toString('utf-8')}`;
 };
 
+export const runtimeV2SmokeEchoCommand = (marker, platform = process.platform) =>
+  platform === 'win32'
+    ? `echo ${marker}\r`
+    : `printf ${marker}\\n\n`;
+
+export const runtimeV2SmokeInitialCommand = (platform = process.platform, { cols = 100, rows = 30 } = {}) =>
+  platform === 'win32'
+    ? `cd\r\necho runtime-v2-size ${rows} ${cols}\r`
+    : 'pwd\nstty size\n';
+
 export const normalizeRuntimeV2SmokeTerminalOutput = (output) =>
   String(output || '')
     .replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
     .replace(/\r/g, '\n');
 
-export const hasRuntimeV2SmokeInitialTerminalOutput = (output, expectedCwd, cols, rows) => {
+export const hasRuntimeV2SmokeInitialTerminalOutput = (output, expectedCwd, cols, rows, { platform = 'linux' } = {}) => {
   const normalized = normalizeRuntimeV2SmokeTerminalOutput(output);
-  const sizePattern = new RegExp(`(?:^|\\s)${rows}\\s+${cols}(?:\\s|$)`);
+  const sizePattern = platform === 'win32'
+    ? new RegExp(`(?:^|\\s)runtime-v2-size\\s+${rows}\\s+${cols}(?:\\s|$)`)
+    : new RegExp(`(?:^|\\s)${rows}\\s+${cols}(?:\\s|$)`);
   return normalized.includes(expectedCwd) && sizePattern.test(normalized);
 };

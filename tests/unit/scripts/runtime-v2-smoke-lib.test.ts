@@ -69,4 +69,37 @@ describe('runtime v2 smoke script helpers', () => {
 
     expect(hasRuntimeV2SmokeInitialTerminalOutput(output, '/data/projects/codex-zone/codexmux', 100, 30)).toBe(true);
   });
+
+  it('uses Windows-safe commands for runtime terminal smoke markers', async () => {
+    const {
+      runtimeV2SmokeEchoCommand,
+      runtimeV2SmokeInitialCommand,
+      hasRuntimeV2SmokeInitialTerminalOutput,
+    } = await loadLib();
+
+    expect(runtimeV2SmokeInitialCommand('win32', { cols: 100, rows: 30 })).toBe('cd\r\necho runtime-v2-size 30 100\r');
+    expect(runtimeV2SmokeEchoCommand('runtime-v2-ok', 'win32')).toBe('echo runtime-v2-ok\r');
+    expect(hasRuntimeV2SmokeInitialTerminalOutput(
+      'D:\\data\\projects\\codex-zone\\codexwinmux\r\nruntime-v2-size 30 100\r\n',
+      'D:\\data\\projects\\codex-zone\\codexwinmux',
+      100,
+      30,
+      { platform: 'win32' },
+    )).toBe(true);
+  });
+
+  it('routes default isolated runtime smoke to the Windows terminal gate on win32', async () => {
+    const { resolveRuntimeV2IsolatedSmokePlan } = await loadLib();
+
+    expect(resolveRuntimeV2IsolatedSmokePlan({ platform: 'win32', targetUrl: '' })).toEqual({
+      kind: 'windows-terminal',
+    });
+    expect(resolveRuntimeV2IsolatedSmokePlan({ platform: 'linux', targetUrl: '' })).toEqual({
+      kind: 'isolated-server',
+    });
+    expect(resolveRuntimeV2IsolatedSmokePlan({ platform: 'win32', targetUrl: 'http://127.0.0.1:8121' })).toEqual({
+      kind: 'target-url',
+      targetUrl: 'http://127.0.0.1:8121',
+    });
+  });
 });

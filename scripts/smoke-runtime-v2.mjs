@@ -11,6 +11,8 @@ import {
   encodeStdin,
   encodeWebStdin,
   isRuntimeV2SmokeHeartbeatFrame,
+  runtimeV2SmokeEchoCommand,
+  runtimeV2SmokeInitialCommand,
   runtimeV2SmokeWsUrl,
 } from './runtime-v2-smoke-lib.mjs';
 import { readEnvAlias } from './env-alias-lib.mjs';
@@ -77,9 +79,9 @@ const waitForTerminalSmoke = (sessionName, expectedCwd) =>
     label: 'initial attach',
     onOpen: (ws) => {
       ws.send(encodeResize(100, 30));
-      ws.send(encodeStdin('pwd\nstty size\n'));
+      ws.send(encodeStdin(runtimeV2SmokeInitialCommand(process.platform, { cols: 100, rows: 30 })));
     },
-    predicate: (output) => hasRuntimeV2SmokeInitialTerminalOutput(output, expectedCwd, 100, 30),
+    predicate: (output) => hasRuntimeV2SmokeInitialTerminalOutput(output, expectedCwd, 100, 30, { platform: process.platform }),
   });
 
 const waitForReconnectSmoke = (sessionName) =>
@@ -87,7 +89,7 @@ const waitForReconnectSmoke = (sessionName) =>
     sessionName,
     label: 'fresh reconnect attach',
     onOpen: (ws) => {
-      ws.send(encodeStdin('printf runtime-v2-reconnect-ok\\n\n'));
+      ws.send(encodeStdin(runtimeV2SmokeEchoCommand('runtime-v2-reconnect-ok', process.platform)));
     },
     predicate: (output) => output.includes('runtime-v2-reconnect-ok'),
   });
@@ -114,7 +116,7 @@ const waitForWebStdinHeartbeatSmoke = (sessionName) =>
 
     ws.on('open', () => {
       ws.send(encodeHeartbeat());
-      ws.send(encodeWebStdin(`printf ${marker}\\n\n`));
+      ws.send(encodeWebStdin(runtimeV2SmokeEchoCommand(marker, process.platform)));
     });
     ws.on('message', (data) => {
       if (isRuntimeV2SmokeHeartbeatFrame(data)) sawHeartbeat = true;
@@ -169,7 +171,7 @@ const waitForFanoutSmoke = (sessionName) =>
       ws.on('open', () => {
         openCount += 1;
         if (openCount === sockets.length) {
-          sockets[0].send(encodeStdin(`printf ${marker}\\n\n`));
+          sockets[0].send(encodeStdin(runtimeV2SmokeEchoCommand(marker, process.platform)));
         }
       });
       ws.on('message', (data) => {

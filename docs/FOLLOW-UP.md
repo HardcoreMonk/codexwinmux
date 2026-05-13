@@ -165,8 +165,10 @@ Public SmartScreen 재검증 전제와 다음 릴리스 불변성, runtime env a
 | 다음 릴리스 하한 | 반영 | `package.json`을 `0.4.15`로 올리고 `smoke:release-immutability`가 `0.4.15` 미만 package version을 차단하도록 했다. `v0.4.14` tag와 asset은 historical evidence로 불변 유지한다 |
 | Storage utility alias | 반영 | `runtime-v2:storage-dry-run`, `runtime-v2:storage-backup`, `runtime-v2:storage-import` entrypoint가 `CODEXWINMUX_RUNTIME_*` 입력만 runtime source로 해석한다 |
 | Storage/timeline smoke fixture alias | 반영 | storage write/default/shadow, timeline shadow/live/resume/session-changed/websocket smoke가 서버 child env와 test process env를 `CODEXWINMUX_RUNTIME_*` helper로 설정한다 |
-| Public SmartScreen smoke | 대기 | public `v0.4.15+` HTTPS installer asset, SHA-256, 실제 reputation 확보가 아직 없으므로 `smoke:windows:smartscreen-public-evidence`는 통과 evidence를 만들 수 없다. 해당 artifact가 준비된 뒤 clean Windows 환경에서 재실행한다 |
+| Public SmartScreen smoke | 대기/차단 확인 | 2026-05-13 기준 `gh release view v0.4.15 --repo HardcoreMonk/codexwinmux`는 `release not found`이고 public `v0.4.15+` HTTPS installer asset, SHA-256, 실제 reputation 확보가 없다. `corepack pnpm smoke:windows:smartscreen-public-evidence`는 `CODEXWINMUX_SMARTSCREEN_DOWNLOAD_URL` 부재로 `windows-smartscreen-public-download-url-missing` blocker를 냈다. 해당 artifact가 준비된 뒤 clean Windows 환경에서 재실행한다 |
 | Legacy runtime fallback 제거 | 반영 | unit fixture와 runtime fallback test를 `CODEXWINMUX_RUNTIME_*` 기준으로 재작성했고, `src/lib/runtime/env.ts`, script helper, Electron bootstrap의 runtime legacy read/write fallback을 제거했다 |
+| Windows storage-shadow fixture | 반영 | Windows의 `smoke:runtime-v2:storage-shadow`는 legacy `/api/workspace` tmux fixture 대신 `/api/v2/workspaces`와 `/api/v2/tabs` fixture를 사용한다. `CODEXWINMUX_RUNTIME_V2_STORAGE_SHADOW_FIXTURE=legacy-shadow|runtime-v2-api`로 명시 override할 수 있고, 2026-05-13 Windows 실행에서 `fixtureMode="runtime-v2-api"`로 통과했다 |
+| Windows runtime smoke gate | 반영 | Windows의 기본 `corepack pnpm smoke:runtime-v2`는 POSIX low-level isolated target smoke 대신 `smoke:runtime-v2:terminal-windows`로 위임한다. target URL을 지정한 경우에는 기존 target smoke를 유지한다. 2026-05-13 Windows 실행에서 terminal gate가 attach/resize/write/detach/reattach/delete/workspace-delete를 통과했다 |
 
 ### 2026-05-05 P2 -> P3 runtime v2 storage preflight
 

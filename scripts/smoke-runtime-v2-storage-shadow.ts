@@ -10,6 +10,7 @@ import {
 } from '@/lib/runtime/storage-shadow-compare';
 import type { ILayoutData, IPaneNode, TLayoutNode } from '@/types/terminal';
 import { buildRuntimeEnvAlias, readRuntimeEnvAlias } from './runtime-env-alias';
+import { resolveStorageShadowFixtureMode } from './runtime-v2-storage-shadow-smoke-lib';
 
 const PASSWORD = 'runtime-v2-storage-shadow-smoke';
 const DEFAULT_TIMEOUT_MS = Number(
@@ -202,11 +203,70 @@ const main = async (): Promise<void> => {
   const checks: string[] = [];
   let server: TServer | null = null;
   let workspaceId: string | null = null;
+  let workspaceDeletePath: string | null = null;
 
   try {
+    const fixtureMode = resolveStorageShadowFixtureMode({ platform: process.platform, env: process.env });
     server = await startServer({ homeDir, dbPath, port });
     const cookie = await ensureLoggedIn(server.baseUrl);
     checks.push('cookie-login');
+
+    if (fixtureMode === 'runtime-v2-api') {
+      const workspace = await jsonRequest<{ id: string; rootPaneId: string }>(server.baseUrl, '/api/v2/workspaces', cookie, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Runtime v2 Storage Shadow',
+          defaultCwd: rootDir,
+        }),
+      });
+      workspaceId = workspace.id;
+      workspaceDeletePath = `/api/v2/workspaces/${encodeURIComponent(workspaceId)}`;
+      checks.push('v2-workspace-create');
+
+      await jsonRequest(
+        server.baseUrl,
+        '/api/v2/tabs',
+        cookie,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            workspaceId,
+            paneId: workspace.rootPaneId,
+            cwd: rootDir,
+          }),
+        },
+      );
+      checks.push('v2-tab-create');
+
+      const runtimeLayout = await jsonRequest<ILayoutData>(
+        server.baseUrl,
+        `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/layout`,
+        cookie,
+      );
+      const actualTabs = collectRuntimeStorageShadowTabs({
+        workspaceId,
+        layout: runtimeLayout,
+      });
+      if (actualTabs.length < 1) {
+        throw new Error(`runtime v2 storage shadow v2 fixture did not create runtime tabs: ${JSON.stringify(runtimeLayout)}`);
+      }
+      checks.push('v2-layout-read');
+
+      await jsonRequest(server.baseUrl, workspaceDeletePath, cookie, { method: 'DELETE' });
+      workspaceId = null;
+      workspaceDeletePath = null;
+      checks.push('v2-workspace-delete');
+
+      console.log(JSON.stringify({
+        ok: true,
+        fixtureMode,
+        homeDir,
+        port,
+        actualRuntimeV2Tabs: actualTabs.length,
+        checks,
+      }, null, 2));
+      return;
+    }
 
     const workspace = await jsonRequest<{ id: string }>(server.baseUrl, '/api/workspace', cookie, {
       method: 'POST',
@@ -216,6 +276,7 @@ const main = async (): Promise<void> => {
       }),
     });
     workspaceId = workspace.id;
+    workspaceDeletePath = `/api/workspace/${encodeURIComponent(workspaceId)}`;
     checks.push('workspace-create');
 
     const initialLayout = await jsonRequest<ILayoutData>(
@@ -266,12 +327,14 @@ const main = async (): Promise<void> => {
     }
     checks.push('shadow-compare');
 
-    await jsonRequest(server.baseUrl, `/api/workspace/${encodeURIComponent(workspaceId)}`, cookie, { method: 'DELETE' });
+    await jsonRequest(server.baseUrl, workspaceDeletePath, cookie, { method: 'DELETE' });
     workspaceId = null;
+    workspaceDeletePath = null;
     checks.push('workspace-delete');
 
     console.log(JSON.stringify({
       ok: true,
+      fixtureMode,
       homeDir,
       port,
       expectedRuntimeV2Tabs: expectedTabs.length,
@@ -285,7 +348,12 @@ const main = async (): Promise<void> => {
     if (workspaceId && server) {
       try {
         const cookie = await ensureLoggedIn(server.baseUrl);
-        await jsonRequest(server.baseUrl, `/api/workspace/${encodeURIComponent(workspaceId)}`, cookie, { method: 'DELETE' });
+        await jsonRequest(
+          server.baseUrl,
+          workspaceDeletePath ?? `/api/workspace/${encodeURIComponent(workspaceId)}`,
+          cookie,
+          { method: 'DELETE' },
+        );
       } catch {
         // best-effort smoke cleanup
       }
