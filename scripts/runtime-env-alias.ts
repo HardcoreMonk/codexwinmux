@@ -11,8 +11,7 @@ export const readRuntimeEnvAlias = (
   legacyKey: string,
 ): string | undefined => {
   const preferredKey = preferredRuntimeEnvKey(legacyKey);
-  if (hasEnvValue(env[preferredKey])) return env[preferredKey];
-  return env[legacyKey];
+  return hasEnvValue(env[preferredKey]) ? env[preferredKey] : undefined;
 };
 
 export const buildRuntimeEnvAlias = (
@@ -20,7 +19,6 @@ export const buildRuntimeEnvAlias = (
   value: string,
 ): Record<string, string> => ({
   [preferredRuntimeEnvKey(legacyKey)]: value,
-  [legacyKey]: value,
 });
 
 export const writeRuntimeEnvAlias = (
@@ -35,7 +33,7 @@ export const writeRuntimeEnvAlias = (
     return;
   }
   env[preferredKey] = value;
-  env[legacyKey] = value;
+  delete env[legacyKey];
 };
 
 export const captureRuntimeEnvAliases = (

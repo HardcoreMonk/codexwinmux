@@ -10,8 +10,15 @@ import {
 
 const rootDir = process.cwd();
 
-const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
-  process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
+const isRuntimeLegacyKey = (legacyKey: string): boolean =>
+  legacyKey.startsWith('CODEXMUX_RUNTIME_');
+
+const readCodexwinmuxAlias = (legacyKey: string): string | undefined => {
+  const preferred = process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')];
+  if (preferred) return preferred;
+  if (isRuntimeLegacyKey(legacyKey)) return undefined;
+  return process.env[legacyKey];
+};
 
 const DEFAULT_TIMEOUT_MS = Number(readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_TIMEOUT_MS') || 20_000);
 
@@ -54,7 +61,8 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  const homeDir = readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME')
+  const configuredHomeDir = readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME');
+  const homeDir = configuredHomeDir
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-windows-terminal-smoke-'));
   const dbPath = readCodexwinmuxAlias('CODEXMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
@@ -186,7 +194,7 @@ const main = async (): Promise<void> => {
       await supervisor.deleteWorkspace(workspaceId).catch(() => undefined);
     }
     supervisor.shutdown();
-    if (!process.env.CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME) {
+    if (!configuredHomeDir) {
       await fs.rm(homeDir, { recursive: true, force: true }).catch(() => undefined);
     }
   }

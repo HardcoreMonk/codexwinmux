@@ -112,7 +112,7 @@ Rust + Tauri 도입은 `docs/TAURI-EVALUATION.md` 기준으로 보류한다. Tau
 - Runtime v2 Worker diagnostics를 `globalThis.__ptRuntimeWorkerDiagnostics`에 집계한다. Storage, Terminal, Timeline, Status Worker별 `starts`, `healthChecks`, `healthFailures`, `readyChecks`, `readyFailures`, `requests`, `replies`, `events`, `commandFailures`, `invalidReplies`, `timeouts`, `sendFailures`, `exits`, `errors`, `restarts`, `shutdowns` counter를 기록한다.
 - `/api/debug/perf`의 `services.runtimeWorkers`가 worker별 snapshot을 반환한다. `lastError`는 `code`, sanitized `message`, `retryable`, `at`만 포함하고 runtime session name과 absolute path는 redaction한다.
 - Runtime v2 shadow runtime은 이 counters를 보고 readiness 실패, restart loop, command timeout, failed reply를 확인한 뒤에만 surface별 default 전환을 검토한다.
-- `CODEXMUX_RUNTIME_V2=1` server startup은 legacy startup을 막지 않고 runtime v2 health diagnostic을 실행한다. 이 호출은 worker별 `healthChecks`, `healthFailures`, `lastHealthAt`에 남는다.
+- `CODEXWINMUX_RUNTIME_V2=1` server startup은 legacy startup을 막지 않고 runtime v2 health diagnostic을 실행한다. 이 호출은 worker별 `healthChecks`, `healthFailures`, `lastHealthAt`에 남는다.
 
 ### 2026-05-08 10차 구현 상태
 
@@ -123,8 +123,8 @@ Rust + Tauri 도입은 `docs/TAURI-EVALUATION.md` 기준으로 보류한다. Tau
 
 ### 2026-05-05 runtime v2 new-tabs/default baseline
 
-`CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`와
-`CODEXMUX_RUNTIME_STORAGE_V2_MODE=default` 전환 뒤 2026-05-05 02:21 KST에
+`CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`와
+`CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default` 전환 뒤 2026-05-05 02:21 KST에
 `/api/debug/perf` snapshot을 재수집했다. Snapshot은 인증된 CLI token으로 조회했고
 session id, cwd, JSONL path, prompt, assistant text, terminal output 본문은 기록하지 않았다.
 

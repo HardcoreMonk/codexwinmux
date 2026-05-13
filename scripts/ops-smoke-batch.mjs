@@ -10,11 +10,31 @@ const startedAt = new Date().toISOString();
 const artifactRoot = process.env.CODEXMUX_SMOKE_ARTIFACT_DIR
   || path.join(os.tmpdir(), `codexmux-ops-smoke-${Date.now()}`);
 
+const quoteWindowsCmdArg = (value) => {
+  const text = String(value);
+  if (!/[()\s^&|<>"]/.test(text)) return text;
+  return `"${text.replace(/(["^])/g, '^$1')}"`;
+};
+
+const buildCorepackInvocation = (args) => (
+  process.platform === 'win32'
+    ? {
+      command: 'cmd.exe',
+      args: ['/d', '/s', '/c', ['corepack', 'pnpm', ...args].map(quoteWindowsCmdArg).join(' ')],
+    }
+    : {
+      command: 'corepack',
+      args: ['pnpm', ...args],
+    }
+);
+
 const run = (name, args, env = {}) => new Promise((resolve) => {
-  const child = spawn('corepack', ['pnpm', ...args], {
+  const invocation = buildCorepackInvocation(args);
+  const child = spawn(invocation.command, invocation.args, {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      PATH: process.env.PATH || process.env.Path,
       CODEXMUX_SMOKE_ARTIFACT_DIR: artifactRoot,
       ...env,
     },

@@ -51,14 +51,14 @@ Legacy local endpoint는 `/api/terminal?session={name}&clientId={id}`다.
 ## Experimental Runtime v2 Terminal
 
 기존 `/api/terminal`은 production terminal WebSocket으로 유지된다. 실험용
-`/api/v2/terminal`은 `CODEXMUX_RUNTIME_V2=1`에서만 열리는 Terminal Worker-owned
+`/api/v2/terminal`은 `CODEXWINMUX_RUNTIME_V2=1`에서만 열리는 Terminal Worker-owned
 경로이며, `rtv2-` session만 받는다.
 
 새로 생성되는 legacy terminal-backed tab은 `runtimeVersion: 1`, runtime v2 tab은
 `runtimeVersion: 2`를 가진다. 기존 JSON layout에 이 field가 없으면 legacy runtime
 1로 해석한다.
 
-`CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`의 첫 production slice는 plain terminal
+`CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`의 첫 production slice는 plain terminal
 tab 생성만 runtime v2로 보낸다. Codex, diff, web-browser, resume, command-start tab은
 legacy `pt-` 경로에 남긴다. 이 단계에서 legacy JSON layout은 계속 UI source of truth이며,
 runtime v2 tab을 만들 때 legacy workspace/pane id를 SQLite에 mirror한 뒤 반환된
@@ -120,7 +120,7 @@ corepack pnpm smoke:runtime-v2
 - terminal tab delete 후 삭제된 session attach가 `1011`로 닫히는 cleanup rejection
 - 남은 workspace delete cleanup
 
-`CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off` rollback에서는 신규 v2 tab 생성이
+`CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off` rollback에서는 신규 v2 tab 생성이
 막힌다. 이미 legacy JSON layout에 남아 있는 `runtimeVersion: 2` tab은 삭제하지
 않고, client가 `/api/v2/runtime/health` preflight에서 `runtime-v2-disabled`를 확인해
 desktop/mobile surface에 명시적인 rollback diagnostic을 표시한다.

@@ -221,25 +221,25 @@ describe('layout store normalization', () => {
   });
 
   it('does not create a legacy tmux fallback when runtime v2 storage default has no layout', async () => {
-    const previousRuntimeV2 = process.env.CODEXMUX_RUNTIME_V2;
-    const previousStorageMode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
-    const previousRuntimeDb = process.env.CODEXMUX_RUNTIME_DB;
+    const previousRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+    const previousStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+    const previousRuntimeDb = process.env.CODEXWINMUX_RUNTIME_DB;
     const runtimeRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-runtime-empty-layout-'));
 
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    process.env.CODEXMUX_RUNTIME_DB = path.join(runtimeRoot, 'state.db');
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = path.join(runtimeRoot, 'state.db');
 
     try {
       await expect(getLayout('ws-missing-runtime', '/tmp')).rejects.toThrow('runtime v2 layout not found');
       expect(tmuxMocks.createSession).not.toHaveBeenCalled();
     } finally {
-      if (previousRuntimeV2 === undefined) delete process.env.CODEXMUX_RUNTIME_V2;
-      else process.env.CODEXMUX_RUNTIME_V2 = previousRuntimeV2;
-      if (previousStorageMode === undefined) delete process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
-      else process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = previousStorageMode;
-      if (previousRuntimeDb === undefined) delete process.env.CODEXMUX_RUNTIME_DB;
-      else process.env.CODEXMUX_RUNTIME_DB = previousRuntimeDb;
+      if (previousRuntimeV2 === undefined) delete process.env.CODEXWINMUX_RUNTIME_V2;
+      else process.env.CODEXWINMUX_RUNTIME_V2 = previousRuntimeV2;
+      if (previousStorageMode === undefined) delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+      else process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = previousStorageMode;
+      if (previousRuntimeDb === undefined) delete process.env.CODEXWINMUX_RUNTIME_DB;
+      else process.env.CODEXWINMUX_RUNTIME_DB = previousRuntimeDb;
       await fs.rm(runtimeRoot, { recursive: true, force: true });
     }
   });

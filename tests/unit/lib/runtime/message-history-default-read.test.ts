@@ -8,16 +8,16 @@ import type { ILayoutData, IWorkspacesData } from '@/types/terminal';
 
 describe('runtime storage v2 message history ownership', () => {
   const originalHome = process.env.HOME;
-  const originalRuntimeV2 = process.env.CODEXMUX_RUNTIME_V2;
-  const originalStorageMode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
-  const originalRuntimeDb = process.env.CODEXMUX_RUNTIME_DB;
+  const originalRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+  const originalStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+  const originalRuntimeDb = process.env.CODEXWINMUX_RUNTIME_DB;
   let homeDir: string | null = null;
 
   afterEach(async () => {
     process.env.HOME = originalHome;
-    process.env.CODEXMUX_RUNTIME_V2 = originalRuntimeV2;
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = originalStorageMode;
-    process.env.CODEXMUX_RUNTIME_DB = originalRuntimeDb;
+    process.env.CODEXWINMUX_RUNTIME_V2 = originalRuntimeV2;
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = originalStorageMode;
+    process.env.CODEXWINMUX_RUNTIME_DB = originalRuntimeDb;
     vi.resetModules();
     if (homeDir) {
       await fs.rm(homeDir, { recursive: true, force: true });
@@ -60,9 +60,9 @@ describe('runtime storage v2 message history ownership', () => {
     db.close();
 
     process.env.HOME = homeDir;
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    process.env.CODEXMUX_RUNTIME_DB = dbPath;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = dbPath;
     vi.resetModules();
 
     const { readMessageHistory, addMessageHistory, deleteMessageHistory } = await import('@/lib/message-history-store');
@@ -77,13 +77,13 @@ describe('runtime storage v2 message history ownership', () => {
       { id: 'hist-imported', message: 'imported message', sentAt: '2026-05-04T00:00:00.000Z' },
     ]);
 
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'off';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'off';
     expect(await readMessageHistory('ws-a')).toEqual([
       expect.objectContaining({ id: added.id, message: 'new message' }),
       { id: 'hist-imported', message: 'imported message', sentAt: '2026-05-04T00:00:00.000Z' },
     ]);
 
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     expect(await deleteMessageHistory('ws-a', added.id)).toBe(true);
     expect(await readMessageHistory('ws-a')).toEqual([
       { id: 'hist-imported', message: 'imported message', sentAt: '2026-05-04T00:00:00.000Z' },

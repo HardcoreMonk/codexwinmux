@@ -6,13 +6,17 @@ const hasEnvValue = (value: string | undefined): value is string =>
 export const preferredRuntimeEnvKey = (legacyKey: string): string =>
   legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
 
+const isRuntimeLegacyKey = (legacyKey: string): boolean =>
+  legacyKey.startsWith('CODEXMUX_RUNTIME_');
+
 export const readRuntimeEnvAlias = (
   env: TRuntimeEnv,
   legacyKey: string,
 ): string | undefined => {
   const preferredKey = preferredRuntimeEnvKey(legacyKey);
   if (hasEnvValue(env[preferredKey])) return env[preferredKey];
-  return env[legacyKey];
+  if (isRuntimeLegacyKey(legacyKey)) return undefined;
+  return hasEnvValue(env[legacyKey]) ? env[legacyKey] : undefined;
 };
 
 export const writeRuntimeEnvAlias = (
@@ -27,16 +31,24 @@ export const writeRuntimeEnvAlias = (
     return;
   }
   env[preferredKey] = value;
-  env[legacyKey] = value;
+  if (isRuntimeLegacyKey(legacyKey)) {
+    delete env[legacyKey];
+  } else {
+    env[legacyKey] = value;
+  }
 };
 
 export const buildRuntimeEnvAliasRecord = (
   legacyKey: string,
   value: string,
-): Record<string, string> => ({
-  [preferredRuntimeEnvKey(legacyKey)]: value,
-  [legacyKey]: value,
-});
+): Record<string, string> => (
+  isRuntimeLegacyKey(legacyKey)
+    ? { [preferredRuntimeEnvKey(legacyKey)]: value }
+    : {
+      [preferredRuntimeEnvKey(legacyKey)]: value,
+      [legacyKey]: value,
+    }
+);
 
 export const isRuntimeV2Enabled = (
   env: TRuntimeEnv = process.env,

@@ -26,19 +26,19 @@ describe('terminal runtime adapter factory', () => {
 
   it('allows explicit tmux adapter selection', () => {
     expect(resolveTerminalRuntimeAdapterKind({
-      env: { CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'tmux' },
+      env: { CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'tmux' },
       platform: 'win32',
     })).toBe('tmux');
   });
 
   it('resolves the Windows adapter kind without claiming it is implemented', () => {
     expect(resolveTerminalRuntimeAdapterKind({
-      env: { CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows' },
+      env: { CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows' },
       platform: 'win32',
     })).toBe('windows');
   });
 
-  it('prefers CODEXWINMUX terminal adapter alias over legacy CODEXMUX adapter env', () => {
+  it('ignores legacy CODEXMUX terminal adapter env after migration', () => {
     expect(resolveTerminalRuntimeAdapterKind({
       env: {
         CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
@@ -50,7 +50,7 @@ describe('terminal runtime adapter factory', () => {
 
   it('fails closed when an unknown terminal runtime adapter is requested', () => {
     expect(() => resolveTerminalRuntimeAdapterKind({
-      env: { CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'conpty' },
+      env: { CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'conpty' },
       platform: 'win32',
     })).toThrow(expect.objectContaining({
       code: 'runtime-v2-terminal-adapter-unsupported',
@@ -60,7 +60,7 @@ describe('terminal runtime adapter factory', () => {
 
   it('creates the selected terminal runtime adapter through an injectable factory', async () => {
     const runtime = createTerminalRuntimeAdapter({
-      env: { CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'tmux' },
+      env: { CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'tmux' },
       createTmuxRuntime: createFakeRuntime,
     });
 
@@ -69,7 +69,7 @@ describe('terminal runtime adapter factory', () => {
 
   it('creates the selected Windows runtime adapter through an injectable factory', async () => {
     const runtime = createTerminalRuntimeAdapter({
-      env: { CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows' },
+      env: { CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows' },
       platform: 'win32',
       createWindowsRuntime: createFakeRuntime,
     });

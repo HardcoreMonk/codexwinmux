@@ -75,18 +75,31 @@ const jsonRequest = async (baseUrl, pathname, cookie, init = {}) => {
 const startServer = async ({ homeDir, dbPath, port }) => {
   const env = {
     ...process.env,
+    PATH: process.env.PATH || process.env.Path,
     HOME: homeDir,
+    ...(process.platform === 'win32' ? {
+      USERPROFILE: homeDir,
+      APPDATA: path.join(homeDir, 'AppData', 'Roaming'),
+      LOCALAPPDATA: path.join(homeDir, 'AppData', 'Local'),
+    } : {}),
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
     ...buildEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
     ...buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'new-tabs'),
+
+    ...(process.platform === 'win32' ? buildEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
     ...buildEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
 
-  const child = spawn('corepack', ['pnpm', 'exec', 'tsx', 'server.ts'], {
+  const child = spawn(
+    process.platform === 'win32' ? 'cmd.exe' : 'corepack',
+    process.platform === 'win32'
+      ? ['/d', '/s', '/c', 'corepack pnpm exec tsx server.ts']
+      : ['pnpm', 'exec', 'tsx', 'server.ts'],
+    {
     cwd: rootDir,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -108,7 +121,11 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     getOutput: () => output,
     stop: async () => {
       if (child.exitCode !== null) return;
-      child.kill('SIGINT');
+      if (process.platform === 'win32' && child.pid) {
+        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+      } else {
+        child.kill('SIGINT');
+      }
       await Promise.race([
         new Promise((resolve) => child.once('exit', resolve)),
         sleep(10_000).then(() => {
@@ -152,6 +169,7 @@ const startElectron = async ({ targetUrl, homeDir, remoteDebuggingPort, timeoutM
     cwd: rootDir,
     env: {
       ...process.env,
+    PATH: process.env.PATH || process.env.Path,
       HOME: homeDir,
       ELECTRON_DEV_URL: targetUrl,
       ELECTRON_DISABLE_SECURITY_WARNINGS: '1',

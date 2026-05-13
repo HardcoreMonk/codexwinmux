@@ -101,12 +101,12 @@ Runtime v2 low-level terminal smoke:
 corepack pnpm smoke:runtime-v2
 ```
 
-기본 명령은 temp HOME/DB 서버를 `CODEXMUX_RUNTIME_V2=1`과 surface mode `off`로 띄운 뒤
+기본 명령은 temp HOME/DB 서버를 `CODEXWINMUX_RUNTIME_V2=1`과 surface mode `off`로 띄운 뒤
 기존 low-level target smoke를 실행한다. 이미 떠 있는 runtime v2 서버를 직접 검증하려면
 target URL을 지정한다.
 
 ```bash
-CODEXMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8121 corepack pnpm smoke:runtime-v2
+CODEXWINMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8121 corepack pnpm smoke:runtime-v2
 corepack pnpm smoke:runtime-v2:target
 ```
 
@@ -146,10 +146,10 @@ legacy terminal tab, runtime v2 terminal tab, web tab, status metadata를 temp S
 `pt-` session이 runtime v2 attach/cleanup 대상에 노출되지 않는지 확인한다.
 `runtime-v2:storage-import`는 live `~/.codexwinmux` JSON snapshot을 `runtime-v2/state.db`로
 import하지만 production source-of-truth를 바꾸지는 않는다.
-`smoke:runtime-v2:storage-write`는 `CODEXMUX_RUNTIME_STORAGE_V2_MODE=write`에서 legacy
+`smoke:runtime-v2:storage-write`는 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write`에서 legacy
 layout JSON write 직후 SQLite projection과 status metadata mirror가 갱신되는지 temp
 HOME/DB로 확인한다.
-`smoke:runtime-v2:storage-default-read`는 `CODEXMUX_RUNTIME_STORAGE_V2_MODE=default`에서
+`smoke:runtime-v2:storage-default-read`는 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서
 workspace/layout/message-history read가 SQLite projection을 우선 사용하고, legacy JSON write와
 `updateActive()` 이후 mirror된 SQLite 값을 다시 읽으며 message-history JSON fallback mirror가
 유지되는지 temp HOME/DB로 확인한다.
@@ -181,7 +181,7 @@ Timeline live shadow unit coverage:
 corepack pnpm test tests/unit/lib/runtime/ipc.test.ts tests/unit/lib/runtime/timeline-mode.test.ts tests/unit/lib/runtime/timeline-shadow-compare.test.ts tests/unit/lib/runtime/timeline-live-shadow.test.ts tests/unit/lib/runtime/timeline-worker-service.test.ts tests/unit/lib/runtime/supervisor.test.ts
 ```
 
-이 검증은 `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=shadow`에서 legacy `/api/timeline`이 계속
+이 검증은 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=shadow`에서 legacy `/api/timeline`이 계속
 client-facing인 상태로 Timeline Worker live subscription을 시작하고, 초기 init reply와
 append event를 sanitized metadata로 비교하는 경로를 확인한다. 별도 long JSONL append smoke와
 timeline WebSocket default 전환 검증은 `smoke:runtime-v2:timeline-websocket-default`에서 확인한다.
@@ -192,7 +192,7 @@ Timeline default-read route unit coverage:
 corepack pnpm test tests/unit/lib/runtime/timeline-mode.test.ts tests/unit/pages/timeline-sessions.test.ts tests/unit/pages/timeline-read-default.test.ts
 ```
 
-이 검증은 `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`에서 기존 `/api/timeline/sessions`,
+이 검증은 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`에서 기존 `/api/timeline/sessions`,
 `/api/timeline/entries`, `/api/timeline/message-counts` HTTP URL이 Timeline Worker read
 command로 route되는지 확인한다. `/api/timeline` WebSocket delivery는 별도
 `timeline-ws.test.ts`와 `smoke:runtime-v2:timeline-websocket-default`에서 검증한다.
@@ -216,7 +216,7 @@ Timeline resume safety smoke:
 corepack pnpm smoke:runtime-v2:timeline-resume-safety
 ```
 
-이 smoke는 temp HOME/server에서 `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`를 켠 뒤
+이 smoke는 temp HOME/server에서 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`를 켠 뒤
 foreground process가 shell이 아닌 tmux pane에 `/api/timeline` WebSocket으로 resume을 보내
 `timeline:resume-blocked`와 `reason="process-running"`을 확인한다. WebSocket default 전환 후에도
 runtime bridge가 기존 process-safety guard를 유지하는 rollback evidence로 사용하며, 출력에는 prompt, assistant text, cwd,
@@ -228,7 +228,7 @@ Timeline session-changed smoke:
 corepack pnpm smoke:runtime-v2:timeline-session-changed
 ```
 
-이 smoke는 temp HOME/server에서 `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`를 켠 뒤
+이 smoke는 temp HOME/server에서 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`를 켠 뒤
 Codex process가 먼저 감지되고 JSONL이 나중에 생성되는 상황을 만든다. Legacy `/api/timeline`
 WebSocket이 빈 init 이후 `timeline:session-changed` with `reason="new-session-started"`를
 먼저 보내고, 그 다음 새 JSONL의 `timeline:init`을 보내는지 확인한다. 출력에는 prompt,
@@ -240,7 +240,7 @@ Timeline WebSocket default smoke:
 corepack pnpm smoke:runtime-v2:timeline-websocket-default
 ```
 
-이 smoke는 temp HOME/server에서 `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`를 켠 뒤
+이 smoke는 temp HOME/server에서 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`를 켠 뒤
 Codex process와 allowed Codex JSONL fixture가 있는 상태로 legacy `/api/timeline`
 WebSocket을 연다. `timeline:init` 이후 JSONL에 entry 하나를 append하고
 `timeline:append`를 받은 다음 `/api/debug/perf`에서
@@ -273,8 +273,8 @@ Side-effect intent는 session history write, Web Push send, JSONL watcher start/
 boolean decision만 비교하며 payload 본문은 출력하지 않는다. Client-event intent는
 ready-for-review dismiss와 needs-input ack acceptance만 비교한다.
 
-`smoke:runtime-v2:status-default`는 temp HOME/server에서 `CODEXMUX_RUNTIME_V2=1`과
-`CODEXMUX_RUNTIME_STATUS_V2_MODE=default`를 켜고 기존 permission prompt smoke를 실행한다.
+`smoke:runtime-v2:status-default`는 temp HOME/server에서 `CODEXWINMUX_RUNTIME_V2=1`과
+`CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`를 켜고 기존 permission prompt smoke를 실행한다.
 이 gate는 `/api/status` WebSocket이 Status Worker live bridge를 사용해 initial sync,
 hook-driven `needs-input`, `status:ack-notification` 후 `busy` 복귀를 유지하는지 확인한다.
 default mode에서는 worker process 안의 StatusManager가 polling, JSONL watcher, ack/dismiss,
@@ -289,14 +289,14 @@ corepack pnpm smoke:runtime-v2:phase6-default-gate
 ```
 
 `smoke:runtime-v2:phase6-default-gate`는 기본적으로 live `http://127.0.0.1:8121`를
-조회하고, 필요하면 `CODEXMUX_RUNTIME_V2_PHASE6_GATE_URL` 또는
-`CODEXMUX_RUNTIME_V2_SMOKE_URL`로 target을 바꾼다. 이 smoke는 `/api/v2/runtime/health`의
+조회하고, 필요하면 `CODEXWINMUX_RUNTIME_V2_PHASE6_GATE_URL` 또는
+`CODEXWINMUX_RUNTIME_V2_SMOKE_URL`로 target을 바꾼다. 이 smoke는 `/api/v2/runtime/health`의
 terminal `new-tabs`, storage/timeline/status `default`, worker health `ok`와
 `/api/debug/perf`의 runtime worker failure/restart/timeout counter 0을 확인한다.
 workspace나 terminal을 만들지 않는 read-only gate이며 token, cwd, session name,
 JSONL path, prompt, assistant text, terminal output 원문을 출력하지 않는다.
 Mode helper unit tests는 raw parser가 unset/invalid를 계속 `off`로 fail-closed하는 것과,
-`CODEXMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset일 때 resolved code fallback이
+`CODEXWINMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset일 때 resolved code fallback이
 terminal `new-tabs`, storage/timeline/status `default`가 되는 것을 함께 검증한다.
 
 `smoke:runtime-v2:phase2`, `smoke:android:runtime-v2`, `smoke:electron:runtime-v2`는 각각

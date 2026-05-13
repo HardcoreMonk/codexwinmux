@@ -220,7 +220,7 @@ Resolved items:
 
 - `src/workers/terminal-worker.ts` now asks the factory for the terminal runtime
   adapter instead of importing the current tmux runtime directly.
-- `CODEXMUX_RUNTIME_TERMINAL_ADAPTER` is parsed in one place. Unset resolves to
+- `CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER` is parsed in one place. Unset resolves to
   `tmux` as the migration fallback.
 - Unknown values fail closed with `runtime-v2-terminal-adapter-unsupported`.
 - The factory is injectable in unit tests, so a future Windows adapter can be
@@ -239,7 +239,7 @@ minimal `node-pty`/ConPTY-backed session manager behind
 
 Resolved items:
 
-- `CODEXMUX_RUNTIME_TERMINAL_ADAPTER=windows` now resolves to a dedicated
+- `CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER=windows` now resolves to a dedicated
   Windows runtime adapter instead of being treated as an unknown adapter value.
 - The Windows runtime adapter supports create, attach, write, resize, detach,
   kill, presence, and basic metadata for in-memory `node-pty` sessions.
@@ -334,7 +334,7 @@ Resolved items:
   helpers.
 - Added package script `smoke:runtime-v2:terminal-windows`.
 - The smoke starts runtime v2 workers through `createRuntimeSupervisorForTest`,
-  forces `CODEXMUX_RUNTIME_TERMINAL_ADAPTER=windows`, uses a temporary runtime
+  forces `CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER=windows`, uses a temporary runtime
   DB, and verifies:
   - terminal worker health reports the Windows adapter
   - terminal tab creation
@@ -447,8 +447,8 @@ Resolved items:
   - `installer-background` remains an accepted future owner
   - unsupported owners fail closed in the plan
 - The dry-run plan fixes the Windows runtime environment for a local server:
-  - `CODEXMUX_RUNTIME_V2=1`
-  - `CODEXMUX_RUNTIME_TERMINAL_ADAPTER=windows`
+  - `CODEXWINMUX_RUNTIME_V2=1`
+  - `CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER=windows`
   - `CODEXMUX_PROCESS_INSPECTOR_ADAPTER=windows`
   - default `HOST=127.0.0.1`
   - default `PORT=8121`

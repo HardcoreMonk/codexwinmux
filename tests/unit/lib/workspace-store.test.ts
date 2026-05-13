@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const originalHome = process.env.HOME;
 const originalUserProfile = process.env.USERPROFILE;
-const originalRuntimeV2 = process.env.CODEXMUX_RUNTIME_V2;
-const originalRuntimeStorageV2Mode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
+const originalRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+const originalRuntimeStorageV2Mode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
 
 const restoreEnv = (key: string, value: string | undefined): void => {
   if (value === undefined) {
@@ -26,8 +26,8 @@ describe('workspace store', () => {
     await fs.mkdir(dataDir, { recursive: true });
     process.env.HOME = homeDir;
     process.env.USERPROFILE = homeDir;
-    delete process.env.CODEXMUX_RUNTIME_V2;
-    delete process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
+    delete process.env.CODEXWINMUX_RUNTIME_V2;
+    delete process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
     delete (globalThis as { __codexmuxWorkspaceLock?: unknown }).__codexmuxWorkspaceLock;
     delete (globalThis as { __codexmuxWorkspacesContentCache?: unknown }).__codexmuxWorkspacesContentCache;
     vi.resetModules();
@@ -36,8 +36,8 @@ describe('workspace store', () => {
   afterEach(async () => {
     restoreEnv('HOME', originalHome);
     restoreEnv('USERPROFILE', originalUserProfile);
-    restoreEnv('CODEXMUX_RUNTIME_V2', originalRuntimeV2);
-    restoreEnv('CODEXMUX_RUNTIME_STORAGE_V2_MODE', originalRuntimeStorageV2Mode);
+    restoreEnv('CODEXWINMUX_RUNTIME_V2', originalRuntimeV2);
+    restoreEnv('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', originalRuntimeStorageV2Mode);
     await fs.rm(homeDir, { recursive: true, force: true });
     vi.resetModules();
   });
@@ -91,8 +91,8 @@ describe('workspace store', () => {
   });
 
   it('creates the first workspace through runtime v2 storage default without tmux', async () => {
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     const listWorkspaces = vi.fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{
@@ -154,8 +154,8 @@ describe('workspace store', () => {
   });
 
   it('deletes workspaces through runtime v2 storage default', async () => {
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     const deleteRuntimeWorkspace = vi.fn().mockResolvedValue({
       deleted: true,
       killedSessions: ['rtv2-ws-runtime-pane-runtime-tab-runtime'],

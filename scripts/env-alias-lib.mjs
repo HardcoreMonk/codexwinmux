@@ -3,16 +3,24 @@ const hasEnvValue = (value) => value !== undefined && value !== null && String(v
 export const preferredCodexwinmuxEnvKey = (legacyKey) =>
   String(legacyKey).replace(/^CODEXMUX_/, 'CODEXWINMUX_');
 
+const isRuntimeLegacyKey = (legacyKey) =>
+  String(legacyKey).startsWith('CODEXMUX_RUNTIME_');
+
 export const readEnvAlias = (env, legacyKey) => {
   const preferredKey = preferredCodexwinmuxEnvKey(legacyKey);
   if (hasEnvValue(env?.[preferredKey])) return env[preferredKey];
+  if (isRuntimeLegacyKey(legacyKey)) return undefined;
   return env?.[legacyKey];
 };
 
-export const buildEnvAlias = (legacyKey, value) => ({
-  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
-  [legacyKey]: value,
-});
+export const buildEnvAlias = (legacyKey, value) => (
+  isRuntimeLegacyKey(legacyKey)
+    ? { [preferredCodexwinmuxEnvKey(legacyKey)]: value }
+    : {
+      [preferredCodexwinmuxEnvKey(legacyKey)]: value,
+      [legacyKey]: value,
+    }
+);
 
 export const hasPreferredEnvAlias = (env, legacyKey) =>
   hasEnvValue(env?.[preferredCodexwinmuxEnvKey(legacyKey)]);

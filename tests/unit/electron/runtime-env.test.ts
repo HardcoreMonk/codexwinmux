@@ -23,12 +23,12 @@ describe('Electron runtime environment helpers', () => {
     expect(env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE).toBe('default');
     expect(env.CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
     expect(env.CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER).toBe('windows');
-    expect(env.CODEXMUX_RUNTIME_V2).toBe('1');
-    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('new-tabs');
-    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('default');
-    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('default');
-    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('default');
-    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
+    expect(env.CODEXMUX_RUNTIME_V2).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBeUndefined();
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBeUndefined();
     expect(env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER).toBe('windows');
   });
 
@@ -36,22 +36,23 @@ describe('Electron runtime environment helpers', () => {
     const env = buildElectronBootstrapEnv({
       platform: 'win32',
       env: {
-        CODEXMUX_RUNTIME_V2: '0',
-        CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
-        CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'off',
-        CODEXMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
-        CODEXMUX_RUNTIME_STATUS_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_V2: '0',
+        CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_STORAGE_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE: 'off',
+        CODEXWINMUX_RUNTIME_STATUS_V2_MODE: 'off',
       },
     });
 
-    expect(env.CODEXMUX_RUNTIME_V2).toBe('0');
-    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_V2).toBe('0');
+    expect(env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
+    expect(env.CODEXMUX_RUNTIME_V2).toBeUndefined();
   });
 
-  it('prefers CODEXWINMUX Windows runtime aliases and mirrors them for legacy internals', () => {
+  it('ignores legacy CODEXMUX Windows runtime aliases after migration', () => {
     const env = buildElectronBootstrapEnv({
       platform: 'win32',
       env: {
@@ -67,12 +68,13 @@ describe('Electron runtime environment helpers', () => {
     });
 
     expect(env.CODEXWINMUX_RUNTIME_V2).toBe('0');
-    expect(env.CODEXMUX_RUNTIME_V2).toBe('0');
-    expect(env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
-    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
+    expect(env.CODEXMUX_RUNTIME_V2).toBeUndefined();
+    expect(env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE).toBe('off');
+    expect(env.CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER).toBe('windows');
+    expect(env.CODEXMUX_RUNTIME_TERMINAL_ADAPTER).toBeUndefined();
     expect(env.CODEXMUX_PROCESS_INSPECTOR_ADAPTER).toBe('windows');
   });
 

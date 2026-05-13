@@ -101,14 +101,25 @@ const jsonRequest = async (baseUrl, pathname, cookie, init = {}) => {
 const startServer = async ({ homeDir, port }) => {
   const env = {
     ...process.env,
+    PATH: process.env.PATH || process.env.Path,
     HOME: homeDir,
+    ...(process.platform === 'win32' ? {
+      USERPROFILE: homeDir,
+      APPDATA: path.join(homeDir, 'AppData', 'Roaming'),
+      LOCALAPPDATA: path.join(homeDir, 'AppData', 'Local'),
+    } : {}),
     SHELL: '/bin/bash',
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
 
-  const child = spawn('corepack', ['pnpm', 'exec', 'tsx', 'server.ts'], {
+  const child = spawn(
+    process.platform === 'win32' ? 'cmd.exe' : 'corepack',
+    process.platform === 'win32'
+      ? ['/d', '/s', '/c', 'corepack pnpm exec tsx server.ts']
+      : ['pnpm', 'exec', 'tsx', 'server.ts'],
+    {
     cwd: rootDir,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -130,7 +141,11 @@ const startServer = async ({ homeDir, port }) => {
     getOutput: () => output,
     stop: async () => {
       if (child.exitCode !== null) return;
-      child.kill('SIGINT');
+      if (process.platform === 'win32' && child.pid) {
+        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+      } else {
+        child.kill('SIGINT');
+      }
       await Promise.race([
         new Promise((resolve) => child.once('exit', resolve)),
         sleep(10_000).then(() => {

@@ -60,14 +60,14 @@ Runtime v2 mode는 base unit을 직접 수정하지 않고 drop-in으로 적용�
 
 ```ini
 [Service]
-Environment=CODEXMUX_RUNTIME_V2=1
-Environment=CODEXMUX_RUNTIME_STORAGE_V2_MODE=default
-Environment=CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs
-Environment=CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default
-Environment=CODEXMUX_RUNTIME_STATUS_V2_MODE=default
+Environment=CODEXWINMUX_RUNTIME_V2=1
+Environment=CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default
+Environment=CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs
+Environment=CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default
+Environment=CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default
 ```
 
-Phase 6 code fallback 이후에는 `CODEXMUX_RUNTIME_V2=1`만 남겨도 unset surface mode가
+Phase 6 code fallback 이후에는 `CODEXWINMUX_RUNTIME_V2=1`만 남겨도 unset surface mode가
 terminal `new-tabs`, storage/timeline/status `default`로 해석된다. 운영 중 의도를 명확히
 보이게 하려면 위처럼 명시 값을 유지한다. Surface rollback만 필요하면 해당 mode를 `off`로
 설정한 뒤 daemon reload/restart를 수행한다. 표준 runtime v2 surface rollback은 worker를
@@ -84,11 +84,11 @@ corepack pnpm lifecycle:rollback-apply
 
 ```ini
 [Service]
-Environment=CODEXMUX_RUNTIME_V2=1
-Environment=CODEXMUX_RUNTIME_STORAGE_V2_MODE=write
-Environment=CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off
-Environment=CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off
-Environment=CODEXMUX_RUNTIME_STATUS_V2_MODE=off
+Environment=CODEXWINMUX_RUNTIME_V2=1
+Environment=CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write
+Environment=CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off
+Environment=CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off
+Environment=CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off
 ```
 
 `KillSignal=SIGINT`는 terminal/WebSocket shutdown을 정리할 시간을 주기 위한 설정이다. Node 계열 프로세스는 SIGINT 종료를 exit code 130으로 남길 수 있으므로 `SuccessExitStatus=130`을 같이 둬서 `systemctl --user restart codexmux.service`가 의도된 중지인데도 journal에 실패처럼 남지 않게 한다.
@@ -164,7 +164,7 @@ curl -fsS http://127.0.0.1:8121/api/health
 
 한 번에 하나의 action만 실행된다. `restart-service`와 `deploy-local`은 요청 중인 서버 process를 재시작할 수 있으므로 브라우저 요청이 중간에 끊길 수 있다. 이 경우 `/api/health` 새로고침 또는 페이지 reload로 배포 commit과 service 상태를 다시 확인한다. 실행 기록은 `~/.codexmux/lifecycle-actions.jsonl`에 action id, status, timestamp, duration, exit code, sanitized failure label만 남기며 stdout/stderr, env, cwd, token, session name, prompt, terminal output은 저장하지 않는다.
 
-`corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime v2 drop-in의 `CODEXMUX_RUNTIME_*`
+`corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime v2 drop-in의 `CODEXWINMUX_RUNTIME_*`
 환경값, 적용할 rollback target flag, daemon reload/restart 계획을 JSON으로 출력한다.
 이 명령은 drop-in 쓰기, backup, daemon reload, service restart를 실행하지 않으며
 `"mutates": false`를 포함한다. `corepack pnpm lifecycle:rollback-apply`와

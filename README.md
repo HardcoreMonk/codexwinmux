@@ -27,9 +27,9 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 `appId`, 설치 파일명, 실행 파일명, updater cache, 앱 데이터 디렉터리는
 `codexwinmux` 기준으로 분리합니다. CLI package alias는 `codexwinmux`와 `cwmux`만
 노출합니다. Runtime v2 mode resolver와 Windows smoke 입력은 `CODEXWINMUX_RUNTIME_*`와
-`CODEXWINMUX_*`를 우선하고, 기존 `CODEXMUX_RUNTIME_*`/`CODEXMUX_*`는 staged
-fallback으로만 유지합니다. `CMUX_PORT`/`CMUX_TOKEN`과
-`x-cmux-token`은 API 호환 레이어로 유지합니다.
+`CODEXWINMUX_*`를 기준으로 사용합니다. `CODEXMUX_RUNTIME_*` legacy fallback은
+`0.4.15`에서 제거했으며, `CMUX_PORT`/`CMUX_TOKEN`과 `x-cmux-token`은 API 호환
+레이어로 유지합니다.
 
 ## 설치와 실행
 

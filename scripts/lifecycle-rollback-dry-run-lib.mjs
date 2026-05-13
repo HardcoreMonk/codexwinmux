@@ -4,7 +4,7 @@ import path from 'path';
 import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 
-const runtimeEnvRe = /^Environment=((?:CODEXWINMUX|CODEXMUX)_RUNTIME_[A-Z0-9_]+)=(.*)$/;
+const runtimeEnvRe = /^Environment=(CODEXWINMUX_RUNTIME_[A-Z0-9_]+)=(.*)$/;
 const execFile = promisify(execFileCb);
 
 export const rollbackRuntimeEnv = {

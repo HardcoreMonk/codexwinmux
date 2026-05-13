@@ -97,12 +97,20 @@ const startServer = async ({ homeDir, dbPath, port }: {
 }): Promise<TServer> => {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    PATH: process.env.PATH || process.env.Path,
     HOME: homeDir,
+    ...(process.platform === 'win32' ? {
+      USERPROFILE: homeDir,
+      APPDATA: path.join(homeDir, 'AppData', 'Roaming'),
+      LOCALAPPDATA: path.join(homeDir, 'AppData', 'Local'),
+    } : {}),
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
     ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
     ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
     ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
+
+    ...(process.platform === 'win32' ? buildRuntimeEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
     ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'shadow'),
     ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_STATUS_V2_MODE', 'off'),
     ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
@@ -111,7 +119,12 @@ const startServer = async ({ homeDir, dbPath, port }: {
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
 
-  const child = spawn('corepack', ['pnpm', 'exec', 'tsx', 'server.ts'], {
+  const child = spawn(
+    process.platform === 'win32' ? 'cmd.exe' : 'corepack',
+    process.platform === 'win32'
+      ? ['/d', '/s', '/c', 'corepack pnpm exec tsx server.ts']
+      : ['pnpm', 'exec', 'tsx', 'server.ts'],
+    {
     cwd: rootDir,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -139,7 +152,11 @@ const startServer = async ({ homeDir, dbPath, port }: {
     getOutput: () => output,
     stop: async () => {
       if (child.exitCode !== null) return;
-      child.kill('SIGINT');
+      if (process.platform === 'win32' && child.pid) {
+        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+      } else {
+        child.kill('SIGINT');
+      }
       await Promise.race([
         new Promise((resolve) => child.once('exit', resolve)),
         sleep(10_000).then(() => {

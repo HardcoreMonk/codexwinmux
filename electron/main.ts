@@ -23,12 +23,15 @@ const isEngineProcess = process.env.CODEXMUX_ELECTRON_ENGINE_PROCESS === '1';
 const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
   process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
 
+const isRuntimeLegacyKey = (legacyKey: string): boolean =>
+  legacyKey.startsWith('CODEXMUX_RUNTIME_');
+
 const buildCodexwinmuxAliasEnv = (legacyKey: string, fallback: string): Record<string, string> => {
-  const value = readCodexwinmuxAlias(legacyKey) || fallback;
-  return {
-    [legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')]: value,
-    [legacyKey]: value,
-  };
+  const preferredKey = legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
+  const value = (isRuntimeLegacyKey(legacyKey) ? process.env[preferredKey] : readCodexwinmuxAlias(legacyKey)) || fallback;
+  return isRuntimeLegacyKey(legacyKey)
+    ? { [preferredKey]: value }
+    : { [preferredKey]: value, [legacyKey]: value };
 };
 
 const fixEnv = () => {

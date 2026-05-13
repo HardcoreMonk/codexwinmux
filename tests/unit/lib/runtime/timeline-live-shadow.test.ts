@@ -9,8 +9,8 @@ import type { IRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import type { IRuntimeTimelineLiveAppendEvent, IRuntimeTimelineLiveSubscribeInput } from '@/lib/runtime/contracts';
 import type { ITimelineInitMessage } from '@/types/timeline';
 
-const originalRuntimeV2 = process.env.CODEXMUX_RUNTIME_V2;
-const originalTimelineMode = process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE;
+const originalRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+const originalTimelineMode = process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
 
 const initMessage: ITimelineInitMessage = {
   type: 'timeline:init',
@@ -24,14 +24,14 @@ const initMessage: ITimelineInitMessage = {
 
 describe('runtime v2 timeline live shadow', () => {
   beforeEach(() => {
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE = 'shadow';
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = 'shadow';
     resetRuntimeTimelineLiveShadowForTest();
   });
 
   afterEach(() => {
-    process.env.CODEXMUX_RUNTIME_V2 = originalRuntimeV2;
-    process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE = originalTimelineMode;
+    process.env.CODEXWINMUX_RUNTIME_V2 = originalRuntimeV2;
+    process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = originalTimelineMode;
     resetRuntimeTimelineLiveShadowForTest();
   });
 
@@ -73,7 +73,7 @@ describe('runtime v2 timeline live shadow', () => {
   });
 
   it('does not start outside shadow mode', async () => {
-    process.env.CODEXMUX_RUNTIME_TIMELINE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = 'default';
     const supervisor = {
       subscribeTimelineLive: vi.fn(),
     } as unknown as IRuntimeSupervisor;

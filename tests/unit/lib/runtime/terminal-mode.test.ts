@@ -19,20 +19,20 @@ describe('runtime terminal v2 mode', () => {
 
   it('defaults to new-tabs when runtime v2 is enabled and terminal mode is unset', () => {
     expect(getRuntimeTerminalV2Mode({
-      CODEXMUX_RUNTIME_V2: '1',
+      CODEXWINMUX_RUNTIME_V2: '1',
     } as unknown as NodeJS.ProcessEnv)).toBe('new-tabs');
     expect(getRuntimeTerminalV2Mode({
-      CODEXMUX_RUNTIME_V2: '1',
-      CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE: 'off',
     } as unknown as NodeJS.ProcessEnv)).toBe('off');
     expect(getRuntimeTerminalV2Mode({
-      CODEXMUX_RUNTIME_V2: '1',
-      CODEXMUX_RUNTIME_TERMINAL_V2_MODE: 'invalid',
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE: 'invalid',
     } as unknown as NodeJS.ProcessEnv)).toBe('off');
     expect(getRuntimeTerminalV2Mode({} as unknown as NodeJS.ProcessEnv)).toBe('off');
   });
 
-  it('prefers CODEXWINMUX runtime aliases over legacy CODEXMUX runtime mode env', () => {
+  it('ignores legacy CODEXMUX runtime mode env after migration', () => {
     expect(getRuntimeTerminalV2Mode({
       CODEXWINMUX_RUNTIME_V2: '1',
       CODEXMUX_RUNTIME_V2: '0',
@@ -51,20 +51,20 @@ describe('runtime terminal v2 mode', () => {
   });
 
   it('uses the process env phase 6 fallback for terminal tab creation', () => {
-    const originalRuntime = process.env.CODEXMUX_RUNTIME_V2;
-    const originalMode = process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE;
+    const originalRuntime = process.env.CODEXWINMUX_RUNTIME_V2;
+    const originalMode = process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE;
     try {
-      process.env.CODEXMUX_RUNTIME_V2 = '1';
-      delete process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE;
+      process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+      delete process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE;
       expect(shouldCreateTerminalTabInRuntimeV2()).toBe(true);
 
-      process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE = 'off';
+      process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'off';
       expect(shouldCreateTerminalTabInRuntimeV2()).toBe(false);
     } finally {
-      if (originalRuntime === undefined) delete process.env.CODEXMUX_RUNTIME_V2;
-      else process.env.CODEXMUX_RUNTIME_V2 = originalRuntime;
-      if (originalMode === undefined) delete process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE;
-      else process.env.CODEXMUX_RUNTIME_TERMINAL_V2_MODE = originalMode;
+      if (originalRuntime === undefined) delete process.env.CODEXWINMUX_RUNTIME_V2;
+      else process.env.CODEXWINMUX_RUNTIME_V2 = originalRuntime;
+      if (originalMode === undefined) delete process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE;
+      else process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = originalMode;
     }
   });
 

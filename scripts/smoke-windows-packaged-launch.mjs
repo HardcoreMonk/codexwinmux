@@ -72,7 +72,7 @@ const resolveAppPath = () =>
 
 const buildEnvAlias = (legacyKey, value) => ({
   [preferredCodexwinmuxEnvKey(legacyKey)]: value,
-  [legacyKey]: value,
+  ...(String(legacyKey).startsWith('CODEXMUX_RUNTIME_') ? {} : { [legacyKey]: value }),
 });
 
 const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({

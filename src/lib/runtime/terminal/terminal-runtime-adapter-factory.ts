@@ -8,7 +8,6 @@ export type TTerminalRuntimeAdapterKind = 'tmux' | 'windows';
 export interface ITerminalRuntimeAdapterFactoryEnv {
   [key: string]: string | undefined;
   CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER?: string;
-  CODEXMUX_RUNTIME_TERMINAL_ADAPTER?: string;
 }
 
 export interface IResolveTerminalRuntimeAdapterKindOptions {

@@ -34,9 +34,7 @@ describe('Windows service host baseline', () => {
         cwd: 'D:\\apps\\codexmux',
         env: {
           CODEXWINMUX_RUNTIME_V2: '1',
-          CODEXMUX_RUNTIME_V2: '1',
           CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
-          CODEXMUX_RUNTIME_TERMINAL_ADAPTER: 'windows',
           CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
           CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
           HOST: '127.0.0.1',

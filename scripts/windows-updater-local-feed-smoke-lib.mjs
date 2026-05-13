@@ -60,7 +60,7 @@ export const buildWindowsUpdaterLocalFeedLatestMetadata = ({
 
 const buildEnvAlias = (legacyKey, value) => ({
   [preferredCodexwinmuxEnvKey(legacyKey)]: value,
-  [legacyKey]: value,
+  ...(String(legacyKey).startsWith('CODEXMUX_RUNTIME_') ? {} : { [legacyKey]: value }),
 });
 
 export const buildWindowsUpdaterSmokeEnv = ({

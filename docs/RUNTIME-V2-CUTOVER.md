@@ -13,19 +13,19 @@
 - Shadow diagnostics: server startup calls runtime v2 health without blocking legacy startup, and `/api/debug/perf` exposes worker health/readiness/restart/timeout counters.
 - Terminal identity: newly created legacy tabs carry `runtimeVersion: 1`, runtime v2 tabs carry `runtimeVersion: 2`, and missing `runtimeVersion` is treated as legacy for existing JSON layouts.
 - Smoke: `/api/v2/terminal` attach/input/output/resize/web stdin/heartbeat/fresh reattach/fanout/backpressure close/tab delete/tab restart/workspace delete, plus Phase 2 app-surface new-tab gate for browser reload, server restart, and terminal mode rollback.
-- 2026-05-04 Phase 1 shadow: live `codexmux.service`에 `CODEXMUX_RUNTIME_V2=1`과 storage/terminal/timeline/status surface mode `off`를 적용했다. `/api/v2/runtime/health`는 모든 worker ok와 `terminalV2Mode: "off"`를 반환한다. `/api/debug/perf`는 각 worker `starts=1`, `readyFailures=0`, `healthFailures=0`, `timeouts=0`, `restarts=0`을 보여준다. 24시간 restart-loop 관찰 항목은 2026-05-05 14:20 KST operator-approved closeout으로 완료 처리했다.
+- 2026-05-04 Phase 1 shadow: live `codexmux.service`에 `CODEXWINMUX_RUNTIME_V2=1`과 storage/terminal/timeline/status surface mode `off`를 적용했다. `/api/v2/runtime/health`는 모든 worker ok와 `terminalV2Mode: "off"`를 반환한다. `/api/debug/perf`는 각 worker `starts=1`, `readyFailures=0`, `healthFailures=0`, `timeouts=0`, `restarts=0`을 보여준다. 24시간 restart-loop 관찰 항목은 2026-05-05 14:20 KST operator-approved closeout으로 완료 처리했다.
 - 2026-05-04 release smoke snapshot: `v0.4.1` commit `23fee4b`가 live deploy 되었고 `/api/health`는 `version=0.4.1`을 반환한다. `corepack pnpm release:patch`는 lint, unit test 92 files/441 tests, `tsc --noEmit`, production build, release commit/tag/push를 통과했다. `corepack pnpm build:electron`, M1 macOS `pnpm pack:electron:dev`, Android debug build/install, Android Tailscale failure recovery, Android production 60초 foreground reconnect, Android runtime v2 foreground, stats/daily report, permission prompt, systemd deploy health가 통과했다. Electron page-context smoke는 existing-cookie `/api/v2/terminal` attach/output plus 2회 page reload/reconnect를 검증했고, Android runtime v2 smoke는 SM-S928N Android 16에서 initial + 2회 foreground marker output을 검증했다. Runtime v2 reconnect recovery now covers Terminal Worker retryable close, `session-not-found` tab/session recreation through Supervisor, and desktop/mobile blocking overlay hiding the stale floating reconnect control. macOS packaging created `0.4.1` arm64/x64 DMG and zip artifacts with native binding/arch/Info.plist/`hdiutil verify` evidence.
 - 2026-05-04 storage dry-run: `corepack pnpm runtime-v2:storage-dry-run`가 실제 `~/.codexmux` JSON stores를 쓰기 없이 읽고, `workspaces.json`과 workspace별 `layout.json` backup manifest, import readiness, count-only summary를 출력한다. live dry-run은 `cutoverReady: true`, blocker 0이다. `corepack pnpm smoke:runtime-v2:storage-dry-run`는 fixture에서 import 가능 상태와 cwd/workspace name/session name/prompt 비노출을 검증한다.
 - 2026-05-04 storage backup export: `corepack pnpm runtime-v2:storage-backup`가 `workspaces.json`, `workspaces/**.json`, `runtime-v2/state.db*`를 `~/.codexmux/backups/runtime-v2-storage-{timestamp}/`로 복사한다. live export snapshot은 29개 파일을 복사했고 원본 삭제나 migration은 수행하지 않았다.
 - 2026-05-04 storage import: schema v2가 `tabs.runtime_version`과 `workspaces.active_pane_id`를 추가했고, schema v3가 `workspace_directories`, `app_state`, `message_history`를 추가했다. `corepack pnpm runtime-v2:storage-import`는 legacy JSON workspace/layout/message-history snapshot을 SQLite로 idempotent import하며 grouped workspace, split layout, active/sidebar state, workspace directory list, message history, legacy `runtimeVersion: 1` terminal tab, non-terminal tab, tab status metadata를 보존한다. Runtime v2 terminal attach/cleanup은 imported legacy `pt-` session을 대상으로 삼지 않도록 `runtime_version=2` terminal tab으로 제한된다. live import snapshot은 workspace 5개, group 1개, pane 5개, tab 5개를 import했고 dry-run blocker는 0이다. message-history import는 temp smoke로 검증됐으며 production default rollout 전 live import를 다시 실행한다.
-- 2026-05-04 storage write mirror/default read: `CODEXMUX_RUNTIME_STORAGE_V2_MODE=write|default`에서 legacy JSON workspace/layout/message-history write 직후 SQLite import mirror를 best-effort로 수행한다. `corepack pnpm smoke:runtime-v2:storage-write`는 layout write, SQLite projection, status metadata 보존을 temp HOME/DB에서 검증한다. `CODEXMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가 SQLite projection을 우선 사용하고 실패 시 JSON으로 fallback한다. `corepack pnpm smoke:runtime-v2:storage-default-read`는 SQLite cold read, workspace directory/sidebar/status/message-history hydration, legacy layout/updateActive write mirror 후 default read, message-history JSON fallback mirror를 temp HOME/DB에서 검증한다. Production live mode는 아직 `write`이며 live default rollout은 남아 있다.
-- 2026-05-05 P2 -> P3 preflight: 현재 production `codexmux.service`는 `CODEXMUX_RUNTIME_V2=1`, `CODEXMUX_RUNTIME_STORAGE_V2_MODE=write`, `CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off`, timeline/status mode `off`이다. `corepack pnpm smoke:runtime-v2:phase2`와 `corepack pnpm smoke:browser-reconnect`가 현재 코드 기준 통과했고, live `/api/v2/runtime/health`는 모든 worker ok와 `storageV2Mode: "write"`, `terminalV2Mode: "off"`를 반환한다. `/api/debug/perf` worker counters는 storage/terminal/timeline/status 모두 `healthFailures=0`, `readyFailures=0`, `commandFailures=0`, `timeouts=0`, `restarts=0`, `errors=0`이다. P3 storage preflight는 temp `storage-dry-run`, `storage-backup`, `storage-import`, `storage-write`, `storage-default-read`, `storage-shadow` smoke를 통과했고, live `runtime-v2:storage-dry-run`은 `cutoverReady: true`, blocker 0, workspace 4개/tab 4개를 반환했다. live `runtime-v2:storage-backup`은 `runtime-v2-storage-20260504T163816Z`에 JSON/SQLite file 37개를 복사했고, live `runtime-v2:storage-import`는 workspace 4개/pane 4개/tab 4개/message-history 5개를 SQLite로 idempotent import했다. Production default rollout과 24시간 restart-loop 부재 관찰은 아직 닫지 않는다.
-- 2026-05-05 live new-tabs/default cutover: `codexmux.service` drop-in을 `CODEXMUX_RUNTIME_STORAGE_V2_MODE=default`, `CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`로 전환하고 service restart를 완료했다. `/api/v2/runtime/health`는 `terminalV2Mode: "new-tabs"`, `storageV2Mode: "default"`와 모든 worker ok를 반환한다. 임시 live workspace에서 plain terminal tab 생성이 legacy layout `runtimeVersion: 2`, `rtv2-` session name, runtime storage projection으로 확인됐고 workspace는 삭제됐다. `CODEXMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8122 corepack pnpm smoke:runtime-v2:target`는 live target에서 attach/stdin/stdout/resize/web-stdin/heartbeat/fresh reattach/fanout/backpressure/tab delete/workspace delete를 통과했다. 30초 간격 6회 rollback window canary 동안 worker restart/timeout/failure 0, service `NRestarts=0`, 최종 warning journal 없음이다. 2026-05-05 14:20 KST에는 운영자 승인으로 observation을 closeout 처리했다. 원래 24시간 clock gate 종료 시각은 2026-05-06 01:42 KST였으므로 이 기록은 elapsed-time pass가 아니라 operator-approved closeout이다.
+- 2026-05-04 storage write mirror/default read: `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write|default`에서 legacy JSON workspace/layout/message-history write 직후 SQLite import mirror를 best-effort로 수행한다. `corepack pnpm smoke:runtime-v2:storage-write`는 layout write, SQLite projection, status metadata 보존을 temp HOME/DB에서 검증한다. `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가 SQLite projection을 우선 사용하고 실패 시 JSON으로 fallback한다. `corepack pnpm smoke:runtime-v2:storage-default-read`는 SQLite cold read, workspace directory/sidebar/status/message-history hydration, legacy layout/updateActive write mirror 후 default read, message-history JSON fallback mirror를 temp HOME/DB에서 검증한다. Production live mode는 아직 `write`이며 live default rollout은 남아 있다.
+- 2026-05-05 P2 -> P3 preflight: 현재 production `codexmux.service`는 `CODEXWINMUX_RUNTIME_V2=1`, `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write`, `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off`, timeline/status mode `off`이다. `corepack pnpm smoke:runtime-v2:phase2`와 `corepack pnpm smoke:browser-reconnect`가 현재 코드 기준 통과했고, live `/api/v2/runtime/health`는 모든 worker ok와 `storageV2Mode: "write"`, `terminalV2Mode: "off"`를 반환한다. `/api/debug/perf` worker counters는 storage/terminal/timeline/status 모두 `healthFailures=0`, `readyFailures=0`, `commandFailures=0`, `timeouts=0`, `restarts=0`, `errors=0`이다. P3 storage preflight는 temp `storage-dry-run`, `storage-backup`, `storage-import`, `storage-write`, `storage-default-read`, `storage-shadow` smoke를 통과했고, live `runtime-v2:storage-dry-run`은 `cutoverReady: true`, blocker 0, workspace 4개/tab 4개를 반환했다. live `runtime-v2:storage-backup`은 `runtime-v2-storage-20260504T163816Z`에 JSON/SQLite file 37개를 복사했고, live `runtime-v2:storage-import`는 workspace 4개/pane 4개/tab 4개/message-history 5개를 SQLite로 idempotent import했다. Production default rollout과 24시간 restart-loop 부재 관찰은 아직 닫지 않는다.
+- 2026-05-05 live new-tabs/default cutover: `codexmux.service` drop-in을 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`, `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`로 전환하고 service restart를 완료했다. `/api/v2/runtime/health`는 `terminalV2Mode: "new-tabs"`, `storageV2Mode: "default"`와 모든 worker ok를 반환한다. 임시 live workspace에서 plain terminal tab 생성이 legacy layout `runtimeVersion: 2`, `rtv2-` session name, runtime storage projection으로 확인됐고 workspace는 삭제됐다. `CODEXWINMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8122 corepack pnpm smoke:runtime-v2:target`는 live target에서 attach/stdin/stdout/resize/web-stdin/heartbeat/fresh reattach/fanout/backpressure/tab delete/workspace delete를 통과했다. 30초 간격 6회 rollback window canary 동안 worker restart/timeout/failure 0, service `NRestarts=0`, 최종 warning journal 없음이다. 2026-05-05 14:20 KST에는 운영자 승인으로 observation을 closeout 처리했다. 원래 24시간 clock gate 종료 시각은 2026-05-06 01:42 KST였으므로 이 기록은 elapsed-time pass가 아니라 operator-approved closeout이다.
 - 2026-05-05 lifecycle control UI/actions slice: `/experimental/runtime` 상단에 Lifecycle Control panel을 추가했다. 이 panel은 `/api/health`, `/api/v2/runtime/health`, `/api/debug/perf`를 normalize해 release metadata, terminal/storage/timeline/status mode, 24시간 observation gate, worker diagnostics, perf timing, rollback runbook을 같은 화면에 표시한다. 추가로 allowlisted action id만 받는 `/api/runtime/lifecycle/action`을 통해 `phase6-gate`, `restart-service`, `deploy-local`, `rollback-runtime-flags`를 실행할 수 있다. Restart/deploy/rollback은 exact confirmation phrase가 필요하고, audit은 `~/.codexmux/lifecycle-actions.jsonl`에 sanitized status event와 failure label만 남긴다. Endpoint 부분 실패는 가능한 section을 계속 렌더링하고 실패 section label만 노출하며, token/cwd/session/prompt/terminal output 원문은 표시하거나 저장하지 않는다. Rollback flag mutation과 systemd drop-in 편집은 `corepack pnpm lifecycle:rollback-dry-run`, `corepack pnpm lifecycle:rollback-apply`, Lifecycle Action `Apply Rollback Flags`로 자동화한다.
 - 2026-05-05 timeline watcher/Android evidence deploy: `d3248c4`가 live deploy 되었고 `/api/health`는 `version=0.4.1`, `commit=d3248c4`를 반환한다. Timeline Worker는 `timeline.session-watch-subscribe`/`timeline.session-watch-unsubscribe`와 subscriber-scoped `timeline.session-changed` IPC foundation을 갖췄다. `corepack pnpm smoke:android:timeline-foreground`는 SM-S928N Android 16에서 `timelineV2Mode=default`, foreground 2회, `timeline:init totalEntries` 3/5/7, blocking console/logcat 0으로 통과했다.
-- 2026-05-05 timeline WebSocket default ownership slice: `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`에서 client-facing `/api/timeline` WebSocket이 `handleRuntimeTimelineConnection()`을 통해 Timeline Worker live subscribe/session watch를 사용한다. 기존 URL과 auth/cookie contract는 유지하고, resume safety는 server helper의 process guard/sendKeys만 재사용하며 legacy file watcher에는 붙지 않는다. `corepack pnpm smoke:runtime-v2:timeline-websocket-default`, `timeline-live-shadow`, `timeline-resume-safety`, `timeline-session-changed`, `smoke:android:timeline-foreground`가 temp HOME/DB 기준 통과했다.
-- 2026-05-05 Phase 6 code fallback default: `CODEXMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset이면 terminal은 `new-tabs`, storage/timeline/status는 `default`로 해석한다. 명시적 `off`는 rollback으로 유지하고, 잘못된 명시 값은 `off`로 fail closed한다.
-- 2026-05-08 lifecycle rollback automation: `corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime drop-in과 target rollback flag를 mutation 없이 출력하고, `corepack pnpm lifecycle:rollback-apply`는 기존 drop-in을 timestamp `.bak`으로 백업한 뒤 storage `write`, terminal/timeline/status `off`, `CODEXMUX_RUNTIME_V2=1`을 쓰고 `systemctl --user daemon-reload`, `systemctl --user restart codexmux.service`를 실행한다. `/experimental/runtime`의 `rollback-runtime-flags` action은 같은 스크립트만 allowlist로 실행하며 confirmation phrase는 `rollback runtime v2`다.
+- 2026-05-05 timeline WebSocket default ownership slice: `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`에서 client-facing `/api/timeline` WebSocket이 `handleRuntimeTimelineConnection()`을 통해 Timeline Worker live subscribe/session watch를 사용한다. 기존 URL과 auth/cookie contract는 유지하고, resume safety는 server helper의 process guard/sendKeys만 재사용하며 legacy file watcher에는 붙지 않는다. `corepack pnpm smoke:runtime-v2:timeline-websocket-default`, `timeline-live-shadow`, `timeline-resume-safety`, `timeline-session-changed`, `smoke:android:timeline-foreground`가 temp HOME/DB 기준 통과했다.
+- 2026-05-05 Phase 6 code fallback default: `CODEXWINMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset이면 terminal은 `new-tabs`, storage/timeline/status는 `default`로 해석한다. 명시적 `off`는 rollback으로 유지하고, 잘못된 명시 값은 `off`로 fail closed한다.
+- 2026-05-08 lifecycle rollback automation: `corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime drop-in과 target rollback flag를 mutation 없이 출력하고, `corepack pnpm lifecycle:rollback-apply`는 기존 drop-in을 timestamp `.bak`으로 백업한 뒤 storage `write`, terminal/timeline/status `off`, `CODEXWINMUX_RUNTIME_V2=1`을 쓰고 `systemctl --user daemon-reload`, `systemctl --user restart codexmux.service`를 실행한다. `/experimental/runtime`의 `rollback-runtime-flags` action은 같은 스크립트만 allowlist로 실행하며 confirmation phrase는 `rollback runtime v2`다.
 
 Production 기본 경로로 전환하지 않은 것:
 
@@ -45,17 +45,17 @@ Production 기본 경로로 전환하지 않은 것:
 
 ## Feature Flags
 
-Introduce separate flags instead of overloading `CODEXMUX_RUNTIME_V2`.
+Introduce separate flags instead of overloading `CODEXWINMUX_RUNTIME_V2`.
 
 | Flag | Values | Purpose |
 | --- | --- | --- |
-| `CODEXMUX_RUNTIME_V2` | `0`, `1` | Starts Supervisor and workers. |
-| `CODEXMUX_RUNTIME_STORAGE_V2_MODE` | `off`, `shadow`, `write`, `default` | Controls SQLite workspace/layout ownership. |
-| `CODEXMUX_RUNTIME_TERMINAL_V2_MODE` | `off`, `opt-in`, `new-tabs`, `default` | Controls terminal tab creation/attach path. |
-| `CODEXMUX_RUNTIME_TIMELINE_V2_MODE` | `off`, `shadow`, `default` | Controls timeline HTTP/WebSocket path. |
-| `CODEXMUX_RUNTIME_STATUS_V2_MODE` | `off`, `shadow`, `default` | Controls status polling/WebSocket/notification path. |
+| `CODEXWINMUX_RUNTIME_V2` | `0`, `1` | Starts Supervisor and workers. |
+| `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE` | `off`, `shadow`, `write`, `default` | Controls SQLite workspace/layout ownership. |
+| `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE` | `off`, `opt-in`, `new-tabs`, `default` | Controls terminal tab creation/attach path. |
+| `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE` | `off`, `shadow`, `default` | Controls timeline HTTP/WebSocket path. |
+| `CODEXWINMUX_RUNTIME_STATUS_V2_MODE` | `off`, `shadow`, `default` | Controls status polling/WebSocket/notification path. |
 
-`CODEXMUX_RUNTIME_V2=1` with every surface mode `off` should only start workers and expose v2 diagnostic endpoints.
+`CODEXWINMUX_RUNTIME_V2=1` with every surface mode `off` should only start workers and expose v2 diagnostic endpoints.
 
 ## Phase 0: Parity Inventory
 
@@ -78,11 +78,11 @@ Goal: run all workers in production while legacy remains the only user-facing pa
 
 Work:
 
-- Start `CODEXMUX_RUNTIME_V2=1` in production service.
+- Start `CODEXWINMUX_RUNTIME_V2=1` in production service.
 - Add `/api/debug/perf` counters for each worker readiness, restart, timeout, and command error.
 - Add a startup diagnostic that calls `runtime.health` and records worker health without blocking legacy startup.
 - Run `corepack pnpm smoke:runtime-v2` against a managed temp HOME/DB server in CI and
-  `CODEXMUX_RUNTIME_V2_SMOKE_URL=<live-url> corepack pnpm smoke:runtime-v2` against the
+  `CODEXWINMUX_RUNTIME_V2_SMOKE_URL=<live-url> corepack pnpm smoke:runtime-v2` against the
   production host after shadow runtime is enabled.
 
 Exit gate:
@@ -95,7 +95,7 @@ Exit gate:
 
 Rollback:
 
-- Set `CODEXMUX_RUNTIME_V2=0`; legacy routes are unchanged.
+- Set `CODEXWINMUX_RUNTIME_V2=0`; legacy routes are unchanged.
 
 ## Phase 2: Terminal v2 For New Tabs
 
@@ -103,11 +103,11 @@ Goal: let selected users create new terminal tabs through v2 while legacy tabs s
 
 Work:
 
-- Add UI/server routing that chooses v2 only for newly created terminal tabs when `CODEXMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`.
+- Add UI/server routing that chooses v2 only for newly created terminal tabs when `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`.
 - Keep existing `pt-` sessions and legacy JSON layout as the UI source of truth.
 - Make tab identity explicit in UI state: `runtimeVersion: 1 | 2`.
-- Parse `CODEXMUX_RUNTIME_TERMINAL_V2_MODE` through `src/lib/runtime/terminal-mode.ts`; unknown values fail closed to `off`.
-- After Phase 6, unset terminal mode falls back to `new-tabs` only when `CODEXMUX_RUNTIME_V2=1`; explicit `off` and invalid values still fail closed.
+- Parse `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE` through `src/lib/runtime/terminal-mode.ts`; unknown values fail closed to `off`.
+- After Phase 6, unset terminal mode falls back to `new-tabs` only when `CODEXWINMUX_RUNTIME_V2=1`; explicit `off` and invalid values still fail closed.
 - Ensure close/delete uses the matching runtime cleanup path.
 - Ensure restart uses the matching runtime path: runtime v2 tabs must be recreated
   through Supervisor/Storage/Terminal Worker with the same tab id and `rtv2-`
@@ -130,7 +130,7 @@ Exit gate:
 
 Rollback:
 
-- Switch `CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off`.
+- Switch `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off`.
 - Keep `state.db` and v2 tmux sessions for explicit recovery; do not auto-delete.
 
 ## Phase 3: Storage v2 Shadow Then Default
@@ -146,8 +146,8 @@ Work:
 - Add dual-write only where operations can preserve ordering and transaction semantics; otherwise keep v1 write and v2 shadow import.
 - Current backup slice: `corepack pnpm runtime-v2:storage-backup` copies legacy JSON stores and `runtime-v2/state.db*` into `~/.codexmux/backups/runtime-v2-storage-{timestamp}/`.
 - Current import slice: `corepack pnpm runtime-v2:storage-import` imports workspace/layout/message-history JSON stores into SQLite schema v3 without switching production source of truth.
-- Current write slice: `CODEXMUX_RUNTIME_STORAGE_V2_MODE=write` keeps legacy JSON as the user-facing read owner, but mirrors every workspace/layout JSON write into SQLite through the same idempotent import path. The mode is exposed as `storageV2Mode` on `/api/v2/runtime/health`.
-- Current default-read slice: `CODEXMUX_RUNTIME_STORAGE_V2_MODE=default` routes workspace/layout/message-history reads through SQLite projection first, keeps rollback JSON mirrors, and falls back to JSON if SQLite projection fails. This slice is verified by `corepack pnpm smoke:runtime-v2:storage-default-read` on temp HOME/DB.
+- Current write slice: `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write` keeps legacy JSON as the user-facing read owner, but mirrors every workspace/layout JSON write into SQLite through the same idempotent import path. The mode is exposed as `storageV2Mode` on `/api/v2/runtime/health`.
+- Current default-read slice: `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default` routes workspace/layout/message-history reads through SQLite projection first, keeps rollback JSON mirrors, and falls back to JSON if SQLite projection fails. This slice is verified by `corepack pnpm smoke:runtime-v2:storage-default-read` on temp HOME/DB.
 - Add migration tests with malformed layout, missing cwd, deleted workspace, stale session names, grouped workspaces, and split panes.
 
 Exit gate:
@@ -162,7 +162,7 @@ Exit gate:
 
 Rollback:
 
-- Switch `CODEXMUX_RUNTIME_STORAGE_V2_MODE=off`.
+- Switch `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=off`.
 - Legacy JSON remains source of truth until a later cleanup release.
 
 ## Phase 4: Timeline v2 WebSocket Cutover
@@ -174,9 +174,9 @@ Work:
 - Move file watcher/session watcher state into Timeline Worker, not just read commands.
 - Current read-only first slice: `corepack pnpm smoke:runtime-v2:timeline-shadow` compares legacy timeline read endpoints with runtime v2 timeline read endpoints for message counts and entries-before metadata without printing entry text.
 - 2026-05-05 live shadow slice: `timeline.live-subscribe` returns the worker initial `timeline:init` payload, `timeline.live-append`/`timeline.live-error` events flow through Supervisor, and legacy `/api/timeline` records sanitized init/append parity counters while remaining client-facing.
-- 2026-05-05 default-read slice: `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default` keeps the existing `/api/timeline/*` HTTP URLs but routes `sessions`, `entries`, and `message-counts` through the Timeline Worker read commands.
+- 2026-05-05 default-read slice: `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default` keeps the existing `/api/timeline/*` HTTP URLs but routes `sessions`, `entries`, and `message-counts` through the Timeline Worker read commands.
 - 2026-05-05 session watcher contract slice: Timeline Worker accepts `timeline.session-watch-subscribe`/`timeline.session-watch-unsubscribe`, emits subscriber-scoped `timeline.session-changed` events to Supervisor, and Supervisor fans out matching changes.
-- 2026-05-05 WebSocket default ownership slice: the existing `/api/timeline` WebSocket URL stays stable, but default mode delegates init/append/error/session-changed delivery to Timeline Worker through `src/lib/runtime/timeline-ws.ts`. Legacy mode remains available with `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off`.
+- 2026-05-05 WebSocket default ownership slice: the existing `/api/timeline` WebSocket URL stays stable, but default mode delegates init/append/error/session-changed delivery to Timeline Worker through `src/lib/runtime/timeline-ws.ts`. Legacy mode remains available with `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off`.
 - Keep stable id/dedupe/merge behavior unchanged.
 - Add worker crash behavior: close timeline sockets with retryable reason and let client reconnect.
 
@@ -193,7 +193,7 @@ Exit gate:
 
 Rollback:
 
-- Switch `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off`; shadow subscriptions do not start and clients remain on legacy `/api/timeline`.
+- Switch `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off`; shadow subscriptions do not start and clients remain on legacy `/api/timeline`.
 
 ## Phase 5: Status v2 Cutover
 
@@ -205,9 +205,9 @@ Work:
 - Current policy-only first slice: `corepack pnpm smoke:runtime-v2:status-shadow` compares Status Worker IPC reducer/policy output with legacy pure helpers.
 - 2026-05-05 side-effect shadow slice: `status.evaluate-side-effects` returns sanitized boolean intent for layout timestamp updates, session history write, Web Push send, and JSONL watcher start/stop. `StatusManager` remains production owner and records only `runtime_v2.status_shadow.side_effect.{match,mismatch,error}` counters in shadow mode.
 - 2026-05-05 ack/dismiss shadow slice: `status.evaluate-client-event` returns sanitized acceptance and intent for `status:ack-notification` and `status:tab-dismissed`. Legacy `/api/status` remains production executor and records only `runtime_v2.status_shadow.client_event.{match,mismatch,error}` counters in shadow mode.
-- 2026-05-05 session history worker slice: `status.add-session-history-entry` and `status.update-session-history-dismissed-at` can execute session history writes through Status Worker. `StatusManager` still builds entries and broadcasts updates; it calls the worker only in `CODEXMUX_RUNTIME_STATUS_V2_MODE=default` and falls back to legacy writes on worker failure.
-- 2026-05-05 Web Push worker slice: `status.send-web-push` can send existing safe Web Push payloads through Status Worker. `StatusManager` still computes foreground visibility in the main process and calls the worker only in `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`, with legacy send fallback on worker failure.
-- 2026-05-05 live bridge/default slice: `status.live-start` runs the StatusManager state machine inside Status Worker, and `/api/status` maps worker `status.*` realtime events back to existing client message types. Hook/statusline events, ack/dismiss, request-sync, last-user-message notify, tab register/remove, device visibility, session history update, Web Push send, JSONL watcher, polling, and rate-limit update are worker-owned in `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`.
+- 2026-05-05 session history worker slice: `status.add-session-history-entry` and `status.update-session-history-dismissed-at` can execute session history writes through Status Worker. `StatusManager` still builds entries and broadcasts updates; it calls the worker only in `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default` and falls back to legacy writes on worker failure.
+- 2026-05-05 Web Push worker slice: `status.send-web-push` can send existing safe Web Push payloads through Status Worker. `StatusManager` still computes foreground visibility in the main process and calls the worker only in `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`, with legacy send fallback on worker failure.
+- 2026-05-05 live bridge/default slice: `status.live-start` runs the StatusManager state machine inside Status Worker, and `/api/status` maps worker `status.*` realtime events back to existing client message types. Hook/statusline events, ack/dismiss, request-sync, last-user-message notify, tab register/remove, device visibility, session history update, Web Push send, JSONL watcher, polling, and rate-limit update are worker-owned in `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`.
 - Keep pure reducer and notification policy output byte-for-byte compatible with current tests.
 - Keep typed status events for sync/update/remove/hook/session-history/rate-limits.
 - Preserve `globalThis` singleton compatibility until custom server and API routes no longer share status state directly.
@@ -215,13 +215,13 @@ Work:
 Exit gate:
 
 - `needs-input`, `ready-for-review`, dismiss, ack, and Web Push smoke pass.
-- `corepack pnpm smoke:runtime-v2:status-default` passes in temp HOME/server and proves the existing permission prompt flow survives `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`.
+- `corepack pnpm smoke:runtime-v2:status-default` passes in temp HOME/server and proves the existing permission prompt flow survives `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`.
 - Session history dedupe still uses `sessionId:turnId`.
 - Legacy `/api/status` fallback can be re-enabled without losing current layout metadata.
 
 Rollback:
 
-- Switch `CODEXMUX_RUNTIME_STATUS_V2_MODE=off`; existing `StatusManager` resumes ownership.
+- Switch `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off`; existing `StatusManager` resumes ownership.
 
 ## Phase 6: Default Runtime v2
 
@@ -231,7 +231,7 @@ Work:
 
 - Run `corepack pnpm smoke:runtime-v2:phase6-default-gate` against the release candidate or live target before changing any code/env defaults.
 - Treat Phase 6 first as an operations gate: runtime v2 must be enabled, terminal must be `new-tabs`, storage/timeline/status must be `default`, and every runtime worker failure/restart/timeout counter must be 0.
-- Default all surface modes in code only after phases 2-5 have shipped independently and the Phase 6 gate passes on the intended target. Completed on 2026-05-05: unset per-surface mode env now resolves to terminal `new-tabs`, storage/timeline/status `default` while `CODEXMUX_RUNTIME_V2=1`.
+- Default all surface modes in code only after phases 2-5 have shipped independently and the Phase 6 gate passes on the intended target. Completed on 2026-05-05: unset per-surface mode env now resolves to terminal `new-tabs`, storage/timeline/status `default` while `CODEXWINMUX_RUNTIME_V2=1`.
 - Keep a documented legacy fallback for at least one release.
 - Add release note section for backup, rollback flags, and diagnostic commands.
 - The gate script remains read-only and does not edit systemd drop-ins, restart services, mutate workspaces, or create tabs.
@@ -246,9 +246,9 @@ Exit gate:
 Rollback:
 
 - Run `corepack pnpm lifecycle:rollback-dry-run`, then `corepack pnpm lifecycle:rollback-apply`, or use Lifecycle Action `Apply Rollback Flags` with confirmation `rollback runtime v2`.
-- The automation keeps `CODEXMUX_RUNTIME_V2=1`, sets storage to `write`, sets terminal/timeline/status to `off`, backs up the previous drop-in, reloads systemd, and restarts `codexmux.service`.
+- The automation keeps `CODEXWINMUX_RUNTIME_V2=1`, sets storage to `write`, sets terminal/timeline/status to `off`, backs up the previous drop-in, reloads systemd, and restarts `codexmux.service`.
 - If applying manually, set the narrow surface flag back first: status, then timeline, then storage, then terminal.
-- If worker startup itself is unstable, set `CODEXMUX_RUNTIME_V2=0`.
+- If worker startup itself is unstable, set `CODEXWINMUX_RUNTIME_V2=0`.
 - Do not delete `~/.codexmux/runtime-v2/state.db` during first rollback; keep it for recovery and diagnostics.
 
 2026-05-07 Windows packaged closeout:

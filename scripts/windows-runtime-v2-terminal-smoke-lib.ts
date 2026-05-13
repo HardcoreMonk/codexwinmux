@@ -21,7 +21,7 @@ const preferredCodexwinmuxEnvKey = (legacyKey: string): string =>
 
 const buildEnvAlias = (legacyKey: string, value: string): Record<string, string> => ({
   [preferredCodexwinmuxEnvKey(legacyKey)]: value,
-  [legacyKey]: value,
+  ...(legacyKey.startsWith('CODEXMUX_RUNTIME_') ? {} : { [legacyKey]: value }),
 });
 
 export const createWindowsRuntimeV2TerminalSmokeEnv = ({

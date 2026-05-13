@@ -17,17 +17,17 @@ const restoreEnv = (key: string, value: string | undefined): void => {
 describe('runtime storage v2 default read ownership', () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
-  const originalRuntimeV2 = process.env.CODEXMUX_RUNTIME_V2;
-  const originalStorageMode = process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE;
-  const originalRuntimeDb = process.env.CODEXMUX_RUNTIME_DB;
+  const originalRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
+  const originalStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
+  const originalRuntimeDb = process.env.CODEXWINMUX_RUNTIME_DB;
   let homeDir: string | null = null;
 
   afterEach(async () => {
     restoreEnv('HOME', originalHome);
     restoreEnv('USERPROFILE', originalUserProfile);
-    restoreEnv('CODEXMUX_RUNTIME_V2', originalRuntimeV2);
-    restoreEnv('CODEXMUX_RUNTIME_STORAGE_V2_MODE', originalStorageMode);
-    restoreEnv('CODEXMUX_RUNTIME_DB', originalRuntimeDb);
+    restoreEnv('CODEXWINMUX_RUNTIME_V2', originalRuntimeV2);
+    restoreEnv('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', originalStorageMode);
+    restoreEnv('CODEXWINMUX_RUNTIME_DB', originalRuntimeDb);
     vi.resetModules();
     if (homeDir) {
       await fs.rm(homeDir, { recursive: true, force: true });
@@ -97,9 +97,9 @@ describe('runtime storage v2 default read ownership', () => {
 
     process.env.HOME = homeDir;
     process.env.USERPROFILE = homeDir;
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    process.env.CODEXMUX_RUNTIME_DB = dbPath;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = dbPath;
     vi.resetModules();
 
     const { getWorkspaces, getActiveWorkspaceId, getWorkspaceById } = await import('@/lib/workspace-store');
@@ -169,9 +169,9 @@ describe('runtime storage v2 default read ownership', () => {
 
     process.env.HOME = homeDir;
     process.env.USERPROFILE = homeDir;
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    process.env.CODEXMUX_RUNTIME_DB = dbPath;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = dbPath;
     vi.resetModules();
 
     const { initWorkspaceStore, getWorkspaces } = await import('@/lib/workspace-store');
@@ -204,9 +204,9 @@ describe('runtime storage v2 default read ownership', () => {
 
     process.env.HOME = homeDir;
     process.env.USERPROFILE = homeDir;
-    process.env.CODEXMUX_RUNTIME_V2 = '1';
-    process.env.CODEXMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    process.env.CODEXMUX_RUNTIME_DB = dbPath;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = dbPath;
     vi.resetModules();
 
     const { getWorkspaces, getActiveWorkspaceId } = await import('@/lib/workspace-store');

@@ -43,6 +43,9 @@ const hasEnvValue = (value: string | undefined): value is string =>
 const preferredWindowsRuntimeAlias = (legacyKey: string): string =>
   legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
 
+const isRuntimeLegacyKey = (legacyKey: string): boolean =>
+  legacyKey.startsWith('CODEXMUX_RUNTIME_');
+
 const applyAliasedDefault = (
   env: Record<string, string | undefined>,
   legacyKey: string,
@@ -51,12 +54,16 @@ const applyAliasedDefault = (
   const preferredKey = preferredWindowsRuntimeAlias(legacyKey);
   const nextValue = hasEnvValue(env[preferredKey])
     ? env[preferredKey]
-    : hasEnvValue(env[legacyKey])
+    : !isRuntimeLegacyKey(legacyKey) && hasEnvValue(env[legacyKey])
       ? env[legacyKey]
       : value;
 
   env[preferredKey] = nextValue;
-  env[legacyKey] = nextValue;
+  if (isRuntimeLegacyKey(legacyKey)) {
+    delete env[legacyKey];
+  } else {
+    env[legacyKey] = nextValue;
+  }
 };
 
 const applyWindowsRuntimeDefaults = (env: Record<string, string | undefined>): void => {

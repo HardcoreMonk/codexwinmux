@@ -278,7 +278,7 @@
 
 ## ADR-022: Runtime env 이름 전환은 staged alias migration으로 진행한다
 
-- Status: Accepted
+- Status: Accepted, ADR-024가 fallback 제거 단계를 supersede
 - Decision: `CODEXWINMUX_RUNTIME_*`를 새 preferred runtime env namespace로 둔다. Mode resolver, runtime worker DB path, lifecycle/systemd rollback, Windows smoke/packaged bootstrap은 preferred 값을 먼저 읽고 쓰며, 기존 `CODEXMUX_RUNTIME_*`는 fallback으로만 해석한다. 전체 내부 코드에서 `CODEXMUX_RUNTIME_*` 문자열을 즉시 제거하지 않고, 오래된 smoke fixture와 legacy fallback 제거는 별도 slice로 migration한다.
 - Rationale: Runtime v2 env는 terminal/storage/timeline/status ownership, rollback, worker DB path, smoke timeout/home path까지 넓게 걸쳐 있다. 한 번에 이름을 바꾸면 rollback 문서와 기존 운영 drop-in이 동시에 깨질 수 있다. Preferred alias를 먼저 도입하면 새 Windows 제품 identity를 적용하면서도 기존 runtime rollback 경로를 유지할 수 있다.
 - Consequences: 새 운영 입력과 문서는 `CODEXWINMUX_RUNTIME_*`를 우선한다. `CODEXMUX_RUNTIME_*`는 staged fallback이며, strict identity는 외부 smoke/배포 입력 env부터 차단한다. Zero-`CODEXMUX` 내부 정리는 별도 작업으로 `남은 smoke fixture 교체 -> non-runtime helper alias 적용 -> legacy fallback 제거` 순서로 진행한다.
@@ -289,3 +289,10 @@
 - Decision: GitHub Release asset과 tag는 같은 semver에서 재발행하거나 clobber하지 않는다. `smoke:release-immutability`는 현재 `package.json` version의 local tag, remote tag, GitHub Release가 이미 있으면 실패한다. 이미 발행한 버전을 갱신해야 하는 상황에서도 다음 patch/minor/major 버전으로 새 릴리스를 만든다.
 - Rationale: updater channel과 SmartScreen, code signing, hash evidence는 버전/태그/asset digest가 함께 맞아야 신뢰할 수 있다. 같은 `v0.4.14`를 여러 번 덮어쓰면 설치자와 운영 기록이 서로 다른 artifact를 가리킬 수 있다.
 - Consequences: `gh release upload --clobber`, tag force-push, 기존 release asset 교체는 운영 예외로 남기지 않는다. 기존 `v0.4.14` 갱신은 과거 closeout 기록으로 보존하고, 이후 릴리스는 새 버전 번호만 사용한다.
+
+## ADR-024: Runtime legacy env fallback을 제거한다
+
+- Status: Accepted
+- Decision: `0.4.15` runtime부터 mode resolver, runtime DB path, Electron bootstrap, Windows smoke helper, lifecycle rollback parser는 `CODEXWINMUX_RUNTIME_*`만 runtime 입력으로 해석한다. 기존 `CODEXMUX_RUNTIME_*`는 strict identity/audit에서 legacy key로 감지할 수는 있지만 runtime 설정 fallback으로 읽거나 child process env로 쓰지 않는다.
+- Rationale: staged migration의 smoke fixture와 storage/timeline/import/backup utility migration이 완료되어, 더 이상 legacy runtime env를 운영 입력으로 유지하면 Windows 제품 identity와 release evidence가 흔들린다. Final removal은 잘못된 legacy drop-in이나 shell env가 조용히 적용되는 일을 막는다.
+- Consequences: runtime rollback/systemd/drop-in, smoke, Electron/Windows packaging 환경은 `CODEXWINMUX_RUNTIME_*`로 갱신해야 한다. `CODEXMUX_RUNTIME_*`만 남은 환경은 runtime v2 enable/mode/DB override로 작동하지 않는다. 비-runtime `CODEXMUX_*` 호환 입력은 각 smoke/운영 helper의 별도 migration 대상이다.

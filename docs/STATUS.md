@@ -30,10 +30,10 @@ StatusManager
 
 ## Experimental Runtime v2 Status
 
-`CODEXMUX_RUNTIME_V2=1`의 SQLite schema에는 `tab_status`가 포함된다. runtime v2에는
+`CODEXWINMUX_RUNTIME_V2=1`의 SQLite schema에는 `tab_status`가 포함된다. runtime v2에는
 Status Worker foundation도 있으며, 현재 범위는 `status-state-machine`과
 `status-notification-policy`, `status-side-effect-policy`, `status-client-event-policy` 같은
-순수 정책을 typed IPC 뒤에서 평가하는 것이다. `CODEXMUX_RUNTIME_STATUS_V2_MODE=shadow`에서는
+순수 정책을 typed IPC 뒤에서 평가하는 것이다. `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=shadow`에서는
 `StatusManager.applyCliState()`가 legacy side-effect intent와 Status Worker
 `status.evaluate-side-effects` intent를 비교하고 `/api/debug/perf` counter에 match,
 mismatch, error만 기록한다. `dismissTab()`과 `ackNotificationInput()`도
@@ -44,20 +44,20 @@ production status source of truth는 계속 `StatusManager`와 layout metadata�
 
 Status Worker에는 session history write command foundation도 있다.
 `status.add-session-history-entry`와 `status.update-session-history-dismissed-at`는
-`CODEXMUX_RUNTIME_STATUS_V2_MODE=default`에서만 `StatusManager`의 write adapter가 사용한다.
+`CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서만 `StatusManager`의 write adapter가 사용한다.
 `off`와 `shadow`에서는 기존 `session-history.json` write path를 유지한다. Broadcast는 아직
 `StatusManager`가 담당하므로 이 foundation은 `/api/status` WebSocket ownership 전환이 아니다.
 
 Web Push send command foundation도 있다. `status.send-web-push`는 `StatusManager`가 만든
 기존 safe payload와 main process에서 계산한 foreground visibility boolean을 받아 worker에서
 background Web Push 전송과 expired subscription 제거를 수행한다. 이 path 역시
-`CODEXMUX_RUNTIME_STATUS_V2_MODE=default`에서만 사용하며, 실패 시 legacy send path로 fallback한다.
+`CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서만 사용하며, 실패 시 legacy send path로 fallback한다.
 main-process production path에서도 session history write와 Web Push 전송은
 `status-session-history-adapter`, `status-web-push-adapter` 뒤에서 실행한다. `StatusManager`는
 상태 전이, dedupe, workspace/config 조회까지만 소유하고, runtime default/legacy fallback 선택과
 전송 세부 구현은 adapter가 맡는다.
 
-2026-05-05 live bridge 이후 `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
+2026-05-05 live bridge 이후 `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
 별도 process 안에서 `StatusManager` state machine을 실행한다. custom server는 startup 때
 `status.live-start`를 호출하고, `/api/status` WebSocket은 `subscribeStatusLive()`로 worker의
 `status.sync`, `status.update`, `status.session-history-update`, `status.hook-event`,
@@ -67,9 +67,9 @@ timeline의 last-user-message notify, tab register/remove, Web Push foreground v
 `status.live-*` command로 worker에 전달한다. 이 모드에서는 worker가 polling, JSONL watcher,
 ack/dismiss mutation, session history write, Web Push send, rate-limit watcher를 소유한다.
 `off`와 `shadow`에서는 기존 main-process `StatusManager`가 그대로 production owner다.
-Phase 6 code fallback 이후 `CODEXMUX_RUNTIME_V2=1`이고
-`CODEXMUX_RUNTIME_STATUS_V2_MODE`가 unset이면 status mode는 `default`로 해석된다.
-명시적으로 `CODEXMUX_RUNTIME_STATUS_V2_MODE=off`를 설정하면 기존 main-process
+Phase 6 code fallback 이후 `CODEXWINMUX_RUNTIME_V2=1`이고
+`CODEXWINMUX_RUNTIME_STATUS_V2_MODE`가 unset이면 status mode는 `default`로 해석된다.
+명시적으로 `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off`를 설정하면 기존 main-process
 `StatusManager`로 rollback된다. 잘못된 명시 값도 `off`로 fail closed한다.
 
 Storage import는 legacy `layout.json`의 `cliState`, `agentSessionId`,

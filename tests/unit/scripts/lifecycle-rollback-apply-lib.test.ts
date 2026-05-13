@@ -97,7 +97,27 @@ describe('lifecycle rollback mutation helpers', () => {
     expect(JSON.stringify(result)).not.toContain('do-not-report');
   });
 
-  it('still parses legacy CODEXMUX runtime env lines during the staged migration', async () => {
+  it('parses preferred CODEXWINMUX runtime env lines', async () => {
+    const { buildLifecycleRollbackDryRun } = await loadLib();
+    const dropInPath = path.join(tempDir, 'codexmux.service.d', 'runtime-v2-shadow.conf');
+    await fs.mkdir(path.dirname(dropInPath), { recursive: true });
+    await fs.writeFile(dropInPath, [
+      '[Service]',
+      'Environment=CODEXWINMUX_RUNTIME_V2=1',
+      'Environment=CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default',
+      '',
+    ].join('\n'));
+
+    const result = await buildLifecycleRollbackDryRun({ dropInPath });
+
+    expect(result.runtimeEnv).toMatchObject({
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXWINMUX_RUNTIME_STORAGE_V2_MODE: 'default',
+    });
+    expect(Object.keys(result.targetEnv)).toContain('CODEXWINMUX_RUNTIME_V2');
+  });
+
+  it('ignores legacy CODEXMUX runtime env lines after migration', async () => {
     const { buildLifecycleRollbackDryRun } = await loadLib();
     const dropInPath = path.join(tempDir, 'codexmux.service.d', 'runtime-v2-shadow.conf');
     await fs.mkdir(path.dirname(dropInPath), { recursive: true });
@@ -110,11 +130,7 @@ describe('lifecycle rollback mutation helpers', () => {
 
     const result = await buildLifecycleRollbackDryRun({ dropInPath });
 
-    expect(result.runtimeEnv).toMatchObject({
-      CODEXMUX_RUNTIME_V2: '1',
-      CODEXMUX_RUNTIME_STORAGE_V2_MODE: 'default',
-    });
-    expect(Object.keys(result.targetEnv)).toContain('CODEXWINMUX_RUNTIME_V2');
+    expect(result.runtimeEnv).toEqual({});
   });
 
   it('creates a missing runtime drop-in and reports a non-secret warning', async () => {

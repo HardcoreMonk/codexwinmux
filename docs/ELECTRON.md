@@ -42,7 +42,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:electron-packaging`: package script와 `electron-builder.yml`이 Windows NSIS/zip 패키징 계약, updater metadata와 맞는 NSIS artifact name을 만족하는지 dry-run으로 확인합니다.
 - `smoke:windows:zip-artifact`: `release/*-win.zip` archive 안에 exe, `app.asar`, runtime v2 workers, Windows native terminal/runtime modules가 있는지 확인합니다.
 - `smoke:windows:update-metadata`: `release/latest.yml`이 실제 NSIS installer, installer size, sha512, blockmap artifact와 일치하고, packaged `app-update.yml`이 GitHub publish provider와 같은 owner/repo를 가리키는지 확인합니다.
-- `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 `internal-not-required` 또는 `internal-trusted-root` 상태를 signed/timestamped artifact와 함께 기록할 수 있습니다. 기존 `CODEXMUX_*` env는 호환 fallback입니다.
+- `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 `internal-not-required` 또는 `internal-trusted-root` 상태를 signed/timestamped artifact와 함께 기록할 수 있습니다. 비-runtime 기존 `CODEXMUX_*` env는 호환 fallback입니다. Runtime 입력은 `0.4.15`부터 `CODEXWINMUX_RUNTIME_*`만 사용합니다.
 - `smoke:windows:smartscreen-public-evidence`: GitHub Release 같은 HTTPS public download URL에서 Chromium download로 installer를 내려받고, Internet ZoneId=3과 `Start-Process` launch/exit 증거를 확인해 public SmartScreen `passed` evidence JSON을 생성합니다. 이 smoke는 temp install/uninstall을 수행하므로 Windows 사용자 설치 상태를 임시로 변경합니다.
 - `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다.
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
@@ -236,7 +236,7 @@ updater-visible `latest.yml`, NSIS installer, installer blockmap asset을 노출
 download/install evidence는 사용자가 설치한 버전보다 더 최신 published version이
 있어야 합니다. release commit이 이미 `package.json`을 올린 뒤에는
 `CODEXWINMUX_WINDOWS_UPDATER_CURRENT_VERSION=<installed-version>`을 지정해 사용자가
-설치한 버전과 channel을 비교합니다. 기존 `CODEXMUX_*` env는 호환 fallback입니다.
+설치한 버전과 channel을 비교합니다. 비-runtime 기존 `CODEXMUX_*` env는 호환 fallback입니다. Runtime 입력은 `0.4.15`부터 `CODEXWINMUX_RUNTIME_*`만 사용합니다.
 
 `smoke:windows:signing-evidence`는 `Get-AuthenticodeSignature`로
 `release/codexwinmux-Setup-<version>.exe`와 `release/win-unpacked/codexwinmux.exe`를
