@@ -38,4 +38,41 @@ describe('Windows installer smoke helpers', () => {
       uninstaller: 'C:\\apps\\codexmux\\Uninstall codexwinmux.exe',
     });
   });
+
+  it('detects stale codexwinmux uninstall entries left by temp smoke installs', async () => {
+    const { isStaleCodexwinmuxSmokeUninstallEntry } = await loadLib();
+
+    expect(isStaleCodexwinmuxSmokeUninstallEntry({
+      displayName: 'codexwinmux 0.4.15',
+      uninstallString: '"C:\\Users\\yohan\\AppData\\Local\\Temp\\codexwinmux-updater-local-feed-smoke-twT0Ft\\app\\Uninstall codexwinmux.exe" /currentuser',
+      tempDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp',
+      uninstallerExists: false,
+    })).toBe(true);
+
+    expect(isStaleCodexwinmuxSmokeUninstallEntry({
+      displayName: 'codexwinmux 0.4.15',
+      uninstallString: '"C:\\Users\\yohan\\AppData\\Local\\Temp\\codexwinmux-updater-local-feed-smoke-twT0Ft\\app\\Uninstall codexwinmux.exe" /currentuser',
+      tempDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp',
+      uninstallerExists: true,
+      removeExistingSmokeInstall: true,
+    })).toBe(true);
+    expect(isStaleCodexwinmuxSmokeUninstallEntry({
+      displayName: 'codexwinmux 0.4.15',
+      uninstallString: '"C:\\Users\\yohan\\AppData\\Local\\Temp\\codexwinmux-updater-local-feed-smoke-twT0Ft\\app\\Uninstall codexwinmux.exe" /currentuser',
+      tempDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp',
+      uninstallerExists: true,
+    })).toBe(false);
+    expect(isStaleCodexwinmuxSmokeUninstallEntry({
+      displayName: 'codexwinmux 0.4.15',
+      uninstallString: '"C:\\Program Files\\codexwinmux\\Uninstall codexwinmux.exe" /currentuser',
+      tempDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp',
+      uninstallerExists: false,
+    })).toBe(false);
+    expect(isStaleCodexwinmuxSmokeUninstallEntry({
+      displayName: 'Other App',
+      uninstallString: '"C:\\Users\\yohan\\AppData\\Local\\Temp\\codexmux-installer-smoke-abc\\app\\Uninstall codexwinmux.exe"',
+      tempDir: 'C:\\Users\\yohan\\AppData\\Local\\Temp',
+      uninstallerExists: false,
+    })).toBe(false);
+  });
 });

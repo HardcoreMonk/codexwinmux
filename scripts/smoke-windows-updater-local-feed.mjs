@@ -14,6 +14,7 @@ import { buildElectronSmokeLaunchCommand } from './electron-smoke-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 import {
   buildNsisSilentInstallArgs,
+  cleanupStaleCodexwinmuxSmokeUninstallEntries,
   findWindowsInstaller,
   resolveInstalledAppPaths,
 } from './windows-installer-smoke-lib.mjs';
@@ -376,6 +377,11 @@ const main = async () => {
     await assertExists(installerPath, 'installer-present', checks);
     await assertExists(latestPath, 'latest-yml-present', checks);
 
+    const preInstallRegistryCleanup = cleanupStaleCodexwinmuxSmokeUninstallEntries();
+    if (preInstallRegistryCleanup.removed.length > 0) {
+      checks.push('stale-uninstall-registry-cleanup');
+    }
+
     await prepareLocalFeed({ feedDir, latestPath });
     checks.push('local-feed-latest-yml');
 
@@ -449,6 +455,7 @@ const main = async () => {
       })}`);
     }
     checks.push('silent-uninstall');
+    cleanupStaleCodexwinmuxSmokeUninstallEntries();
 
     const successPayload = {
       ok: true,

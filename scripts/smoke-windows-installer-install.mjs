@@ -5,6 +5,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import {
   buildNsisSilentInstallArgs,
+  cleanupStaleCodexwinmuxSmokeUninstallEntries,
   findWindowsInstaller,
   resolveInstalledAppPaths,
 } from './windows-installer-smoke-lib.mjs';
@@ -101,6 +102,11 @@ const main = async () => {
     await fs.access(installerPath);
     checks.push('installer-present');
 
+    const preInstallRegistryCleanup = cleanupStaleCodexwinmuxSmokeUninstallEntries();
+    if (preInstallRegistryCleanup.removed.length > 0) {
+      checks.push('stale-uninstall-registry-cleanup');
+    }
+
     installResult = await runCommand(installerPath, buildNsisSilentInstallArgs(installDir), {
       timeoutMs: Number(process.env.CODEXMUX_WINDOWS_INSTALLER_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
     });
@@ -150,6 +156,7 @@ const main = async () => {
       })}`);
     }
     checks.push('silent-uninstall');
+    cleanupStaleCodexwinmuxSmokeUninstallEntries();
 
     const successPayload = {
       ok: true,
