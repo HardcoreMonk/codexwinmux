@@ -33,7 +33,9 @@ export const writeRuntimeEnvAlias = (
     return;
   }
   env[preferredKey] = value;
-  delete env[legacyKey];
+  if (legacyKey !== preferredKey) {
+    delete env[legacyKey];
+  }
 };
 
 export const captureRuntimeEnvAliases = (

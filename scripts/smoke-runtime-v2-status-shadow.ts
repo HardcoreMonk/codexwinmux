@@ -15,7 +15,7 @@ import { evaluateStatusSideEffects } from '@/lib/status-side-effect-policy';
 import { readRuntimeEnvAlias } from './runtime-env-alias';
 
 const main = async (): Promise<void> => {
-  const homeDir = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STATUS_SHADOW_HOME')
+  const homeDir = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STATUS_SHADOW_HOME')
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-runtime-v2-status-shadow-'));
   const dbPath = path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });

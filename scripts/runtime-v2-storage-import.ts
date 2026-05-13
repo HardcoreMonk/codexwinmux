@@ -7,9 +7,9 @@ import { openRuntimeDatabase } from '@/lib/runtime/storage/schema';
 import { readRuntimeEnvAlias } from './runtime-env-alias';
 
 const main = async (): Promise<void> => {
-  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_IMPORT_DATA_DIR')
+  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_IMPORT_DATA_DIR')
     || path.join(os.homedir(), '.codexwinmux');
-  const dbPath = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_IMPORT_DB')
+  const dbPath = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_IMPORT_DB')
     || path.join(dataDir, 'runtime-v2', 'state.db');
   const snapshot = await readLegacyStorageSnapshot(dataDir);
   const db = openRuntimeDatabase(dbPath);

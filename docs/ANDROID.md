@@ -217,7 +217,7 @@ corepack pnpm smoke:android:runtime-v2
 CODEXMUX_ANDROID_RUNTIME_V2_FOREGROUND_ROUNDS=4 CODEXMUX_ANDROID_RUNTIME_V2_BACKGROUND_MS=30000 corepack pnpm smoke:android:runtime-v2
 ```
 
-5. `CODEXMUX_RUNTIME_TERMINAL_V2_MODE=off`로 서버를 재시작하면 새 plain terminal tab은
+5. `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off`로 서버를 재시작하면 새 plain terminal tab은
    legacy로 생성되고 기존 v2 tab은 삭제되지 않으며 runtime v2 disabled diagnostic을 표시하는지 확인한다.
 
 이 smoke는 `/api/v2/terminal` fresh attach, existing-cookie auth, Android foreground reconnect 정책을 확인한다.

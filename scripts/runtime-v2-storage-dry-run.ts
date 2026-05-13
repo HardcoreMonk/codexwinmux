@@ -56,7 +56,7 @@ const readLayouts = async (
 };
 
 const main = async (): Promise<void> => {
-  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_DRY_RUN_DATA_DIR')
+  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_DRY_RUN_DATA_DIR')
     || path.join(os.homedir(), '.codexwinmux');
   const workspacesData = await readWorkspacesData(dataDir);
   const layoutsByWorkspaceId = await readLayouts(dataDir, workspacesData);

@@ -5,11 +5,11 @@ import { createRuntimeStorageBackup } from '@/lib/runtime/storage-backup';
 import { readRuntimeEnvAlias } from './runtime-env-alias';
 
 const main = async (): Promise<void> => {
-  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_DATA_DIR')
+  const dataDir = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_BACKUP_DATA_DIR')
     || path.join(os.homedir(), '.codexwinmux');
-  const outputRoot = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_OUTPUT_DIR')
+  const outputRoot = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_BACKUP_OUTPUT_DIR')
     || path.join(dataDir, 'backups');
-  const timestamp = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_TIMESTAMP');
+  const timestamp = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_BACKUP_TIMESTAMP');
   const result = await createRuntimeStorageBackup({ dataDir, outputRoot, timestamp });
   console.log(JSON.stringify({
     ok: true,

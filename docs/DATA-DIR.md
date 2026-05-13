@@ -81,8 +81,8 @@ Linux `systemd --user` 등록 파일은 legacy 운영 경로인 `~/.config/syste
 
 ## Runtime v2 SQLite 초기화
 
-`CODEXMUX_RUNTIME_V2=1`은 실험용 runtime v2를 켜고, 기본 DB 경로로
-`~/.codexwinmux/runtime-v2/state.db`를 사용한다. `CODEXMUX_RUNTIME_DB`가 있으면 smoke나
+`CODEXWINMUX_RUNTIME_V2=1`은 실험용 runtime v2를 켜고, 기본 DB 경로로
+`~/.codexwinmux/runtime-v2/state.db`를 사용한다. `CODEXWINMUX_RUNTIME_DB`가 있으면 smoke나
 개발 검증용으로 다른 DB 파일을 지정할 수 있다.
 
 Runtime schema v2는 `tabs.runtime_version`과 `workspaces.active_pane_id`를 포함한다.
@@ -92,14 +92,14 @@ terminal tab과 runtime v2 `rtv2-` terminal tab을 구분하고, active pane, ac
 workspace, sidebar 상태, workspace directory list, message history를 복원하기 위해 필요하다. Runtime v2
 terminal attach/cleanup은 `runtime_version=2`인 terminal tab만 대상으로 삼는다.
 
-`CODEXMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가 SQLite
+`CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가 SQLite
 projection을 먼저 사용한다. projection이 없거나 DB open/read가 실패하면 legacy
 `workspaces.json`, `workspaces/{wsId}/layout.json`,
 `workspaces/{wsId}/message-history.json` read로 fallback한다. Message history write는 SQLite를
 우선 갱신하고 rollback용 JSON 파일도 함께 쓴다. Config, keybindings, sidebar items는 기존
 JSON 파일이 owner다.
 
-`CODEXMUX_RUNTIME_V2_RESET=1`을 함께 설정하면 runtime 시작 전에 기존
+`CODEXWINMUX_RUNTIME_V2_RESET=1`을 함께 설정하면 runtime 시작 전에 기존
 `runtime-v2/state.db`, `runtime-v2/state.db-wal`, `runtime-v2/state.db-shm` 파일을 각각
 timestamp가 붙은 `.bak` 파일로 이동한다. `state.db` 없이 WAL/SHM sidecar만 남은 경우도
 각 sidecar를 독립적으로 백업하고 원래 경로에 stale sidecar를 남기지 않는다.
@@ -112,9 +112,9 @@ key cascade로 함께 제거된다.
 Storage cutover 전 백업은 `corepack pnpm runtime-v2:storage-backup`으로 만든다. 기본 출력은
 `~/.codexwinmux/backups/runtime-v2-storage-{timestamp}/`이며 `workspaces.json`,
 `workspaces/**.json`, `runtime-v2/state.db`, `runtime-v2/state.db-wal`,
-`runtime-v2/state.db-shm`를 복사한다. `CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_DATA_DIR`,
-`CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_OUTPUT_DIR`,
-`CODEXMUX_RUNTIME_V2_STORAGE_BACKUP_TIMESTAMP`로 data/output/timestamp를 override할 수 있다.
+`runtime-v2/state.db-shm`를 복사한다. `CODEXWINMUX_RUNTIME_V2_STORAGE_BACKUP_DATA_DIR`,
+`CODEXWINMUX_RUNTIME_V2_STORAGE_BACKUP_OUTPUT_DIR`,
+`CODEXWINMUX_RUNTIME_V2_STORAGE_BACKUP_TIMESTAMP`로 data/output/timestamp를 override할 수 있다.
 이 명령은 원본 파일을 삭제하거나 migration을 수행하지 않는다.
 
 Runtime v2 Timeline Worker foundation은 새 영속 파일을 만들지 않는다. v2 timeline read

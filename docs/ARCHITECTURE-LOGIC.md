@@ -22,7 +22,7 @@ Runtime state
 
 ## Experimental Runtime v2
 
-`CODEXMUX_RUNTIME_V2=1`이면 현재 runtime 옆에 실험용 Supervisor + Worker runtime이
+`CODEXWINMUX_RUNTIME_V2=1`이면 현재 runtime 옆에 실험용 Supervisor + Worker runtime이
 함께 시작된다. Supervisor는 public routing과 worker lifecycle을 소유하고, Storage
 Worker는 `~/.codexmux/runtime-v2/state.db` SQLite app state를 소유한다. Terminal
 Worker는 별도 `codexmux-runtime-v2` tmux socket의 `rtv2-` session lifecycle과
@@ -30,11 +30,11 @@ Worker는 별도 `codexmux-runtime-v2` tmux socket의 `rtv2-` session lifecycle�
 Timeline Worker는 Codex JSONL session list, older entry read, message count 같은
 읽기 전용 timeline command를 typed IPC 뒤에 둔다. 아직 production `/api/timeline`
 WebSocket의 file watch/live append/resume 경로를 대체하지 않는다.
-`CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`에서는 기존 `/api/timeline/sessions`,
+`CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`에서는 기존 `/api/timeline/sessions`,
 `/api/timeline/entries`, `/api/timeline/message-counts` HTTP route가 URL을 유지한 채
 Supervisor의 Timeline Worker read command로 처리된다.
 Status Worker는 상태 전이와 notification gating 같은 순수 정책 평가 command를 typed
-IPC 뒤에 둔다. `CODEXMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
+IPC 뒤에 둔다. `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
 별도 process 안에서 `StatusManager` live state machine을 실행하고 기존 `/api/status`
 WebSocket은 worker realtime event를 client message로 bridge한다. `off`/`shadow`에서는
 기존 main-process `StatusManager`가 production owner다.
@@ -125,7 +125,7 @@ codexmux가 쓰는 영속 상태는 `~/.codexmux/` 아래에 둔다.
 | live terminal process | tmux | terminal/status/timeline |
 | Codex transcript | `~/.codex/sessions/**/*.jsonl` | timeline/status |
 
-`CODEXMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가
+`CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가
 `~/.codexmux/runtime-v2/state.db`의 SQLite projection을 우선 사용한다. 기존 JSON write
 path와 sync broadcast는 유지하며, write 직후 runtime v2 import mirror가 SQLite projection을
 갱신한다. Message history는 default mode에서 SQLite read/write를 우선 사용하고 rollback용
@@ -213,7 +213,7 @@ Timeline은 terminal scrollback을 그대로 보여주는 기능이 아니라 Co
 resume session id validation은 `timeline-resume-service`로 분리한다. 이 분리는 runtime v2 WebSocket bridge와
 legacy file watcher가 같은 순수 helper를 쓰도록 만든 경계다.
 
-`CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`일 때 7번의 HTTP read path와 session list,
+`CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`일 때 7번의 HTTP read path와 session list,
 message counts는 legacy URL을 유지하면서 Timeline Worker command로 처리된다. WebSocket
 init/append/session-changed/resume은 아직 legacy `timeline-server`가 소유한다.
 

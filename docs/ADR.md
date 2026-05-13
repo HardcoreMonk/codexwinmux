@@ -46,7 +46,7 @@
   runtime v2 tmux session 존재 여부도 reconciliation한 뒤에만 started 상태가 된다.
   Timeline Worker는 read-only foundation으로 먼저 들어가며 session list, older entry,
   message count command를 typed IPC로 처리한다.
-  `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=default`에서는 legacy HTTP read routes
+  `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`에서는 legacy HTTP read routes
   (`/api/timeline/sessions`, `/api/timeline/entries`, `/api/timeline/message-counts`)가
   내부적으로 Supervisor의 Timeline Worker read command를 호출한다. 같은 mode에서
   client-facing `/api/timeline` WebSocket URL은 유지하되 `handleRuntimeTimelineConnection()`이
@@ -54,15 +54,15 @@
   `timeline:session-changed` delivery를 소유한다. Resume message execution은 기존 server
   helper의 unsafe-process guard와 `sendKeys` path를 재사용하지만, runtime bridge가 직접
   worker live subscription으로 전환하므로 legacy file watcher에는 붙지 않는다. Rollback은
-  `CODEXMUX_RUNTIME_TIMELINE_V2_MODE=off`로 같은 URL의 legacy timeline server implementation을
+  `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off`로 같은 URL의 legacy timeline server implementation을
   다시 사용한다.
   Status Worker는 policy foundation과 live default bridge를 함께 가진다.
-  `CODEXMUX_RUNTIME_STATUS_V2_MODE=shadow`는 hook/Codex/client-event/side-effect policy를
+  `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=shadow`는 hook/Codex/client-event/side-effect policy를
   legacy pure helper와 비교하고, `default`는 worker process 안의 `StatusManager`가
   polling/JSONL watcher/hook application/ack/dismiss/session-history/Web Push/rate-limit update를
   소유한다. 기존 `/api/status` WebSocket URL은 유지하고 server는 worker realtime event를
-  기존 client protocol로 변환한다. Rollback은 `CODEXMUX_RUNTIME_STATUS_V2_MODE=off`다.
-  Phase 6 이후 `CODEXMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset이면 code fallback은
+  기존 client protocol로 변환한다. Rollback은 `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off`다.
+  Phase 6 이후 `CODEXWINMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset이면 code fallback은
   terminal `new-tabs`, storage/timeline/status `default`로 해석한다. 명시적 `off`는 계속
   rollback이고, 잘못된 명시 값은 `off`로 fail closed한다.
 
@@ -71,7 +71,7 @@
 - Status: Proposed
 - Decision: workspace/layout/tab/status metadata의 runtime v2 source of truth는
   Storage Worker가 소유하는 `~/.codexwinmux/runtime-v2/state.db`다.
-  `CODEXMUX_RUNTIME_V2_RESET=1`은 `state.db`, `state.db-wal`,
+  `CODEXWINMUX_RUNTIME_V2_RESET=1`은 `state.db`, `state.db-wal`,
   `state.db-shm`을 독립적으로 timestamp `.bak` 파일로 이동한 뒤 새 DB를 만든다.
 - Rationale: normalized entities, transactions, invariant enforcement, indexed
   queries, durable event logs는 JSON 파일과 직접 module caller 조합으로 안전하게
@@ -91,13 +91,13 @@
   Storage schema v3는 `workspace_directories`, `app_state`, `message_history`를 추가해
   workspace directory list, active workspace, sidebar collapsed/width, message history를
   SQLite projection에 보존한다.
-  `CODEXMUX_RUNTIME_STORAGE_V2_MODE=write|default`는 production read source를 즉시
+  `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write|default`는 production read source를 즉시
   바꾸지 않고 legacy JSON write 직후 같은 import path로 SQLite를 mirror한다. `default`
   mode에서는 workspace/layout/message-history read가 SQLite projection을 우선 사용하고
   실패 시 legacy JSON으로 fail closed한다. Message history write는 default mode에서
   SQLite를 우선 갱신하고 rollback용 JSON 파일을 함께 쓴다. Production live mode는 별도
   rollout 전까지 `write`로 유지했고, Phase 6 이후 unset storage mode는
-  `CODEXMUX_RUNTIME_V2=1`에서 `default`로 해석한다. 명시적 `off`는 legacy JSON rollback이다.
+  `CODEXWINMUX_RUNTIME_V2=1`에서 `default`로 해석한다. 명시적 `off`는 legacy JSON rollback이다.
   `better-sqlite3`는 optional dependency이며 lazy load된다. runtime v2가 꺼진
   install/build는 native binding load에 의존하지 않고, runtime v2가 켜졌을 때 binding
   부재는 `runtime-v2-sqlite-unavailable`로 실패한다.
@@ -274,14 +274,14 @@
 - Status: Accepted
 - Decision: `0.4.14`부터 Windows 제품 identity는 `codexwinmux`로 독립 적용한다. Electron `productName`은 `codexwinmux`, Electron `appId`는 `com.hardcoremonk.codexwinmux`, installer artifact basename은 `codexwinmux-Setup-<version>.exe`, 실행 파일은 `codexwinmux.exe`, app state data dir은 `~/.codexwinmux`다. GitHub updater publish channel은 계속 `HardcoreMonk/codexwinmux`다.
 - Rationale: channel-only 전환은 `0.4.8` 업데이트 경로 검증에는 충분했지만, 이후 내부 배포에서는 Start Menu/app shortcut, updater cache, health identity, 앱 데이터 위치가 repository/product line과 다르면 운영 증거가 흔들린다. 독립 제품으로 제공하려면 설치/실행/진단에서 보이는 identity를 한 줄로 맞춰야 한다.
-- Consequences: 기존 `~/.codexmux`와 `codexmux` 설치는 자동 삭제하거나 병합하지 않는다. `CMUX_PORT`/`CMUX_TOKEN`, `x-cmux-token`은 API 호환 레이어로 유지한다. Runtime env는 `CODEXWINMUX_RUNTIME_*`를 preferred namespace로 읽고 쓰며, 기존 `CODEXMUX_RUNTIME_*`는 staged fallback으로만 유지한다. `0.4.14` 후속 legacy sunset gate 이후 package CLI alias는 `codexwinmux`와 `cwmux`만 노출하고 `codexmux`/`cmux` alias는 제거한다. 새 릴리스 evidence는 `latest.yml`, `codexwinmux-Setup-<version>.exe`, matching `.blockmap`, `release/win-unpacked/codexwinmux.exe`, `~/.codexwinmux`, `com.hardcoremonk.codexwinmux`를 기준으로 수집한다.
+- Consequences: 기존 `~/.codexmux`와 `codexmux` 설치는 자동 삭제하거나 병합하지 않는다. `CMUX_PORT`/`CMUX_TOKEN`, `x-cmux-token`은 API 호환 레이어로 유지한다. Runtime env는 `CODEXWINMUX_RUNTIME_*`를 namespace로 읽고 쓴다. 기존 `CODEXMUX_RUNTIME_*` fallback은 `0.4.15`에서 제거됐고, 이후에는 strict identity/audit에서 legacy 입력으로만 감지한다. `0.4.14` 후속 legacy sunset gate 이후 package CLI alias는 `codexwinmux`와 `cwmux`만 노출하고 `codexmux`/`cmux` alias는 제거한다. 새 릴리스 evidence는 `latest.yml`, `codexwinmux-Setup-<version>.exe`, matching `.blockmap`, `release/win-unpacked/codexwinmux.exe`, `~/.codexwinmux`, `com.hardcoremonk.codexwinmux`를 기준으로 수집한다.
 
 ## ADR-022: Runtime env 이름 전환은 staged alias migration으로 진행한다
 
 - Status: Accepted, ADR-024가 fallback 제거 단계를 supersede
-- Decision: `CODEXWINMUX_RUNTIME_*`를 새 preferred runtime env namespace로 둔다. Mode resolver, runtime worker DB path, lifecycle/systemd rollback, Windows smoke/packaged bootstrap은 preferred 값을 먼저 읽고 쓰며, 기존 `CODEXMUX_RUNTIME_*`는 fallback으로만 해석한다. 전체 내부 코드에서 `CODEXMUX_RUNTIME_*` 문자열을 즉시 제거하지 않고, 오래된 smoke fixture와 legacy fallback 제거는 별도 slice로 migration한다.
+- Decision: `CODEXWINMUX_RUNTIME_*`를 새 preferred runtime env namespace로 둔다. Mode resolver, runtime worker DB path, lifecycle/systemd rollback, Windows smoke/packaged bootstrap은 preferred 값을 읽고 쓴다. 기존 `CODEXMUX_RUNTIME_*` fallback은 migration 중간 단계에서만 허용했고 ADR-024에 따라 `0.4.15`에서 제거했다. 전체 내부 코드의 오래된 smoke fixture와 helper 문자열은 별도 slice로 migration한다.
 - Rationale: Runtime v2 env는 terminal/storage/timeline/status ownership, rollback, worker DB path, smoke timeout/home path까지 넓게 걸쳐 있다. 한 번에 이름을 바꾸면 rollback 문서와 기존 운영 drop-in이 동시에 깨질 수 있다. Preferred alias를 먼저 도입하면 새 Windows 제품 identity를 적용하면서도 기존 runtime rollback 경로를 유지할 수 있다.
-- Consequences: 새 운영 입력과 문서는 `CODEXWINMUX_RUNTIME_*`를 우선한다. `CODEXMUX_RUNTIME_*`는 staged fallback이며, strict identity는 외부 smoke/배포 입력 env부터 차단한다. Zero-`CODEXMUX` 내부 정리는 별도 작업으로 `남은 smoke fixture 교체 -> non-runtime helper alias 적용 -> legacy fallback 제거` 순서로 진행한다.
+- Consequences: 새 운영 입력과 문서는 `CODEXWINMUX_RUNTIME_*`만 사용한다. `CODEXMUX_RUNTIME_*`는 runtime fallback이 아니라 strict identity/audit에서 감지할 legacy 입력이다. Zero-`CODEXMUX` 내부 정리는 별도 작업으로 `남은 smoke fixture 교체 -> non-runtime helper alias 적용 -> legacy fallback 제거` 순서에서 진행했으며, 남은 문구는 역사 기록 또는 비-runtime 호환 입력 migration 대상으로 분리한다.
 
 ## ADR-023: 릴리스 버전은 불변으로 발행한다
 

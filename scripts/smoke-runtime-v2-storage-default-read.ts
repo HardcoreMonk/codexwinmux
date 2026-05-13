@@ -12,10 +12,10 @@ import {
 } from './runtime-env-alias';
 
 const RUNTIME_ENV_KEYS = [
-  'CODEXMUX_RUNTIME_V2',
-  'CODEXMUX_RUNTIME_STORAGE_V2_MODE',
-  'CODEXMUX_RUNTIME_DB',
-  'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR',
+  'CODEXWINMUX_RUNTIME_V2',
+  'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE',
+  'CODEXWINMUX_RUNTIME_DB',
+  'CODEXWINMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR',
 ];
 
 const assert = (condition: unknown, message: string): void => {
@@ -88,10 +88,10 @@ const main = async (): Promise<void> => {
     }
 
     process.env.HOME = homeDir;
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2', '1');
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'default');
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_DB', dbPath);
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR', dataDir);
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2', '1');
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'default');
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_DB', dbPath);
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR', dataDir);
 
     await fs.rm(path.join(dataDir, 'workspaces.json'), { force: true });
     await fs.rm(layoutPath, { force: true });
@@ -155,10 +155,10 @@ const main = async (): Promise<void> => {
     const addedHistory = await addMessageHistory('ws-default', 'runtime history');
     const updatedHistory = await readMessageHistory('ws-default');
     assert(updatedHistory[0]?.id === addedHistory.id, 'default write did not update SQLite message history');
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off');
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'off');
     const fallbackHistory = await readMessageHistory('ws-default');
     assert(fallbackHistory[0]?.id === addedHistory.id, 'default write did not mirror message history JSON fallback');
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'default');
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'default');
     await deleteMessageHistory('ws-default', addedHistory.id);
     const deletedHistory = await readMessageHistory('ws-default');
     assert(deletedHistory.every((entry) => entry.id !== addedHistory.id), 'default delete did not update SQLite message history');

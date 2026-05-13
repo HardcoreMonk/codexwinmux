@@ -9,7 +9,7 @@ import { buildRuntimeEnvAlias, readRuntimeEnvAlias } from './runtime-env-alias';
 
 const PASSWORD = 'runtime-v2-timeline-websocket-default-smoke';
 const DEFAULT_TIMEOUT_MS = Number(
-  readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_TIMEOUT_MS') || 30_000,
+  readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_TIMEOUT_MS') || 30_000,
 );
 const TMUX_SOCKET = 'codexwinmux';
 const SESSION_ID = '44444444-4444-4444-8444-444444444444';
@@ -194,14 +194,14 @@ const startServer = async ({ homeDir, dbPath, port, jsonlPath }: {
     } : {}),
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
-    ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_V2', '1'),
-    ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
-    ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
 
-    ...(process.platform === 'win32' ? buildRuntimeEnvAlias('CODEXMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
-    ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
-    ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_STATUS_V2_MODE', 'off'),
-    ...buildRuntimeEnvAlias('CODEXMUX_RUNTIME_DB', dbPath),
+    ...(process.platform === 'win32' ? buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_STATUS_V2_MODE', 'off'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_DB', dbPath),
     PORT: String(port),
   };
   delete env.__CMUX_PRISTINE_ENV;
@@ -434,12 +434,12 @@ const summarizeMessages = (messages: ITimelineMessage[]): Array<{
   }));
 
 const main = async (): Promise<void> => {
-  const homeDir = readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_HOME')
+  const homeDir = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_HOME')
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-runtime-v2-timeline-websocket-default-'));
   const dbPath = path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
   const jsonlPath = await prepareFixturePath(homeDir);
-  const port = Number(readRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_PORT') || await getFreePort());
+  const port = Number(readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_PORT') || await getFreePort());
   const sessionName = `pt-rv2-timeline-default-${process.pid}`;
   const checks: string[] = [];
   let server: TServer | null = null;

@@ -10,10 +10,10 @@ import {
 } from './runtime-env-alias';
 
 const RUNTIME_ENV_KEYS = [
-  'CODEXMUX_RUNTIME_V2',
-  'CODEXMUX_RUNTIME_STORAGE_V2_MODE',
-  'CODEXMUX_RUNTIME_DB',
-  'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR',
+  'CODEXWINMUX_RUNTIME_V2',
+  'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE',
+  'CODEXWINMUX_RUNTIME_DB',
+  'CODEXWINMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR',
 ];
 
 const main = async (): Promise<void> => {
@@ -64,10 +64,10 @@ const main = async (): Promise<void> => {
     await fs.mkdir(layoutDir, { recursive: true });
     await fs.writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify(workspacesData), { mode: 0o600 });
     process.env.HOME = homeDir;
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2', '1');
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_STORAGE_V2_MODE', 'write');
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_DB', dbPath);
-    writeRuntimeEnvAlias(process.env, 'CODEXMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR', dataDir);
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2', '1');
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'write');
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_DB', dbPath);
+    writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_MIRROR_DATA_DIR', dataDir);
 
     const { writeLayoutFile } = await import('@/lib/layout-store');
     const { openRuntimeDatabase } = await import('@/lib/runtime/storage/schema');

@@ -20,7 +20,7 @@ export const resolveStorageShadowFixtureMode = ({
   platform = process.platform,
   env = process.env,
 }: IResolveStorageShadowFixtureModeInput = {}): TStorageShadowFixtureMode => {
-  const requested = readPreferredEnv(env, 'CODEXMUX_RUNTIME_V2_STORAGE_SHADOW_FIXTURE');
+  const requested = readPreferredEnv(env, 'CODEXWINMUX_RUNTIME_V2_STORAGE_SHADOW_FIXTURE');
   if (requested === 'legacy-shadow' || requested === 'runtime-v2-api') return requested;
   return platform === 'win32' ? 'runtime-v2-api' : 'legacy-shadow';
 };
