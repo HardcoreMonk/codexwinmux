@@ -27,7 +27,7 @@
 - 2026-05-05 Phase 6 code fallback default: `CODEXWINMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset이면 terminal은 `new-tabs`, storage/timeline/status는 `default`로 해석한다. 명시적 `off`는 rollback으로 유지하고, 잘못된 명시 값은 `off`로 fail closed한다.
 - 2026-05-08 lifecycle rollback automation: `corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime drop-in과 target rollback flag를 mutation 없이 출력하고, `corepack pnpm lifecycle:rollback-apply`는 기존 drop-in을 timestamp `.bak`으로 백업한 뒤 storage `write`, terminal/timeline/status `off`, `CODEXWINMUX_RUNTIME_V2=1`을 쓰고 `systemctl --user daemon-reload`, `systemctl --user restart codexmux.service`를 실행한다. `/experimental/runtime`의 `rollback-runtime-flags` action은 같은 스크립트만 allowlist로 실행하며 confirmation phrase는 `rollback runtime v2`다.
 - 2026-05-14 storage/status metadata write-through slice: `storage.patch-tab-status-metadata`와 `storage.get-tab-status-metadata`를 추가해 `agentSessionId`, `agentJsonlPath`, `agentSummary`, `lastUserMessage`, `cliState`, `dismissedAt`를 SQLite `tab_status`/`agent_sessions` contract로 갱신한다. `layout-store`의 timeline/status metadata helper는 storage default에서 Supervisor/Storage Worker를 호출한다. Status Worker live manager는 주입된 persistence adapter로 metadata를 갱신해 worker 내부에서 새 Supervisor를 띄우지 않는다. Direct v2 workspace/tab mutation API와 config/keybinding JSON mutation API는 기존 sync WebSocket invalidation을 broadcast한다.
-- 2026-05-14 local stale-UI smoke attempt: Windows checkout에서 `CODEXWINMUX_RUNTIME_V2=1`, `CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER=windows`로 Browser/Electron/Android smoke를 시도했다. `corepack pnpm smoke:browser-reconnect`는 legacy tmux kill 단계에서 `spawn tmux ENOENT`로 실패하므로 Windows runtime-v2 stale UI gate evidence로 사용할 수 없다. `corepack pnpm smoke:electron:runtime-v2`는 runtime workspace/layout/tab creation까지 진입한 뒤 5분 제한에 걸려 pass evidence를 만들지 못했다. `corepack pnpm smoke:android:runtime-v2`는 `adb devices failed: spawnSync adb ENOENT`로 로컬 ADB가 없어 실행되지 않았다. `corepack pnpm smoke:runtime-v2:phase6-default-gate`는 live target 미지정 상태에서 fetch failure로 실패했다. `corepack pnpm lifecycle:rollback-dry-run`은 mutation 없이 rollback target flags를 출력했다. 따라서 legacy JSON fallback removal gate는 이 slice에서 닫지 않는다.
+- 2026-05-14 Windows runtime v2 follow-up: CLI tab creation은 `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`에서 Supervisor `createTerminalTab()`를 사용하도록 전환했고, storage default에서는 JSON layout append 없이 runtime storage tab을 app-facing 응답으로 반환한다. Layout tab 생성과 CLI tab 생성의 storage-default path는 직접 `layout` sync invalidation을 broadcast한다. `corepack pnpm smoke:runtime-v2:browser-sync`는 Windows checkout에서 tmux kill 없이 temp runtime v2 default server, Playwright Chromium, page-context `/api/sync` probe로 workspace mutation event와 sidebar UI 갱신을 확인했다. `corepack pnpm smoke:electron:runtime-v2`는 Windows process-tree cleanup 보정 뒤 기본 initial + 2 reconnect marker output으로 통과했다. ADB는 winget `Google.PlatformTools`로 설치했고 `adb devices -l`은 실행됐지만 연결된 Android 기기가 없어 `corepack pnpm smoke:android:runtime-v2`는 `connected=-`에서 중단됐다. `corepack pnpm smoke:runtime-v2:phase6-default-gate`는 live URL 미지정 때문에 외부/live evidence는 만들 수 없었고, temp runtime v2 default target을 명시한 로컬 gate만 통과했다. 따라서 legacy JSON fallback removal gate는 이 slice에서 닫지 않는다.
 
 Production 기본 경로로 전환하지 않은 것:
 
@@ -164,8 +164,8 @@ Exit gate:
 - Legacy JSON fallback can still render the previous layout after disabling storage v2.
 - `write` and `default` mode smokes pass and disabling the mode leaves JSON reads/writes unchanged.
 - Lifecycle Control panel shows storage `default`, terminal `new-tabs`, worker restart/timeout/failure 0, and the current 24h observation state before closing the default rollout gate.
-- Browser/Electron/Android stale UI smoke must cover workspace rename/group/order, layout split/close/patch/reorder/move/tab patch, status/timeline metadata, direct v2 API mutation sync, and config/keybinding invalidation over the existing sync WebSocket before legacy JSON fallback removal.
-- CLI/config/keybinding paths are classified separately from runtime storage ownership. Config/keybinding remain rollback-compatible JSON stores with `config` sync invalidation; CLI tab creation must not reintroduce JSON layout as the app-facing source of truth before fallback removal.
+- Browser/Electron/Android stale UI smoke must cover workspace rename/group/order, layout split/close/patch/reorder/move/tab patch, status/timeline metadata, direct v2 API mutation sync, and config/keybinding invalidation over the existing sync WebSocket before legacy JSON fallback removal. Windows-local browser evidence now covers direct runtime v2 workspace mutation sync without tmux; Android device evidence and broader mutation matrix coverage remain.
+- CLI/config/keybinding paths are classified separately from runtime storage ownership. Config/keybinding remain rollback-compatible JSON stores with `config` sync invalidation; CLI tab creation now routes plain terminal creation through runtime Supervisor in terminal v2 mode and no longer reintroduces JSON layout as the app-facing source of truth in storage default mode.
 
 Rollback:
 
@@ -290,6 +290,7 @@ corepack pnpm smoke:runtime-v2:timeline-live-shadow
 corepack pnpm smoke:runtime-v2:timeline-resume-safety
 corepack pnpm smoke:runtime-v2:timeline-session-changed
 corepack pnpm smoke:runtime-v2:status-default
+corepack pnpm smoke:runtime-v2:browser-sync
 corepack pnpm smoke:runtime-v2:phase6-default-gate
 corepack pnpm smoke:android:timeline-foreground
 corepack pnpm build:electron

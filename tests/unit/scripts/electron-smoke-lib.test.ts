@@ -207,4 +207,25 @@ describe('Electron smoke helpers', () => {
     expect(normalizeElectronWindowForegroundCycles('999')).toBe(5);
     expect(normalizeElectronWindowForegroundCycles('nope')).toBe(0);
   });
+
+  it('normalizes Electron smoke timeout values', async () => {
+    const { normalizeElectronSmokeTimeoutMs } = await loadLib();
+
+    expect(normalizeElectronSmokeTimeoutMs(undefined)).toBe(30_000);
+    expect(normalizeElectronSmokeTimeoutMs('45000')).toBe(45_000);
+    expect(normalizeElectronSmokeTimeoutMs('100')).toBe(1_000);
+    expect(normalizeElectronSmokeTimeoutMs('999999')).toBe(120_000);
+    expect(normalizeElectronSmokeTimeoutMs('nope')).toBe(30_000);
+  });
+
+  it('builds a Windows process tree kill command for Electron smoke cleanup', async () => {
+    const { buildProcessTreeKillCommand } = await loadLib();
+
+    expect(buildProcessTreeKillCommand({ pid: 1234, platform: 'win32' })).toEqual({
+      command: 'taskkill',
+      args: ['/PID', '1234', '/T', '/F'],
+    });
+    expect(buildProcessTreeKillCommand({ pid: 1234, platform: 'linux' })).toBeNull();
+    expect(buildProcessTreeKillCommand({ pid: 0, platform: 'win32' })).toBeNull();
+  });
 });

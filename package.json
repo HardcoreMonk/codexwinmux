@@ -113,6 +113,7 @@
     "smoke:runtime-v2:timeline-resume-safety": "tsx scripts/smoke-runtime-v2-timeline-resume-safety.ts",
     "smoke:runtime-v2:timeline-session-changed": "tsx scripts/smoke-runtime-v2-timeline-session-changed.ts",
     "smoke:runtime-v2:timeline-websocket-default": "tsx scripts/smoke-runtime-v2-timeline-websocket-default.ts",
+    "smoke:runtime-v2:browser-sync": "node scripts/smoke-runtime-v2-browser-sync.mjs",
     "smoke:runtime-v2:status-shadow": "tsx scripts/smoke-runtime-v2-status-shadow.ts",
     "smoke:runtime-v2:status-default": "node scripts/smoke-runtime-v2-status-default.mjs",
     "smoke:runtime-v2:phase6-default-gate": "node scripts/smoke-runtime-v2-phase6-default-gate.mjs",

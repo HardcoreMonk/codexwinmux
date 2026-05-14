@@ -2,51 +2,42 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
-  const statusManager = {
-    registerTab: vi.fn(),
-  };
   const supervisor = {
     ensureStarted: vi.fn(),
     createTerminalTab: vi.fn(),
     deleteTerminalTab: vi.fn(),
   };
   return {
+    verifyCliToken: vi.fn(),
+    getLayout: vi.fn(),
     addTabToPane: vi.fn(),
     addExistingTabToPane: vi.fn(),
-    updateTabAgentSessionId: vi.fn(),
-    getActiveWorkspaceId: vi.fn(),
     getWorkspaceById: vi.fn(),
-    getStatusManager: vi.fn(() => statusManager),
-    statusManager,
-    getProviderByPanelType: vi.fn(),
-    sendKeys: vi.fn(),
+    getWorkspaces: vi.fn(),
+    resolveFirstPaneId: vi.fn(),
     getRuntimeSupervisor: vi.fn(() => supervisor),
     broadcastSync: vi.fn(),
     supervisor,
   };
 });
 
+vi.mock('@/lib/cli-token', () => ({
+  verifyCliToken: mocks.verifyCliToken,
+}));
+
 vi.mock('@/lib/layout-store', () => ({
+  getLayout: mocks.getLayout,
   addTabToPane: mocks.addTabToPane,
   addExistingTabToPane: mocks.addExistingTabToPane,
-  updateTabAgentSessionId: mocks.updateTabAgentSessionId,
 }));
 
 vi.mock('@/lib/workspace-store', () => ({
-  getActiveWorkspaceId: mocks.getActiveWorkspaceId,
   getWorkspaceById: mocks.getWorkspaceById,
+  getWorkspaces: mocks.getWorkspaces,
 }));
 
-vi.mock('@/lib/status-manager', () => ({
-  getStatusManager: mocks.getStatusManager,
-}));
-
-vi.mock('@/lib/providers', () => ({
-  getProviderByPanelType: mocks.getProviderByPanelType,
-}));
-
-vi.mock('@/lib/tmux', () => ({
-  sendKeys: mocks.sendKeys,
+vi.mock('@/lib/cli-utils', () => ({
+  resolveFirstPaneId: mocks.resolveFirstPaneId,
 }));
 
 vi.mock('@/lib/runtime/supervisor', () => ({
@@ -64,7 +55,7 @@ vi.mock('@/lib/logger', () => ({
   }),
 }));
 
-import handler from '@/pages/api/layout/pane/[paneId]/tabs';
+import handler from '@/pages/api/cli/tabs';
 
 const createResponse = () => {
   let statusCode = 0;
@@ -99,12 +90,12 @@ const createResponse = () => {
 
 const createRequest = (body: unknown): NextApiRequest => ({
   method: 'POST',
-  query: { workspace: 'ws-a', paneId: 'pane-a' },
+  query: {},
   body,
   headers: {},
 }) as unknown as NextApiRequest;
 
-describe('layout tab api runtime routing', () => {
+describe('CLI tabs API runtime storage ownership', () => {
   beforeEach(() => {
     delete process.env.CODEXWINMUX_RUNTIME_V2;
     delete process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE;
@@ -112,28 +103,30 @@ describe('layout tab api runtime routing', () => {
     delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
     delete process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE;
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
-    process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'off';
-    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'off';
-    process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = 'off';
-    process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE = 'off';
+    process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'new-tabs';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE = 'default';
+
     Object.values(mocks).forEach((value) => {
       if (typeof value === 'function') value.mockReset();
     });
-    mocks.statusManager.registerTab.mockReset();
     mocks.supervisor.ensureStarted.mockReset();
     mocks.supervisor.createTerminalTab.mockReset();
     mocks.supervisor.deleteTerminalTab.mockReset();
-    mocks.broadcastSync.mockReset();
+
+    mocks.verifyCliToken.mockReturnValue(true);
     mocks.getWorkspaceById.mockResolvedValue({
       id: 'ws-a',
       name: 'Workspace A',
       directories: ['/repo'],
     });
+    mocks.getWorkspaces.mockResolvedValue({ workspaces: [], groups: [] });
+    mocks.resolveFirstPaneId.mockResolvedValue('pane-a');
     mocks.addTabToPane.mockResolvedValue({
       id: 'tab-legacy',
       sessionName: 'pt-ws-a-pane-a-tab-legacy',
-      name: '',
-      order: 1,
+      name: 'Legacy',
       runtimeVersion: 1,
     });
     mocks.supervisor.createTerminalTab.mockResolvedValue({
@@ -149,33 +142,30 @@ describe('layout tab api runtime routing', () => {
     mocks.addExistingTabToPane.mockResolvedValue({
       id: 'tab-runtime',
       sessionName: 'rtv2-ws-a-pane-a-tab-runtime',
-      name: '',
-      order: 1,
+      name: 'Runtime CLI',
+      order: 0,
       cwd: '/repo',
       panelType: 'terminal',
       runtimeVersion: 2,
     });
   });
 
-  it('keeps using legacy tab creation when terminal v2 mode is off', async () => {
+  it('creates plain terminal tabs through the runtime supervisor in storage default mode', async () => {
     const response = createResponse();
 
-    await handler(createRequest({ cwd: '/repo', panelType: 'terminal' }), response.res);
+    await handler(createRequest({
+      workspaceId: 'ws-a',
+      name: 'Runtime CLI',
+      panelType: 'terminal',
+    }), response.res);
 
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toMatchObject({ sessionName: 'pt-ws-a-pane-a-tab-legacy', runtimeVersion: 1 });
-    expect(mocks.addTabToPane).toHaveBeenCalledWith('ws-a', 'pane-a', undefined, '/repo', 'terminal', undefined);
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
-  });
-
-  it('creates plain new terminal tabs through runtime v2 when new-tabs mode is enabled', async () => {
-    process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'new-tabs';
-    const response = createResponse();
-
-    await handler(createRequest({ cwd: '/repo', panelType: 'terminal' }), response.res);
-
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toMatchObject({ sessionName: 'rtv2-ws-a-pane-a-tab-runtime', runtimeVersion: 2 });
+    expect(response.statusCode).toBe(201);
+    expect(response.body).toMatchObject({
+      tabId: 'tab-runtime',
+      workspaceId: 'ws-a',
+      paneId: 'pane-a',
+      sessionName: 'rtv2-ws-a-pane-a-tab-runtime',
+    });
     expect(mocks.supervisor.ensureStarted).toHaveBeenCalled();
     expect(mocks.supervisor.createTerminalTab).toHaveBeenCalledWith({
       workspaceId: 'ws-a',
@@ -186,45 +176,43 @@ describe('layout tab api runtime routing', () => {
         defaultCwd: '/repo',
       },
     });
-    expect(mocks.addExistingTabToPane).toHaveBeenCalledWith('ws-a', 'pane-a', expect.objectContaining({
-      id: 'tab-runtime',
-      runtimeVersion: 2,
-    }));
     expect(mocks.addTabToPane).not.toHaveBeenCalled();
-  });
-
-  it('broadcasts layout sync when storage default returns the runtime v2 tab directly', async () => {
-    process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'new-tabs';
-    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
-    const response = createResponse();
-
-    await handler(createRequest({ cwd: '/repo', panelType: 'terminal' }), response.res);
-
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toMatchObject({ sessionName: 'rtv2-ws-a-pane-a-tab-runtime', runtimeVersion: 2 });
     expect(mocks.addExistingTabToPane).not.toHaveBeenCalled();
     expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'layout', workspaceId: 'ws-a' });
   });
 
-  it('keeps command-start and non-terminal tabs on the legacy path', async () => {
-    process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'new-tabs';
-
-    await handler(createRequest({ cwd: '/repo', panelType: 'terminal', command: 'codex' }), createResponse().res);
-    await handler(createRequest({ cwd: '/repo', panelType: 'codex' }), createResponse().res);
-
-    expect(mocks.addTabToPane).toHaveBeenCalledTimes(2);
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
-  });
-
-  it('deletes the created runtime v2 tab when legacy layout append fails', async () => {
-    process.env.CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE = 'new-tabs';
-    mocks.addExistingTabToPane.mockResolvedValueOnce(null);
+  it('mirrors runtime tabs into legacy layout when storage default read is not active', async () => {
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'write';
     const response = createResponse();
 
-    await handler(createRequest({ cwd: '/repo', panelType: 'terminal' }), response.res);
+    await handler(createRequest({
+      workspaceId: 'ws-a',
+      name: 'Runtime CLI',
+      panelType: 'terminal',
+    }), response.res);
 
-    expect(response.statusCode).toBe(404);
-    expect(response.body).toMatchObject({ error: 'Pane not found' });
-    expect(mocks.supervisor.deleteTerminalTab).toHaveBeenCalledWith('tab-runtime');
+    expect(response.statusCode).toBe(201);
+    expect(mocks.addExistingTabToPane).toHaveBeenCalledWith('ws-a', 'pane-a', expect.objectContaining({
+      id: 'tab-runtime',
+      name: 'Runtime CLI',
+      runtimeVersion: 2,
+    }));
+    expect(mocks.addTabToPane).not.toHaveBeenCalled();
+    expect(mocks.broadcastSync).not.toHaveBeenCalled();
+  });
+
+  it('keeps non-terminal CLI tabs on the legacy creation path', async () => {
+    const response = createResponse();
+
+    await handler(createRequest({
+      workspaceId: 'ws-a',
+      name: 'Browser',
+      panelType: 'web-browser',
+    }), response.res);
+
+    expect(response.statusCode).toBe(201);
+    expect(response.body).toMatchObject({ tabId: 'tab-legacy', sessionName: 'pt-ws-a-pane-a-tab-legacy' });
+    expect(mocks.addTabToPane).toHaveBeenCalledWith('ws-a', 'pane-a', 'Browser', '/repo', 'web-browser');
+    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
   });
 });

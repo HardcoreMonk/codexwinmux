@@ -18,17 +18,19 @@ import {
   buildElectronRuntimeV2ReconnectRounds,
   buildElectronRuntimeV2EvalScript,
   buildElectronSmokeLaunchCommand,
+  normalizeElectronSmokeTimeoutMs,
   normalizeElectronSmokeUrl,
   normalizeElectronReconnectRounds,
   normalizeElectronWindowForegroundCycles,
   selectElectronPageTarget,
+  stopChildProcessTree,
 } from './electron-smoke-lib.mjs';
 import {
   collectPaneNodes,
   extractCookieHeader,
   resolveSmokeTerminalEndpoint,
 } from './runtime-v2-phase2-smoke-lib.mjs';
-import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
+import { buildEnvAlias, readEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 
 const PASSWORD = 'electron-runtime-v2-smoke';
@@ -120,19 +122,7 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     baseUrl,
     getOutput: () => output,
     stop: async () => {
-      if (child.exitCode !== null) return;
-      if (process.platform === 'win32' && child.pid) {
-        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-      } else {
-        child.kill('SIGINT');
-      }
-      await Promise.race([
-        new Promise((resolve) => child.once('exit', resolve)),
-        sleep(10_000).then(() => {
-          if (child.exitCode === null) child.kill('SIGTERM');
-          return new Promise((resolve) => child.once('exit', resolve));
-        }),
-      ]);
+      await stopChildProcessTree(child, { timeoutMs: 10_000 });
     },
   };
 };
@@ -273,16 +263,21 @@ const cycleElectronWindowForeground = async (browserCdp, pageCdp, target, baseUr
 };
 
 const main = async () => {
-  const homeDir = process.env.CODEXMUX_ELECTRON_RUNTIME_V2_HOME
+  const homeDir = readEnvAlias(process.env, 'CODEXMUX_ELECTRON_RUNTIME_V2_HOME')
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-electron-runtime-v2-'));
   const dbPath = path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
-  const serverPort = Number(process.env.CODEXMUX_ELECTRON_RUNTIME_V2_PORT || await getFreePort());
-  const remoteDebuggingPort = Number(process.env.CODEXMUX_ELECTRON_DEVTOOLS_PORT || await getFreePort());
-  const timeoutMs = Number(process.env.CODEXMUX_ELECTRON_SMOKE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
-  const reconnectRounds = normalizeElectronReconnectRounds(process.env.CODEXMUX_ELECTRON_RUNTIME_V2_RECONNECT_ROUNDS);
-  const foregroundCycles = normalizeElectronWindowForegroundCycles(process.env.CODEXMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES);
-  const appPath = process.env.CODEXMUX_ELECTRON_RUNTIME_V2_APP_PATH || process.env.CODEXMUX_ELECTRON_APP_PATH || '.';
+  const serverPort = Number(readEnvAlias(process.env, 'CODEXMUX_ELECTRON_RUNTIME_V2_PORT') || await getFreePort());
+  const remoteDebuggingPort = Number(readEnvAlias(process.env, 'CODEXMUX_ELECTRON_DEVTOOLS_PORT') || await getFreePort());
+  const timeoutMs = normalizeElectronSmokeTimeoutMs(
+    readEnvAlias(process.env, 'CODEXMUX_ELECTRON_SMOKE_TIMEOUT_MS'),
+    DEFAULT_TIMEOUT_MS,
+  );
+  const reconnectRounds = normalizeElectronReconnectRounds(readEnvAlias(process.env, 'CODEXMUX_ELECTRON_RUNTIME_V2_RECONNECT_ROUNDS'));
+  const foregroundCycles = normalizeElectronWindowForegroundCycles(readEnvAlias(process.env, 'CODEXMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES'));
+  const appPath = readEnvAlias(process.env, 'CODEXMUX_ELECTRON_RUNTIME_V2_APP_PATH')
+    || readEnvAlias(process.env, 'CODEXMUX_ELECTRON_APP_PATH')
+    || '.';
   const checks = [];
   let server = null;
   let electron = null;
@@ -438,14 +433,8 @@ const main = async () => {
   } finally {
     if (browserCdp) browserCdp.close();
     if (cdp) cdp.close();
-    if (electron && electron.exitCode === null && process.env.CODEXMUX_ELECTRON_KEEP_OPEN !== '1') {
-      electron.kill('SIGTERM');
-      await Promise.race([
-        new Promise((resolve) => electron.once('exit', resolve)),
-        sleep(5_000).then(() => {
-          if (electron.exitCode === null) electron.kill('SIGKILL');
-        }),
-      ]);
+    if (electron && electron.exitCode === null && readEnvAlias(process.env, 'CODEXMUX_ELECTRON_KEEP_OPEN') !== '1') {
+      await stopChildProcessTree(electron, { timeoutMs: 5_000 });
     }
     if (workspaceId && server) {
       try {

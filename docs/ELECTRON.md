@@ -149,7 +149,9 @@ corepack pnpm smoke:runtime-v2
    server/HOME/DB를 띄우고, Electron page에 login cookie를 주입한 뒤
    `/api/v2/terminal` WebSocket으로 marker command 출력이 돌아오는지 확인한다.
    기본값은 initial attach 후 2회 page reload/reconnect이며,
-   `CODEXMUX_ELECTRON_RUNTIME_V2_RECONNECT_ROUNDS`로 반복 횟수를 조정한다.
+   `CODEXWINMUX_ELECTRON_RUNTIME_V2_RECONNECT_ROUNDS`로 반복 횟수를 조정한다.
+   Windows smoke harness는 `cmd -> corepack -> pnpm exec electron` process tree를
+   `taskkill /T /F`로 정리해 timeout 뒤 cleanup 대기에 머무르지 않게 한다.
 
 ```bash
 corepack pnpm smoke:electron:runtime-v2
@@ -272,7 +274,7 @@ harness 요구사항이며 제품 identity나 updater metadata 변경이 아닙�
 
 macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사용한다. `dmg-license`는 pnpm node linker에서 electron-builder의 runtime `require()`가 항상 해석되도록 direct devDependency로 고정한다. Linux에서는 `corepack pnpm build:electron`까지를 release smoke로 보고, macOS packaging은 Mac M1 같은 macOS host에서 `corepack pnpm pack:electron:mac:dev`/`pack:electron:mac`로 실행한다.
 
-2026-05-04 `v0.4.1` release 기준 Linux release host에서 `corepack pnpm build:electron`은 통과했다. 당시 macOS 패키징은 M1 macOS host(`Darwin arm64`)에서 commit `23fee4b`로 `release/codexwinmux-0.4.1-arm64.dmg`, `release/codexwinmux-0.4.1-arm64-mac.zip`, `release/codexwinmux-0.4.1.dmg`, `release/codexwinmux-0.4.1-mac.zip`을 생성했다. `node scripts/verify-runtime-native-bindings.mjs --electron`, `lipo -archs`, `Info.plist` version `0.4.1`, arm64/x86_64 app arch, `hdiutil verify`가 통과했다. `CODEXMUX_ELECTRON_APP_PATH=<release/.../codexwinmux.app>`를 주면 attach/runtime-v2 smoke가 packaged `.app` 실행 파일을 직접 띄울 수 있고, `CODEXMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES=1`로 CDP foreground probe 뒤 terminal attach를 반복 확인할 수 있다. Linux Electron 41 smoke에서는 `Browser.*` window bounds가 없어 `target-activate` fallback으로 통과했다. live checkout에서 Electron build/packaging을 실행한 뒤에는 `.next/standalone`이 다시 만들어지므로 Linux user service는 `corepack pnpm deploy:local`로 재시작해 cwd를 정상화한다.
+2026-05-04 `v0.4.1` release 기준 Linux release host에서 `corepack pnpm build:electron`은 통과했다. 당시 macOS 패키징은 M1 macOS host(`Darwin arm64`)에서 commit `23fee4b`로 `release/codexwinmux-0.4.1-arm64.dmg`, `release/codexwinmux-0.4.1-arm64-mac.zip`, `release/codexwinmux-0.4.1.dmg`, `release/codexwinmux-0.4.1-mac.zip`을 생성했다. `node scripts/verify-runtime-native-bindings.mjs --electron`, `lipo -archs`, `Info.plist` version `0.4.1`, arm64/x86_64 app arch, `hdiutil verify`가 통과했다. `CODEXWINMUX_ELECTRON_APP_PATH=<release/.../codexwinmux.app>`를 주면 attach/runtime-v2 smoke가 packaged `.app` 실행 파일을 직접 띄울 수 있고, `CODEXWINMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES=1`로 CDP foreground probe 뒤 terminal attach를 반복 확인할 수 있다. Linux Electron 41 smoke에서는 `Browser.*` window bounds가 없어 `target-activate` fallback으로 통과했다. live checkout에서 Electron build/packaging을 실행한 뒤에는 `.next/standalone`이 다시 만들어지므로 Linux user service는 `corepack pnpm deploy:local`로 재시작해 cwd를 정상화한다.
 
 ## 패키징 메모
 

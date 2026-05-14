@@ -1,12 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import os from 'os';
 import { verifyCliToken } from '@/lib/cli-token';
-import { getLayout, addTabToPane } from '@/lib/layout-store';
+import { getLayout, addExistingTabToPane, addTabToPane } from '@/lib/layout-store';
 import { collectPanes } from '@/lib/layout-tree';
 import { getWorkspaceById, getWorkspaces } from '@/lib/workspace-store';
 import { resolveFirstPaneId } from '@/lib/cli-utils';
 import { createLogger } from '@/lib/logger';
 import { normalizePanelType } from '@/lib/panel-type';
 import type { TPanelType } from '@/types/terminal';
+import { shouldCreateTerminalTabInRuntimeV2 } from '@/lib/runtime/terminal-mode';
+import { shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
+import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { broadcastSync } from '@/lib/sync-server';
 
 const log = createLogger('api:cli:tabs');
 
@@ -60,7 +65,43 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const resolvedType: TPanelType = normalizePanelType(panelType) ?? 'terminal';
 
     try {
-      const tab = await addTabToPane(workspaceId, paneId, name, ws.directories[0], resolvedType);
+      const shouldUseRuntimeV2 = resolvedType === 'terminal' && shouldCreateTerminalTabInRuntimeV2();
+      const defaultCwd = ws.directories[0] ?? os.homedir();
+      const tab = shouldUseRuntimeV2
+        ? await (async () => {
+            const supervisor = getRuntimeSupervisor();
+            await supervisor.ensureStarted();
+            const runtimeTab = await supervisor.createTerminalTab({
+              workspaceId,
+              paneId,
+              cwd: defaultCwd,
+              ensureWorkspacePane: {
+                workspaceName: ws.name ?? workspaceId,
+                defaultCwd,
+              },
+            });
+            if (shouldReadRuntimeStorageV2()) {
+              broadcastSync({ type: 'layout', workspaceId });
+              return runtimeTab;
+            }
+
+            const added = await addExistingTabToPane(workspaceId, paneId, {
+              id: runtimeTab.id,
+              sessionName: runtimeTab.sessionName,
+              name: typeof name === 'string' ? name.trim() : runtimeTab.name,
+              order: runtimeTab.order,
+              cwd: runtimeTab.cwd ?? defaultCwd,
+              panelType: 'terminal',
+              runtimeVersion: 2,
+            });
+            if (!added) {
+              await Promise.resolve(supervisor.deleteTerminalTab(runtimeTab.id)).catch((err) => {
+                log.warn(`runtime v2 CLI tab rollback failed: ${err instanceof Error ? err.message : err}`);
+              });
+            }
+            return added;
+          })()
+        : await addTabToPane(workspaceId, paneId, name, defaultCwd, resolvedType);
       if (!tab) return res.status(500).json({ error: 'Failed to create tab' });
       return res.status(201).json({
         tabId: tab.id,

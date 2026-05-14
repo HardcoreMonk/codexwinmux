@@ -11,6 +11,7 @@ import { shouldCreateTerminalTabInRuntimeV2 } from '@/lib/runtime/terminal-mode'
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 import { shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
+import { broadcastSync } from '@/lib/sync-server';
 
 const log = createLogger('layout');
 
@@ -75,7 +76,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
               defaultCwd: workspace?.directories[0] ?? effectiveCwd,
             },
           });
-          if (shouldReadRuntimeStorageV2()) return runtimeTab;
+          if (shouldReadRuntimeStorageV2()) {
+            broadcastSync({ type: 'layout', workspaceId: wsId });
+            return runtimeTab;
+          }
 
           const added = await addExistingTabToPane(wsId, paneId, {
             id: runtimeTab.id,

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
 
 const safeUrl = (raw) => {
   try {
@@ -141,6 +142,62 @@ export const normalizeElectronWindowForegroundCycles = (raw, fallback = 0) => {
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(0, Math.min(5, Math.floor(parsed)));
+};
+
+export const normalizeElectronSmokeTimeoutMs = (raw, fallback = 30_000) => {
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1_000, Math.min(120_000, Math.floor(parsed)));
+};
+
+export const buildProcessTreeKillCommand = ({ pid, platform = process.platform }) => {
+  const numericPid = Number(pid);
+  if (platform !== 'win32' || !Number.isInteger(numericPid) || numericPid <= 0) return null;
+  return {
+    command: 'taskkill',
+    args: ['/PID', String(numericPid), '/T', '/F'],
+  };
+};
+
+const waitForChildExit = (child, timeoutMs) =>
+  new Promise((resolve) => {
+    if (!child || child.exitCode !== null) {
+      resolve(true);
+      return;
+    }
+    const timer = setTimeout(() => resolve(false), timeoutMs);
+    child.once('exit', () => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+
+const runKiller = (command, args) =>
+  new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: 'ignore' });
+    child.once('error', () => resolve(false));
+    child.once('exit', (code) => resolve(code === 0));
+  });
+
+export const stopChildProcessTree = async (child, {
+  platform = process.platform,
+  timeoutMs = 5_000,
+} = {}) => {
+  if (!child || child.exitCode !== null) return { exited: true, method: 'already-exited' };
+
+  const killCommand = buildProcessTreeKillCommand({ pid: child.pid, platform });
+  if (killCommand) {
+    await runKiller(killCommand.command, killCommand.args);
+    if (await waitForChildExit(child, timeoutMs)) return { exited: true, method: 'taskkill' };
+  }
+
+  child.kill('SIGTERM');
+  if (await waitForChildExit(child, timeoutMs)) return { exited: true, method: 'sigterm' };
+
+  child.kill('SIGKILL');
+  const exited = await waitForChildExit(child, timeoutMs);
+  return { exited, method: 'sigkill' };
 };
 
 export const buildElectronRuntimeV2ReconnectRounds = ({
