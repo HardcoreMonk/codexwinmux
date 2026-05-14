@@ -13,6 +13,7 @@ const activeRuntimeEnvFiles = [
   'scripts/smoke-runtime-v2-phase2-gate.mjs',
   'scripts/smoke-runtime-v2-phase6-default-gate.mjs',
   'scripts/smoke-runtime-v2-status-default.mjs',
+  'scripts/smoke-runtime-v2-status-timeline-stale-ui.mjs',
   'scripts/smoke-runtime-v2.mjs',
   'scripts/smoke-windows-packaged-launch.mjs',
   'scripts/smoke-windows-runtime-v2-terminal.ts',

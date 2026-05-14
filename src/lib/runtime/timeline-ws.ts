@@ -23,6 +23,7 @@ export interface IRuntimeTimelineConnectionInput {
     payload: { sessionId: string; tmuxSession: string },
   ) => Promise<IResolvedTimelineJsonl | null | void> | IResolvedTimelineJsonl | null | void;
   updateTabAgentSessionId: (sessionId: string) => Promise<void> | void;
+  updateTabAgentJsonlPath?: (jsonlPath: string | null) => Promise<void> | void;
 }
 
 interface IRuntimeTimelineConnectionState {
@@ -132,6 +133,7 @@ export const handleRuntimeTimelineConnection = async (
     recordPerfCounter('runtime_v2.timeline_ws.default.init');
     sendJson(ws, result.init);
     await input.updateTabAgentSessionId(result.init.sessionId);
+    await input.updateTabAgentJsonlPath?.(result.init.jsonlPath ?? resolved.jsonlPath);
   };
 
   const handleSessionChanged = async (event: IRuntimeTimelineSessionChangedEvent): Promise<void> => {

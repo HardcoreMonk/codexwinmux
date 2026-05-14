@@ -305,6 +305,12 @@ trusted root distribution 범위의 SmartScreen evidence로 기록합니다. 외
 시작할 때만 public SmartScreen reputation을 별도 release blocker로 둡니다.
 `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1` strict mode는 이 내부 판정을 거부하고
 public launch evidence JSON 기반 `passed` evidence를 요구합니다.
+2026-05-15 재검증에서는 `v0.4.15` public installer와 SHA-256
+`68ea233834ce254064545b2194a6844d6c7fb7051f65367dccf917de11042480` 기준
+Chromium download, SHA match, Internet ZoneId=3까지 통과했지만 Windows
+`Start-Process` launch evidence가 취소/SmartScreen reputation 단계에서 실패했습니다.
+따라서 public SmartScreen `passed` evidence는 아직 확보되지 않았고, 다음 공개
+릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.16+` 새 version으로 발행해야 합니다.
 다음 공개/내부 릴리스는 기존 tag나 asset을 덮어쓰지 말고 새 version/tag로
 발행합니다. `v0.4.14` tag와 asset은 불변 historical evidence로 유지합니다.
 

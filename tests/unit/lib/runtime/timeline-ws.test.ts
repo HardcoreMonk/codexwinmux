@@ -120,6 +120,7 @@ const createConnectionInput = (overrides: Partial<Parameters<typeof handleRuntim
   }),
   handleResume: vi.fn(),
   updateTabAgentSessionId: vi.fn(),
+  updateTabAgentJsonlPath: vi.fn(),
   ...overrides,
 });
 
@@ -229,6 +230,7 @@ describe('runtime timeline websocket bridge', () => {
     const fake = createSupervisor();
     const ws = new FakeSocket();
     const updateTabAgentSessionId = vi.fn();
+    const updateTabAgentJsonlPath = vi.fn();
     const initialSubscribe = createDeferred<{
       subscriberId: string;
       subscribed: boolean;
@@ -246,6 +248,7 @@ describe('runtime timeline websocket bridge', () => {
     const connection = handleRuntimeTimelineConnection(ws as never, createConnectionInput({
       supervisor: fake.supervisor,
       updateTabAgentSessionId,
+      updateTabAgentJsonlPath,
     }));
 
     await vi.waitFor(() => {
@@ -279,6 +282,8 @@ describe('runtime timeline websocket bridge', () => {
     expect(fake.supervisor.unsubscribeTimelineLive).toHaveBeenCalledWith('sub-live-initial');
     expect(updateTabAgentSessionId).toHaveBeenCalledTimes(1);
     expect(updateTabAgentSessionId).toHaveBeenCalledWith('session-b');
+    expect(updateTabAgentJsonlPath).toHaveBeenCalledTimes(1);
+    expect(updateTabAgentJsonlPath).toHaveBeenCalledWith(selectedJsonlPath);
   });
 
   it('subscribes the session watcher before sending an unresolved initial init', async () => {

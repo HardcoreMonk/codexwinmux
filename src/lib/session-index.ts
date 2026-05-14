@@ -327,10 +327,12 @@ const toStartedAtMs = (value: string): number | null => {
 const toPublicSession = (session: IIndexedSessionMeta): ISessionMeta => {
   const { indexKey, indexJsonlPath, indexMtimeMs, indexSize, ...meta } = session;
   void indexKey;
-  void indexJsonlPath;
   void indexMtimeMs;
   void indexSize;
-  return meta;
+  return {
+    ...meta,
+    jsonlPath: indexJsonlPath,
+  };
 };
 
 const buildLocalSession = async (

@@ -113,6 +113,19 @@ describe('session-index', () => {
     expect(page.sessions).toEqual([]);
   });
 
+  it('exposes local jsonlPath so the session list can open a timeline without resume fallback', async () => {
+    const jsonlPath = await writeSession('Open this transcript');
+    const { refreshSessionIndex, getSessionIndexPage } = await import('@/lib/session-index');
+
+    await refreshSessionIndex();
+    const page = await getSessionIndexPage({ waitForInitial: false });
+
+    expect(page.sessions[0]).toMatchObject({
+      firstMessage: 'Open this transcript',
+      jsonlPath,
+    });
+  });
+
   it('prewarms the legacy session index only while legacy timeline reads own session lists', async () => {
     const { shouldPrewarmSessionIndexOnStartup } = await import('@/lib/session-index');
 

@@ -571,17 +571,17 @@ const resolveActiveOrLatestJsonl = async (
 const resolveStoredOrLatestJsonl = async (
   provider: IAgentProvider,
   sessionName: string,
-  sessionId: string,
+  sessionId: string | null,
 ): Promise<IAgentJsonlResolution | null> => {
   const cachedPath = await resolveCachedJsonlPath(sessionName, provider);
-  const resolvedPath = cachedPath ?? await resolveJsonlPath(provider, sessionName, sessionId);
-  const latest = await resolveLatestCwdJsonl(provider, sessionName, resolvedPath);
+  const resolvedPath = cachedPath ?? (sessionId ? await resolveJsonlPath(provider, sessionName, sessionId) : null);
+  const latest = sessionId ? await resolveLatestCwdJsonl(provider, sessionName, resolvedPath) : null;
   if (latest) return latest;
   if (!resolvedPath) return null;
 
   return {
     jsonlPath: resolvedPath,
-    sessionId: extractSessionIdFromJsonlPath(resolvedPath) ?? sessionId,
+    sessionId: extractSessionIdFromJsonlPath(resolvedPath) ?? sessionId ?? '',
     mtimeMs: await statMtimeMs(resolvedPath) ?? undefined,
   };
 };
@@ -713,9 +713,7 @@ export const handleTimelineConnection = async (ws: WebSocket, request: IncomingM
           };
         }
 
-        const effectiveSessionId = info.sessionId ?? hintSessionId;
-        if (!effectiveSessionId) return null;
-
+        const effectiveSessionId = info.sessionId ?? hintSessionId ?? null;
         const resolved = await resolveStoredOrLatestJsonl(provider, sessionName, effectiveSessionId);
         if (!resolved) return null;
 
@@ -733,6 +731,9 @@ export const handleTimelineConnection = async (ws: WebSocket, request: IncomingM
       },
       updateTabAgentSessionId: async (sessionId) => {
         await updateTabAgentSessionId(sessionName, provider, sessionId).catch(() => {});
+      },
+      updateTabAgentJsonlPath: async (jsonlPath) => {
+        await updateTabAgentJsonlPath(sessionName, provider, jsonlPath).catch(() => {});
       },
     });
     return;
