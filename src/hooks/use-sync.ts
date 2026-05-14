@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import useWorkspaceStore from '@/hooks/use-workspace-store';
 import { useLayoutStore, collectPanes } from '@/hooks/use-layout';
 import useTabStore from '@/hooks/use-tab-store';
+import useConfigStore from '@/hooks/use-config-store';
+import useKeybindingsStore from '@/hooks/use-keybindings-store';
 import {
   NATIVE_APP_STATE_EVENT,
   readNativeAppStateActive,
@@ -75,6 +77,11 @@ const useSync = () => {
                 })
                 .catch(() => {});
             }
+          }
+
+          if (data.type === 'config') {
+            useConfigStore.getState().syncConfig();
+            useKeybindingsStore.getState().load();
           }
         } catch (err) {
           console.log(`[sync-ws] message parse error: ${err instanceof Error ? err.message : err}`);

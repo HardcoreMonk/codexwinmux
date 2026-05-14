@@ -126,6 +126,7 @@ const saveActive = (updates: {
 let syncTicketCounter = 0;
 let lastAppliedSyncTicket = 0;
 let mutationFenceTicket = 0;
+const refreshFetchInit: RequestInit = { cache: 'no-store' };
 
 const bumpMutationFence = () => {
   mutationFenceTicket = syncTicketCounter;
@@ -162,7 +163,7 @@ const useWorkspaceStore = create<IWorkspaceState>((set, get) => ({
   fetchWorkspaces: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch('/api/workspace');
+      const res = await fetch('/api/workspace', refreshFetchInit);
       if (!res.ok) throw new Error();
       const data = await res.json();
       const activeWorkspaceId = resolveActiveWorkspaceId(data.workspaces, data.activeWorkspaceId);
@@ -183,7 +184,7 @@ const useWorkspaceStore = create<IWorkspaceState>((set, get) => ({
   syncWorkspaces: async () => {
     const myTicket = ++syncTicketCounter;
     try {
-      const res = await fetch('/api/workspace');
+      const res = await fetch('/api/workspace', refreshFetchInit);
       if (!res.ok) return;
       const data = await res.json();
       if (myTicket < lastAppliedSyncTicket || myTicket <= mutationFenceTicket) return;

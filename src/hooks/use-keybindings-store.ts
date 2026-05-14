@@ -18,13 +18,15 @@ interface IKeybindingsState {
   resetAll: () => Promise<void>;
 }
 
+const refreshFetchInit: RequestInit = { cache: 'no-store' };
+
 const useKeybindingsStore = create<IKeybindingsState>((set, get) => ({
   overrides: {},
   loaded: false,
 
   load: async () => {
     try {
-      const res = await fetch('/api/keybindings');
+      const res = await fetch('/api/keybindings', refreshFetchInit);
       if (!res.ok) throw new Error();
       const data = await res.json();
       const overrides: Record<string, TKeybindingOverride> = data.overrides ?? {};

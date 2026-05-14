@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { deleteWorkspace, renameWorkspace, setWorkspaceGroup } from '@/lib/workspace-store';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  res.setHeader('Cache-Control', 'no-store');
+
   const workspaceId = req.query.workspaceId as string;
 
   if (req.method === 'DELETE') {

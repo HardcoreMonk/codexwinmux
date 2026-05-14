@@ -6,12 +6,16 @@ import { spawn } from 'child_process';
 import { chromium } from '@playwright/test';
 import {
   getFreePort,
-  sleep,
   waitFor,
 } from './android-webview-smoke-lib.mjs';
-import { extractCookieHeader } from './runtime-v2-phase2-smoke-lib.mjs';
+import {
+  collectPaneNodes,
+  extractCookieHeader,
+} from './runtime-v2-phase2-smoke-lib.mjs';
 import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
+import { stopChildProcessTree } from './electron-smoke-lib.mjs';
+import { buildTsxServerInvocation } from './server-smoke-process-lib.mjs';
 import {
   buildInstallBrowserSyncProbeScript,
   buildReadBrowserSyncProbeEventScript,
@@ -83,11 +87,10 @@ const startServer = async ({ homeDir, dbPath, port, timeoutMs }) => {
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
 
+  const invocation = buildTsxServerInvocation({ rootDir });
   const child = spawn(
-    process.platform === 'win32' ? 'cmd.exe' : 'corepack',
-    process.platform === 'win32'
-      ? ['/d', '/s', '/c', 'corepack pnpm exec tsx server.ts']
-      : ['pnpm', 'exec', 'tsx', 'server.ts'],
+    invocation.command,
+    invocation.args,
     {
       cwd: rootDir,
       env,
@@ -111,18 +114,7 @@ const startServer = async ({ homeDir, dbPath, port, timeoutMs }) => {
     getOutput: () => output,
     stop: async () => {
       if (child.exitCode !== null) return;
-      if (process.platform === 'win32' && child.pid) {
-        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-      } else {
-        child.kill('SIGINT');
-      }
-      await Promise.race([
-        new Promise((resolve) => child.once('exit', resolve)),
-        sleep(10_000).then(() => {
-          if (child.exitCode === null) child.kill('SIGTERM');
-          return new Promise((resolve) => child.once('exit', resolve));
-        }),
-      ]);
+      await stopChildProcessTree(child, { timeoutMs: 10_000 });
     },
   };
 };
@@ -165,7 +157,35 @@ const addSessionCookie = async (context, baseUrl, cookie) => {
   }]);
 };
 
-const runBrowserAssertion = async ({ baseUrl, cookie, workspaceName, timeoutMs }) => {
+const createRuntimeWorkspaceWithTab = async ({ baseUrl, cookie, name, defaultCwd }) => {
+  const workspace = await jsonRequest(baseUrl, '/api/v2/workspaces', cookie, {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      defaultCwd,
+    }),
+  });
+  await jsonRequest(baseUrl, '/api/v2/tabs', cookie, {
+    method: 'POST',
+    body: JSON.stringify({
+      workspaceId: workspace.id,
+      paneId: workspace.rootPaneId,
+      cwd: defaultCwd,
+    }),
+  });
+  return workspace;
+};
+
+const responsePathMatches = (response, pathname, searchParams = {}) => {
+  const url = new URL(response.url());
+  if (url.pathname !== pathname) return false;
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (url.searchParams.get(key) !== value) return false;
+  }
+  return response.status() >= 200 && response.status() < 300;
+};
+
+const runBrowserAssertion = async ({ baseUrl, cookie, timeoutMs }) => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
@@ -182,24 +202,50 @@ const runBrowserAssertion = async ({ baseUrl, cookie, workspaceName, timeoutMs }
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    await page.evaluate(buildInstallBrowserSyncProbeScript({
-      expectedType: 'workspace',
-      timeoutMs,
-    }));
-    await page.evaluate(buildReadBrowserSyncProbeReadyScript());
 
     return {
       page,
       browser,
-      finish: async () => {
-        const syncEvent = await page.evaluate(buildReadBrowserSyncProbeEventScript());
-        await page.getByText(workspaceName, { exact: true }).waitFor({ state: 'visible', timeout: timeoutMs });
+      waitForText: async (text, { exact = true } = {}) => {
+        try {
+          await page.getByText(text, { exact }).waitFor({ state: 'visible', timeout: timeoutMs });
+        } catch (err) {
+          const bodyText = await page.locator('body').innerText({ timeout: 1000 }).catch(() => '');
+          const message = err instanceof Error ? err.message : String(err);
+          throw new Error(`${message}\nVisible body text:\n${bodyText.slice(0, 2000)}`);
+        }
+      },
+      waitForSyncMutation: async ({ expectedType, workspaceId, mutate }) => {
+        await page.evaluate(buildInstallBrowserSyncProbeScript({
+          expectedType,
+          workspaceId,
+          timeoutMs,
+        }));
+        await page.evaluate(buildReadBrowserSyncProbeReadyScript());
+        const eventPromise = page.evaluate(buildReadBrowserSyncProbeEventScript());
+        const result = await mutate();
+        const syncEvent = await eventPromise;
         return {
           syncEvent,
-          consoleEventCount: consoleEvents.length,
-          pageUrl: page.url(),
+          result,
         };
       },
+      waitForLayoutRefresh: (workspaceId) =>
+        page.waitForResponse((response) =>
+          response.request().method() === 'GET'
+          && responsePathMatches(response, '/api/layout', { workspace: workspaceId }), { timeout: timeoutMs }),
+      waitForConfigRefresh: () =>
+        page.waitForResponse((response) =>
+          response.request().method() === 'GET'
+          && responsePathMatches(response, '/api/config'), { timeout: timeoutMs }),
+      waitForKeybindingsRefresh: () =>
+        page.waitForResponse((response) =>
+          response.request().method() === 'GET'
+          && responsePathMatches(response, '/api/keybindings'), { timeout: timeoutMs }),
+      getBrowserResult: () => ({
+        consoleEventCount: consoleEvents.length,
+        pageUrl: page.url(),
+      }),
     };
   } catch (err) {
     await browser.close().catch(() => undefined);
@@ -222,43 +268,237 @@ const main = async () => {
     const { baseUrl } = server;
     const cookie = await ensureLoggedIn(baseUrl);
 
-    const initial = await jsonRequest(baseUrl, '/api/v2/workspaces', cookie, {
-      method: 'POST',
-      body: JSON.stringify({
-        name: 'Browser Sync Initial',
-        defaultCwd: rootDir,
-      }),
+    const initialName = `Browser Sync Initial ${Date.now()}`;
+    const initial = await createRuntimeWorkspaceWithTab({
+      baseUrl,
+      cookie,
+      name: initialName,
+      defaultCwd: rootDir,
     });
     createdWorkspaceIds.push(initial.id);
 
-    const workspaceName = `Browser Sync ${Date.now()}`;
     assertion = await runBrowserAssertion({
       baseUrl,
       cookie,
-      workspaceName,
       timeoutMs,
     });
+    await assertion.waitForText(initialName);
 
-    const created = await jsonRequest(baseUrl, '/api/v2/workspaces', cookie, {
-      method: 'POST',
-      body: JSON.stringify({
+    const checks = [
+      'runtime-v2-storage-default-no-tmux-kill',
+      'browser-initial-workspace-visible',
+    ];
+    const syncEvents = [];
+
+    const workspaceName = `Browser Sync Workspace ${Date.now()}`;
+    const created = (await assertion.waitForSyncMutation({
+      expectedType: 'workspace',
+      mutate: () => createRuntimeWorkspaceWithTab({
+        baseUrl,
+        cookie,
         name: workspaceName,
         defaultCwd: rootDir,
       }),
-    });
+    })).result;
     createdWorkspaceIds.push(created.id);
+    syncEvents.push({ label: 'workspace-create', type: 'workspace' });
+    await assertion.waitForText(workspaceName);
+    checks.push('browser-sync-websocket-workspace-create-event', 'browser-workspace-list-create-updated');
 
-    const browser = await assertion.finish();
+    const renamedName = `Browser Sync Renamed ${Date.now()}`;
+    syncEvents.push({
+      label: 'workspace-rename',
+      ...(await assertion.waitForSyncMutation({
+        expectedType: 'workspace',
+        mutate: () => jsonRequest(baseUrl, `/api/workspace/${encodeURIComponent(initial.id)}`, cookie, {
+          method: 'PATCH',
+          body: JSON.stringify({ name: renamedName }),
+        }),
+      })).syncEvent,
+    });
+    await assertion.waitForText(renamedName);
+    checks.push('browser-sync-websocket-workspace-rename-event', 'browser-workspace-list-rename-updated');
+
+    const groupName = `Browser Sync Group ${Date.now()}`;
+    const group = (await assertion.waitForSyncMutation({
+      expectedType: 'workspace',
+      mutate: () => jsonRequest(baseUrl, '/api/workspace/group', cookie, {
+        method: 'POST',
+        body: JSON.stringify({ name: groupName }),
+      }),
+    })).result;
+    syncEvents.push({ label: 'workspace-group-create', type: 'workspace' });
+    await assertion.waitForSyncMutation({
+      expectedType: 'workspace',
+      mutate: () => jsonRequest(baseUrl, `/api/workspace/${encodeURIComponent(initial.id)}`, cookie, {
+        method: 'PATCH',
+        body: JSON.stringify({ groupId: group.id }),
+      }),
+    });
+    await assertion.waitForText(groupName, { exact: false });
+    checks.push('browser-sync-websocket-workspace-group-event', 'browser-workspace-group-updated');
+
+    await assertion.waitForSyncMutation({
+      expectedType: 'workspace',
+      mutate: () => jsonRequest(baseUrl, '/api/workspace/reorder', cookie, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          items: [
+            { id: created.id, groupId: null },
+            { id: initial.id, groupId: group.id },
+          ],
+        }),
+      }),
+    });
+    await assertion.waitForSyncMutation({
+      expectedType: 'workspace',
+      mutate: () => jsonRequest(baseUrl, '/api/workspace/group/reorder', cookie, {
+        method: 'PATCH',
+        body: JSON.stringify({ groupIds: [group.id] }),
+      }),
+    });
+    checks.push('browser-sync-websocket-workspace-order-event', 'browser-sync-websocket-group-order-event');
+
+    const refreshedInitial = await jsonRequest(baseUrl, `/api/layout?workspace=${encodeURIComponent(initial.id)}`, cookie);
+    const rootPane = collectPaneNodes(refreshedInitial)[0];
+    if (!rootPane) throw new Error('browser sync matrix workspace did not include a pane');
+    const initialRootPaneTabIds = rootPane.tabs.map((tab) => tab.id);
+
+    const layoutMutation = async (label, mutate) => {
+      const refreshPromise = assertion.waitForLayoutRefresh(initial.id);
+      const { syncEvent, result } = await assertion.waitForSyncMutation({
+        expectedType: 'layout',
+        workspaceId: initial.id,
+        mutate,
+      });
+      await refreshPromise;
+      syncEvents.push({ label, ...syncEvent });
+      checks.push(`browser-sync-websocket-${label}-layout-event`, `browser-layout-${label}-refetched`);
+      return result;
+    };
+
+    const tabA = await layoutMutation('tab-create-a', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane/${encodeURIComponent(rootPane.id)}/tabs?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Browser Sync Tab A', cwd: rootDir }),
+        },
+      ));
+    const tabB = await layoutMutation('tab-create-b', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane/${encodeURIComponent(rootPane.id)}/tabs?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Browser Sync Tab B', cwd: rootDir }),
+        },
+      ));
+
+    await layoutMutation('tab-patch', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane/${encodeURIComponent(rootPane.id)}/tabs/${encodeURIComponent(tabA.id)}?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ name: 'Browser Sync Patched Tab', terminalCollapsed: true }),
+        },
+      ));
+    const patchedLayout = await jsonRequest(baseUrl, `/api/layout?workspace=${encodeURIComponent(initial.id)}`, cookie);
+    const patchedTab = collectPaneNodes(patchedLayout)
+      .flatMap((pane) => pane.tabs)
+      .find((tab) => tab.id === tabA.id);
+    if (patchedTab?.name !== 'Browser Sync Patched Tab' || patchedTab?.terminalCollapsed !== true) {
+      throw new Error(`patched tab state was not stored: ${JSON.stringify(patchedTab)}`);
+    }
+    checks.push('runtime-v2-layout-tab-patch-stored');
+
+    await layoutMutation('tab-reorder', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane/${encodeURIComponent(rootPane.id)}/tabs/order?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ tabIds: [tabB.id, tabA.id, ...initialRootPaneTabIds] }),
+        },
+      ));
+
+    const splitLayout = await layoutMutation('pane-split', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        {
+          method: 'POST',
+          body: JSON.stringify({ sourcePaneId: rootPane.id, orientation: 'horizontal', cwd: rootDir, panelType: 'terminal' }),
+        },
+      ));
+    const splitPanes = collectPaneNodes(splitLayout);
+    const targetPane = splitPanes.find((pane) => pane.id !== rootPane.id);
+    if (!targetPane) throw new Error('pane split did not create a second pane');
+
+    await layoutMutation('tab-move', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane/${encodeURIComponent(rootPane.id)}/tabs/${encodeURIComponent(tabA.id)}/move?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        {
+          method: 'POST',
+          body: JSON.stringify({ toPaneId: targetPane.id, toIndex: 0 }),
+        },
+      ));
+
+    await layoutMutation('layout-patch', () =>
+      jsonRequest(baseUrl, `/api/layout?workspace=${encodeURIComponent(initial.id)}`, cookie, {
+        method: 'PATCH',
+        body: JSON.stringify({ activePaneId: targetPane.id }),
+      }));
+
+    await layoutMutation('pane-close', () =>
+      jsonRequest(
+        baseUrl,
+        `/api/layout/pane/${encodeURIComponent(targetPane.id)}?workspace=${encodeURIComponent(initial.id)}`,
+        cookie,
+        { method: 'DELETE' },
+      ));
+
+    const configRefreshPromise = assertion.waitForConfigRefresh();
+    await assertion.waitForSyncMutation({
+      expectedType: 'config',
+      mutate: () => jsonRequest(baseUrl, '/api/config', cookie, {
+        method: 'PATCH',
+        body: JSON.stringify({ codexShowTerminal: false }),
+      }),
+    });
+    await configRefreshPromise;
+    checks.push('browser-sync-websocket-config-event', 'browser-config-refetched');
+
+    const keybindingsRefreshPromise = assertion.waitForKeybindingsRefresh();
+    await assertion.waitForSyncMutation({
+      expectedType: 'config',
+      mutate: () => jsonRequest(baseUrl, '/api/keybindings', cookie, {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'workspace.new', key: 'ctrl+alt+n' }),
+      }),
+    });
+    await keybindingsRefreshPromise;
+    checks.push('browser-sync-websocket-keybindings-config-event', 'browser-keybindings-refetched');
+
+    const browser = assertion.getBrowserResult();
     const payload = {
       ok: true,
       baseUrl,
-      workspaceId: created.id,
-      workspaceName,
-      checks: [
-        'browser-sync-websocket-workspace-event',
-        'browser-workspace-list-updated',
-        'runtime-v2-storage-default-no-tmux-kill',
-      ],
+      workspaceId: initial.id,
+      workspaceName: renamedName,
+      secondaryWorkspaceId: created.id,
+      groupId: group.id,
+      checks,
+      syncEvents,
       browser,
     };
     await writeArtifact('passed', payload);

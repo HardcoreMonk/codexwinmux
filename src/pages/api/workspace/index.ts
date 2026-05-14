@@ -18,6 +18,8 @@ const shouldUseRuntimeStatusLive = (): boolean =>
   isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method === 'GET') {
     const data = await getWorkspaces();
     return res.status(200).json(data);

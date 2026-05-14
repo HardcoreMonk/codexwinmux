@@ -6,6 +6,8 @@ import { createLogger } from '@/lib/logger';
 const log = createLogger('layout');
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  res.setHeader('Cache-Control', 'no-store');
+
   const wsId = (req.query.workspace as string) || await getActiveWorkspaceId();
   if (!wsId) {
     return res.status(400).json({ error: 'No workspace found' });

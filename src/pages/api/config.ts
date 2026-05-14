@@ -33,6 +33,8 @@ const isValidCodexApprovalPolicy = (value: unknown): boolean =>
   value === null || (typeof value === 'string' && (CODEX_APPROVAL_POLICIES as readonly string[]).includes(value));
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method === 'GET') {
     const { authPassword, authSecret: _, ...safe } = await getConfig();
     const hostEnvLocked = typeof process.env.HOST === 'string' && process.env.HOST.trim().length > 0;

@@ -64,6 +64,7 @@ interface IConfigState {
   bindHostIsLocal: boolean;
 
   hydrate: (data: IConfigInitialData) => void;
+  syncConfig: () => Promise<void>;
   setDangerouslySkipPermissions: (enabled: boolean) => void;
   setCodexModel: (model: string) => void;
   setCodexSandbox: (sandbox: TCodexSandboxMode | '') => void;
@@ -121,6 +122,8 @@ const saveConfig = (updates: Record<string, unknown>) => {
   });
 };
 
+const refreshFetchInit: RequestInit = { cache: 'no-store' };
+
 const useConfigStore = create<IConfigState>((set, get) => ({
   dangerouslySkipPermissions: initialConfig.dangerouslySkipPermissions,
   codexModel: initialConfig.codexModel,
@@ -170,6 +173,17 @@ const useConfigStore = create<IConfigState>((set, get) => ({
       hostEnvLocked: data.hostEnvLocked ?? false,
       bindHostIsLocal: data.bindHostIsLocal ?? false,
     });
+  },
+
+  syncConfig: async () => {
+    try {
+      const res = await fetch('/api/config', refreshFetchInit);
+      if (!res.ok) return;
+      const data: IConfigInitialData = await res.json();
+      get().hydrate(data);
+    } catch (err) {
+      console.log(`[config-store] sync failed: ${err instanceof Error ? err.message : err}`);
+    }
   },
 
   setDangerouslySkipPermissions: (enabled) => {

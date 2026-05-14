@@ -12,6 +12,8 @@ const isKnownActionId = (id: string): boolean =>
   Object.prototype.hasOwnProperty.call(ACTIONS, id);
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method === 'GET') {
     const data = await readKeybindings();
     return res.status(200).json(data);
