@@ -67,6 +67,34 @@ const runtimeConnections = new Set<WebSocket>();
 const shouldUseRuntimeStatusLive = (): boolean =>
   isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
 
+const getRuntimeTerminalSessionInfo = async (sessionName: string) => {
+  if (!isRuntimeV2Enabled()) return null;
+  try {
+    return await getRuntimeSupervisor().getTerminalSessionInfo(sessionName);
+  } catch (err) {
+    log.debug('runtime terminal session info lookup failed: %s', err instanceof Error ? err.message : String(err));
+    return null;
+  }
+};
+
+const getTimelineSessionPanePid = async (sessionName: string): Promise<number | null> => {
+  const tmuxPanePid = await getSessionPanePid(sessionName);
+  if (tmuxPanePid) return tmuxPanePid;
+
+  const runtimeInfo = await getRuntimeTerminalSessionInfo(sessionName);
+  return runtimeInfo?.exists && typeof runtimeInfo.pid === 'number' && runtimeInfo.pid > 0
+    ? runtimeInfo.pid
+    : null;
+};
+
+const getTimelineSessionCwd = async (sessionName: string): Promise<string | null> => {
+  const tmuxCwd = await getSessionCwd(sessionName);
+  if (tmuxCwd) return tmuxCwd;
+
+  const runtimeInfo = await getRuntimeTerminalSessionInfo(sessionName);
+  return runtimeInfo?.exists && runtimeInfo.cwd ? runtimeInfo.cwd : null;
+};
+
 const notifyStatusLastUserMessage = (sessionName: string, message: string): void => {
   if (shouldUseRuntimeStatusLive()) {
     getRuntimeSupervisor().notifyStatusLiveLastUserMessage({ sessionName, message }).catch((err) => {
@@ -456,7 +484,7 @@ const resolveJsonlPath = async (
   tmuxSession: string,
   sessionId: string,
 ): Promise<string | null> => {
-  const cwd = await getSessionCwd(tmuxSession);
+  const cwd = await getTimelineSessionCwd(tmuxSession);
   if (!cwd) return null;
   const jsonlPath = await provider.resolveJsonlPath(sessionId, cwd);
   if (!jsonlPath) return null;
@@ -488,7 +516,7 @@ const resolveLatestCwdJsonl = async (
 ): Promise<IAgentJsonlResolution | null> => {
   if (!provider.resolveLatestJsonlPath) return null;
 
-  const cwd = await getSessionCwd(sessionName);
+  const cwd = await getTimelineSessionCwd(sessionName);
   if (!cwd) return null;
 
   const latest = await provider.resolveLatestJsonlPath(cwd);
@@ -649,7 +677,7 @@ export const handleTimelineConnection = async (ws: WebSocket, request: IncomingM
     return;
   }
 
-  const panePid = await getSessionPanePid(sessionName);
+  const panePid = await getTimelineSessionPanePid(sessionName);
   if (!panePid) {
     sendEmptyInit(ws);
     ws.close(1000, 'Cannot resolve pane pid');

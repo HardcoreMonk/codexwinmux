@@ -204,6 +204,18 @@ const runtimeTerminalTabSchema = z.object({
 const runtimeTerminalSessionSchema = z.object({
   sessionName: runtimeSessionNameSchema,
 });
+const runtimeTerminalSessionInfoSchema = runtimeTerminalSessionSchema.extend({
+  exists: z.boolean(),
+  cwd: z.string().nullable(),
+  command: z.string().nullable(),
+  pid: z.number().int().nullable(),
+  startedAt: z.number().nullable(),
+  metadataSource: z.union([
+    z.literal('terminal-runtime'),
+    z.literal('process-inspector'),
+    z.literal('unavailable'),
+  ]),
+});
 const rawTerminalSessionSchema = z.object({
   sessionName: z.string(),
 });
@@ -771,6 +783,7 @@ export const runtimeCommandRegistry = {
   'terminal.detach': { payload: runtimeTerminalSessionSchema, reply: runtimeTerminalSessionSchema.extend({ detached: z.boolean() }) },
   'terminal.kill-session': { payload: runtimeTerminalSessionSchema, reply: runtimeTerminalSessionSchema.extend({ killed: z.boolean() }) },
   'terminal.has-session': { payload: runtimeTerminalSessionSchema, reply: runtimeTerminalSessionSchema.extend({ exists: z.boolean() }) },
+  'terminal.get-session-info': { payload: runtimeTerminalSessionSchema, reply: runtimeTerminalSessionInfoSchema },
   'terminal.write-stdin': { payload: terminalWritePayloadSchema, reply: z.object({ written: z.number().int().nonnegative() }) },
   'terminal.write-web-stdin': { payload: terminalWritePayloadSchema, reply: z.object({ written: z.number().int().nonnegative() }) },
   'terminal.resize': { payload: terminalResizePayloadSchema, reply: terminalResizePayloadSchema },

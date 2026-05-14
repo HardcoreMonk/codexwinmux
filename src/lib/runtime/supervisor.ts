@@ -39,6 +39,7 @@ import type {
   TRuntimeStatusSideEffectIntent,
   TRuntimeStatusUpdateSessionHistoryDismissedAtResult,
   IRuntimeTerminalSessionPresence,
+  IRuntimeTerminalSessionInfo,
   IRuntimeTerminalTab,
   IRuntimeTimelineEntriesBeforeInput,
   IRuntimeTimelineLiveAppendEvent,
@@ -133,6 +134,7 @@ export interface IRuntimeSupervisor {
   unsubscribeTimelineLive(subscriberId: string): Promise<IRuntimeTimelineLiveUnsubscribeResult>;
   subscribeTimelineSessionWatch(input: IRuntimeTimelineSessionWatchSubscribeInput): Promise<IRuntimeTimelineSessionWatchSubscribeResult>;
   unsubscribeTimelineSessionWatch(subscriberId: string): Promise<IRuntimeTimelineSessionWatchUnsubscribeResult>;
+  getTerminalSessionInfo(sessionName: string): Promise<IRuntimeTerminalSessionInfo>;
   reduceStatusHookState(input: TRuntimeStatusHookStateInput): Promise<TRuntimeStatusHookDecision>;
   reduceStatusCodexState(input: TRuntimeStatusCodexStateInput): Promise<TRuntimeStatusDecision>;
   evaluateStatusNotificationPolicy(input: IRuntimeStatusNotificationPolicyInput): Promise<IRuntimeStatusNotificationPolicyResult>;
@@ -1014,6 +1016,15 @@ export const createRuntimeSupervisorForTest = (
       return getClients().timeline.request<{ subscriberId: string }, IRuntimeTimelineSessionWatchUnsubscribeResult>(
         'timeline.session-watch-unsubscribe',
         { subscriberId },
+      );
+    },
+
+    async getTerminalSessionInfo(sessionName) {
+      await this.ensureStarted();
+      const parsedSessionName = parseRuntimeSessionName(sessionName);
+      return getClients().terminal.request<{ sessionName: string }, IRuntimeTerminalSessionInfo>(
+        'terminal.get-session-info',
+        { sessionName: parsedSessionName },
       );
     },
 

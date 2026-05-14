@@ -1,6 +1,7 @@
 import type { ILayoutData } from '@/types/terminal';
 import type { IChunkReadResult, ISessionInfo, ISessionMeta, ITimelineAppendMessage, ITimelineErrorMessage, ITimelineInitMessage, TCliState } from '@/types/timeline';
 import type { IMessageCountResult } from '@/lib/timeline-message-counts';
+import type { ITerminalRuntimeSessionInfo } from '@/lib/runtime/terminal/terminal-runtime-contract';
 import type { ICodexStateInput, IHookStateDecision, IHookStateInput, IStateDecision } from '@/lib/status-state-machine';
 import type { IStatusClientEventIntent, IStatusClientEventPolicyInput } from '@/lib/status-client-event-policy';
 import type { IStatusSideEffectIntent, IStatusSideEffectPolicyInput } from '@/lib/status-side-effect-policy';
@@ -115,6 +116,8 @@ export interface IRuntimeTerminalSessionPresence {
   sessionName: string;
   exists: boolean;
 }
+
+export type IRuntimeTerminalSessionInfo = ITerminalRuntimeSessionInfo;
 
 export interface IRuntimeDeleteWorkspaceStorageResult {
   deleted: boolean;

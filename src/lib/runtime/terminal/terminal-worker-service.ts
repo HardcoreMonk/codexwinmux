@@ -203,6 +203,22 @@ export const createTerminalWorkerService = (options: ITerminalWorkerServiceOptio
           const input = parseRuntimeCommandPayload('terminal.has-session', command.payload);
           return ok(command, await options.runtime.hasSession(input.sessionName));
         }
+        if (command.type === 'terminal.get-session-info') {
+          const input = parseRuntimeCommandPayload('terminal.get-session-info', command.payload);
+          if (options.runtime.getSessionInfo) {
+            return ok(command, await options.runtime.getSessionInfo(input.sessionName));
+          }
+          const presence = await options.runtime.hasSession(input.sessionName);
+          return ok(command, {
+            sessionName: input.sessionName,
+            exists: presence.exists,
+            cwd: null,
+            command: null,
+            pid: null,
+            startedAt: null,
+            metadataSource: 'unavailable',
+          });
+        }
         return invalidCommand(command, {
           code: 'invalid-worker-command',
           message: `Unsupported terminal command: ${command.type}`,

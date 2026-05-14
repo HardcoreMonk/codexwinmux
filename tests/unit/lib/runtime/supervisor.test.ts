@@ -111,6 +111,15 @@ const createWorkers = () => {
   terminal.replies.set('terminal.detach', { sessionName: 'rtv2-ws-a-pane-b-tab-c', detached: true });
   terminal.replies.set('terminal.kill-session', { sessionName: 'rtv2-ws-a-pane-b-tab-c', killed: true });
   terminal.replies.set('terminal.has-session', { sessionName: 'rtv2-ws-a-pane-b-tab-c', exists: true });
+  terminal.replies.set('terminal.get-session-info', {
+    sessionName: 'rtv2-ws-a-pane-b-tab-c',
+    exists: true,
+    cwd: '/repo',
+    command: 'bash',
+    pid: 4242,
+    startedAt: 1710000000000,
+    metadataSource: 'terminal-runtime',
+  });
   terminal.replies.set('terminal.write-stdin', { written: 4 });
   terminal.replies.set('terminal.resize', { sessionName: 'rtv2-ws-a-pane-b-tab-c', cols: 80, rows: 24 });
   timeline.replies.set('timeline.health', { ok: true });
@@ -485,6 +494,28 @@ describe('runtime supervisor', () => {
       {
         type: 'timeline.live-unsubscribe',
         payload: { subscriberId: subscription.subscriberId },
+      },
+    ]));
+  });
+
+  it('proxies terminal session info through the terminal worker', async () => {
+    const { storage, terminal, timeline, status } = createWorkers();
+    const supervisor = createRuntimeSupervisorForTest({ storage, terminal, timeline, status });
+
+    await expect(supervisor.getTerminalSessionInfo('rtv2-ws-a-pane-b-tab-c')).resolves.toEqual({
+      sessionName: 'rtv2-ws-a-pane-b-tab-c',
+      exists: true,
+      cwd: '/repo',
+      command: 'bash',
+      pid: 4242,
+      startedAt: 1710000000000,
+      metadataSource: 'terminal-runtime',
+    });
+
+    expect(terminal.commands).toEqual(expect.arrayContaining([
+      {
+        type: 'terminal.get-session-info',
+        payload: { sessionName: 'rtv2-ws-a-pane-b-tab-c' },
       },
     ]));
   });

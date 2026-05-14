@@ -6,6 +6,9 @@ import path from 'path';
 import { execFileSync, spawn } from 'child_process';
 import { WebSocket } from 'ws';
 import { buildRuntimeEnvAlias, readRuntimeEnvAlias } from './runtime-env-alias';
+import { collectPaneNodes } from './runtime-v2-phase2-smoke-lib.mjs';
+import { stopChildProcessTree } from './electron-smoke-lib.mjs';
+import { buildTsxServerInvocation } from './server-smoke-process-lib.mjs';
 
 const PASSWORD = 'runtime-v2-timeline-websocket-default-smoke';
 const DEFAULT_TIMEOUT_MS = Number(
@@ -17,6 +20,7 @@ const INITIAL_ENTRY_COUNT = 2;
 const APPEND_ENTRY_COUNT = 1;
 const SERVER_CLEANUP_GRACE_MS = 3_000;
 const rootDir = process.cwd();
+const useWindowsRuntimeFixture = process.platform === 'win32';
 
 interface ITimelineMessage {
   type: string;
@@ -58,45 +62,13 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 
 const line = (value: unknown): string => JSON.stringify(value);
 
-const waitForProcessExit = async (
-  child: ReturnType<typeof spawn>,
-  timeoutMs: number,
-): Promise<boolean> => {
-  if (child.exitCode !== null || child.signalCode !== null) return true;
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      child.off('exit', onExit);
-      resolve(false);
-    }, timeoutMs);
-    const onExit = () => {
-      clearTimeout(timer);
-      resolve(true);
-    };
-    child.once('exit', onExit);
-  });
-};
-
 const stopServerChild = async (
   child: ReturnType<typeof spawn>,
   label: string,
   graceMs = SERVER_CLEANUP_GRACE_MS,
 ): Promise<void> => {
-  if (await waitForProcessExit(child, 0)) return;
-
-  if (process.platform === 'win32' && child.pid) {
-        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-      } else {
-        child.kill('SIGINT');
-      }
-  if (await waitForProcessExit(child, graceMs)) return;
-
-  child.kill('SIGTERM');
-  if (await waitForProcessExit(child, graceMs)) return;
-
-  child.kill('SIGKILL');
-  if (await waitForProcessExit(child, graceMs)) return;
-
-  throw new Error(`${label} cleanup timed out after SIGKILL`);
+  const result = await stopChildProcessTree(child, { timeoutMs: graceMs });
+  if (!result.exited) throw new Error(`${label} cleanup timed out after ${result.method}`);
 };
 
 const getFreePort = (): Promise<number> =>
@@ -195,8 +167,8 @@ const startServer = async ({ homeDir, dbPath, port, jsonlPath }: {
     NEXT_TELEMETRY_DISABLED: '1',
     SHELL: '/bin/sh',
     ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_V2', '1'),
-    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'off'),
-    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', 'off'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', useWindowsRuntimeFixture ? 'default' : 'off'),
+    ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE', useWindowsRuntimeFixture ? 'new-tabs' : 'off'),
 
     ...(process.platform === 'win32' ? buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
     ...buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
@@ -207,11 +179,10 @@ const startServer = async ({ homeDir, dbPath, port, jsonlPath }: {
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
 
+  const invocation = buildTsxServerInvocation({ rootDir });
   const child = spawn(
-    process.platform === 'win32' ? 'cmd.exe' : 'corepack',
-    process.platform === 'win32'
-      ? ['/d', '/s', '/c', 'corepack pnpm exec tsx server.ts']
-      : ['pnpm', 'exec', 'tsx', 'server.ts'],
+    invocation.command,
+    invocation.args,
     {
     cwd: rootDir,
     env,
@@ -340,6 +311,27 @@ const createTmuxSession = (sessionName: string, cwd: string): void => {
   ], { cwd });
 };
 
+const createRuntimeWorkspaceSession = async (
+  baseUrl: string,
+  cookie: string,
+  cwd: string,
+): Promise<{ workspaceId: string; sessionName: string; tabId: string }> => {
+  const workspace = await jsonRequest<{ id: string }>(baseUrl, '/api/workspace', cookie, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: `Timeline WebSocket Runtime ${Date.now()}`,
+      directory: cwd,
+    }),
+  });
+  const layout = await jsonRequest<unknown>(baseUrl, `/api/layout?workspace=${encodeURIComponent(workspace.id)}`, cookie);
+  const pane = collectPaneNodes(layout)[0] as { tabs?: Array<{ id?: string; sessionName?: string }> } | undefined;
+  const tab = pane?.tabs?.[0];
+  if (!tab?.id || !tab.sessionName) {
+    throw new Error('runtime workspace did not include a terminal tab');
+  }
+  return { workspaceId: workspace.id, sessionName: tab.sessionName, tabId: tab.id };
+};
+
 const timelineWsUrl = (baseUrl: string, sessionName: string): string => {
   const url = new URL('/api/timeline', baseUrl);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -440,7 +432,8 @@ const main = async (): Promise<void> => {
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
   const jsonlPath = await prepareFixturePath(homeDir);
   const port = Number(readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_V2_TIMELINE_WEBSOCKET_DEFAULT_PORT') || await getFreePort());
-  const sessionName = `pt-rv2-timeline-default-${process.pid}`;
+  let sessionName = `pt-rv2-timeline-default-${process.pid}`;
+  let workspaceId: string | null = null;
   const checks: string[] = [];
   let server: TServer | null = null;
   let timeline: TTimelineClient | null = null;
@@ -450,8 +443,15 @@ const main = async (): Promise<void> => {
     const cookie = await ensureLoggedIn(server.baseUrl);
     checks.push('cookie-login');
 
-    createTmuxSession(sessionName, homeDir);
-    checks.push('tmux-codex');
+    if (useWindowsRuntimeFixture) {
+      const runtimeSession = await createRuntimeWorkspaceSession(server.baseUrl, cookie, homeDir);
+      workspaceId = runtimeSession.workspaceId;
+      sessionName = runtimeSession.sessionName;
+      checks.push('windows-runtime-tab');
+    } else {
+      createTmuxSession(sessionName, homeDir);
+      checks.push('tmux-codex');
+    }
 
     await sleep(250);
     await writeFixture(homeDir, jsonlPath);
@@ -459,6 +459,12 @@ const main = async (): Promise<void> => {
 
     timeline = await connectTimeline(server.baseUrl, cookie, sessionName);
     checks.push('timeline-ws-open');
+    if (useWindowsRuntimeFixture) {
+      await timeline.waitFor('timeline runtime bootstrap init', (message) =>
+        message.type === 'timeline:init' || message.type === 'timeline:error');
+      timeline.ws.send(JSON.stringify({ type: 'timeline:subscribe', jsonlPath }));
+      checks.push('timeline-explicit-subscribe');
+    }
 
     const init = await timeline.waitFor('timeline init for fixture', (message) =>
       message.type === 'timeline:init'
@@ -504,7 +510,15 @@ const main = async (): Promise<void> => {
     throw new Error(server ? server.sanitize(message) : message);
   } finally {
     if (timeline) await timeline.close().catch(() => undefined);
-    runTmux(['kill-session', '-t', sessionName], { allowFailure: true });
+    if (!useWindowsRuntimeFixture) runTmux(['kill-session', '-t', sessionName], { allowFailure: true });
+    if (workspaceId && server) {
+      try {
+        const cookie = await ensureLoggedIn(server.baseUrl);
+        await jsonRequest(server.baseUrl, `/api/workspace/${encodeURIComponent(workspaceId)}`, cookie, { method: 'DELETE' });
+      } catch {
+        // best-effort cleanup
+      }
+    }
     if (server) await server.stop();
   }
 };

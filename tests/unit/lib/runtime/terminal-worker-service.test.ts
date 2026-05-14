@@ -97,6 +97,38 @@ describe('terminal worker service', () => {
     });
   });
 
+  it('returns terminal session info without attaching a pty', async () => {
+    const runtime = createFakeRuntime();
+    runtime.getSessionInfo = async (sessionName) => ({
+      sessionName,
+      exists: true,
+      cwd: 'D:\\repo',
+      command: 'powershell.exe',
+      pid: 4242,
+      startedAt: 1710000000000,
+      metadataSource: 'terminal-runtime',
+    });
+    const service = createTerminalWorkerService({ runtime });
+
+    const checked = await service.handleCommand(createRuntimeCommand({
+      source: 'supervisor',
+      target: 'terminal',
+      type: 'terminal.get-session-info',
+      payload: { sessionName: 'rtv2-ws-a-pane-b-tab-c' },
+    }));
+
+    expect(checked.ok).toBe(true);
+    expect(checked.payload).toEqual({
+      sessionName: 'rtv2-ws-a-pane-b-tab-c',
+      exists: true,
+      cwd: 'D:\\repo',
+      command: 'powershell.exe',
+      pid: 4242,
+      startedAt: 1710000000000,
+      metadataSource: 'terminal-runtime',
+    });
+  });
+
   it('returns structured errors for invalid worker commands', async () => {
     const service = createTerminalWorkerService({ runtime: createFakeRuntime() });
     const unknown = await service.handleCommand(createRuntimeCommand({
