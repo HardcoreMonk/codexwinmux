@@ -494,8 +494,10 @@ corepack pnpm smoke:android:timeline-foreground
 - `smoke:android:foreground`: Tailscale Serve HTTPS target, background/foreground 복귀,
   native bridge, `triggerEvent` fallback, blocking console/logcat.
 - `smoke:android:recovery`: network, HTTP 4xx, SSL 실패 뒤 launcher 복귀와 저장 서버 재연결. DevTools target lifetime flake를 피하기 위해 failure class별 독립 app start로 검증하며, 기본 HTTP 4xx는 live target의 missing path를 사용한다.
-- `smoke:android:runtime-v2`: temp runtime v2 server를 Tailscale IP로 노출하고 Android
-  WebView에서 `/api/v2/terminal` attach와 foreground reconnect marker output을 확인.
+- `smoke:android:runtime-v2`: temp runtime v2 server를 Tailscale IP 또는 명시 target URL로
+  노출하고 Android WebView에서 `/api/v2/terminal` attach와 foreground reconnect marker
+  output을 확인한다. Windows host에 Tailscale IPv4가 없으면 `adb reverse tcp:<port> tcp:<port>`와
+  `CODEXMUX_ANDROID_RUNTIME_V2_URL=http://127.0.0.1:<port>`를 함께 사용한다.
 - `smoke:android:timeline-foreground`: temp runtime v2 server를 Tailscale IP로 노출하고
   Android WebView page context에서 `/api/timeline` WebSocket init을 확인한다. 각 foreground
   round는 background 중 fixture JSONL에 entry를 추가한 뒤 foreground 복귀 후 새 WebSocket

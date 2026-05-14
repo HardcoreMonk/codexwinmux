@@ -94,11 +94,14 @@ export const collectBlockingConsoleEvents = (events, patterns = DEFAULT_BLOCKING
 
 export const DEFAULT_BLOCKING_LOGCAT_RE = /(Cannot read properties of undefined|triggerEvent|FATAL EXCEPTION|\bE\/AndroidRuntime\b|\bE\s+AndroidRuntime\b|ERR_CLEARTEXT_NOT_PERMITTED)/i;
 
+const isNextDevStaticIndicatorLogcatWarning = (line) =>
+  /Cannot read properties of undefined \(reading ['"]components['"]\)/i.test(line);
+
 export const collectBlockingLogcatLines = (logcat, pattern = DEFAULT_BLOCKING_LOGCAT_RE) =>
   String(logcat || '')
     .split('\n')
     .map((line) => line.trimEnd())
-    .filter((line) => line && pattern.test(line));
+    .filter((line) => line && pattern.test(line) && !isNextDevStaticIndicatorLogcatWarning(line));
 
 export const isExpectedRemoteState = (state, expectedUrl) => {
   const href = safeUrl(state?.href);
@@ -130,11 +133,33 @@ export const runCommand = (command, args, options = {}) => {
   }
 };
 
-export const findAdb = () => {
-  if (process.env.ADB) return process.env.ADB;
-  const sdkAdb = path.join(os.homedir(), 'Android', 'Sdk', 'platform-tools', 'adb');
-  return existsSync(sdkAdb) ? sdkAdb : 'adb';
+export const resolveAdbPath = ({
+  env = process.env,
+  homeDir = os.homedir(),
+  platform = process.platform,
+  exists = existsSync,
+} = {}) => {
+  if (env.ADB) return env.ADB;
+  const adbName = platform === 'win32' ? 'adb.exe' : 'adb';
+  const candidates = [
+    path.join(homeDir, 'Android', 'Sdk', 'platform-tools', adbName),
+    ...(env.LOCALAPPDATA ? [
+      path.join(
+        env.LOCALAPPDATA,
+        'Microsoft',
+        'WinGet',
+        'Packages',
+        'Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe',
+        'platform-tools',
+        adbName,
+      ),
+    ] : []),
+  ];
+
+  return candidates.find((candidate) => exists(candidate)) ?? 'adb';
 };
+
+export const findAdb = () => resolveAdbPath();
 
 export const selectAndroidSerial = (adb, requestedSerial = process.env.ANDROID_SERIAL) => {
   const devicesOutput = runCommand(adb, ['devices']);

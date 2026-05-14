@@ -34,7 +34,7 @@ corepack pnpm smoke:android:timeline-foreground
 - `smoke:android:install`: 연결된 debug APK의 package/version/activity 상태를 확인합니다.
 - `smoke:android:foreground`: Android WebView DevTools와 ADB로 foreground/background 복귀, native bridge, console/logcat 오류를 확인합니다.
 - `smoke:android:recovery`: network, HTTP 4xx, SSL 실패 후 native launcher 복귀와 서버 재연결을 확인합니다.
-- `smoke:android:runtime-v2`: temp runtime v2 서버를 Tailscale IP로 노출하고 Android WebView에서 `/api/v2/terminal` attach와 foreground reconnect marker output을 확인합니다.
+- `smoke:android:runtime-v2`: temp runtime v2 서버를 Tailscale IP 또는 명시 target URL로 노출하고 Android WebView에서 `/api/v2/terminal` attach와 foreground reconnect marker output을 확인합니다.
 - `smoke:android:timeline-foreground`: temp runtime v2 서버를 Tailscale IP로 노출하고 Android WebView page context에서 `/api/timeline` init freshness와 foreground reconnect를 확인한 뒤, 종료 전에 운영 restore URL 로드 완료를 검증합니다.
 
 ## Versioning
@@ -55,7 +55,7 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 - 마이너 기능 변경과 작은 수정 배포는 patch를 `0.0.1`씩 올립니다.
 - 메이저 기능 묶음은 minor를 `0.1`씩 올리고 patch를 `0`으로 되돌립니다.
 
-현재 앱 ID는 `com.hardcoremonk.codexmux`입니다.
+현재 앱 ID는 `com.hardcoremonk.codexwinmux`입니다.
 
 ## Local SDK
 
@@ -136,6 +136,19 @@ browser pane에도 적용된다.
 
 서버가 내려주는 React 코드만 바뀌는 경우에는 APK 재배포가 필요 없습니다. Linux user service 운영에서는 `corepack pnpm deploy:local`로 build, service restart, health check를 수행하면 기존 Android 앱 WebView가 새 reconnect 로직을 받습니다. native bridge를 바꾸는 앱 정보/재시작 기능 변경은 debug/release APK를 다시 빌드해 기기에 설치해야 합니다.
 
+## 2026-05-14 Runtime v2 Android Smoke Result
+
+2026-05-14 Windows host와 SM-S928N(Android 16) 실기기 기준:
+
+| 항목 | 결과 |
+| --- | --- |
+| device 연결 | `adb devices -l`, serial `R3CX10RTWFH`, model `SM-S928N`, state `device` |
+| debug install | `com.hardcoremonk.codexwinmux`, `versionName=0.4.16`, `versionCode=416`, `lastUpdateTime=2026-05-14 18:40:47` |
+| Android install smoke | `corepack pnpm smoke:android:install` 통과 |
+| Android runtime v2 foreground | USB `adb reverse` target `http://127.0.0.1:2579`, `corepack pnpm smoke:android:runtime-v2`, initial + 2회 foreground `/api/v2/terminal` marker output, blocking console/logcat 0 |
+
+Windows host에서 Tailscale IPv4가 없는 경우 `adb reverse tcp:<port> tcp:<port>`로 Android 기기의 `127.0.0.1:<port>`를 host temp server에 연결하고 `CODEXMUX_ANDROID_RUNTIME_V2_URL=http://127.0.0.1:<port>`를 지정해 같은 smoke를 실행할 수 있습니다. 이 경로는 Windows `codexwinmux` 앱 검증용이며 Linux `codexmux` live service나 Tailscale Serve 상태를 변경하지 않습니다.
+
 ## 2026-05-05 Timeline Foreground Smoke Result
 
 2026-05-05 SM-S928N(Android 16) 실기기 기준:
@@ -201,8 +214,9 @@ corepack pnpm smoke:runtime-v2
 ```
 
 3. Android WebView foreground smoke를 실행한다. 이 명령은 temp HOME/DB 서버를
-   `HOST=localhost,tailscale`과 runtime v2 new-tabs mode로 띄우고, Android 기기가 접근할
-   Tailscale IP URL을 만든다. WebView에는 normal session cookie를 주입하고
+   `HOST=localhost,tailscale`과 runtime v2 new-tabs mode로 띄운다. 기본값은 Android 기기가 접근할
+   Tailscale IP URL을 만들지만, Windows-local 실기기 검증처럼 USB reverse를 쓰는 경우
+   `CODEXMUX_ANDROID_RUNTIME_V2_URL=http://127.0.0.1:<port>`로 target을 명시한다. WebView에는 normal session cookie를 주입하고
    `/api/v2/terminal` marker output을 initial attach와 기본 2회 foreground reconnect에서 확인한다.
    원격 page load 직후 native bridge fallback이 늦게 보일 수 있으므로 smoke는
    `window.Capacitor.triggerEvent`와 `CodexmuxAndroid` bridge가 준비될 때까지 기다린다.
@@ -263,9 +277,9 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ```bash
 ~/Android/Sdk/platform-tools/adb devices -l
-~/Android/Sdk/platform-tools/adb shell pm path com.hardcoremonk.codexmux
-~/Android/Sdk/platform-tools/adb shell dumpsys package com.hardcoremonk.codexmux | rg "versionName|versionCode|lastUpdateTime|Package \\["
-~/Android/Sdk/platform-tools/adb shell cmd package resolve-activity --brief com.hardcoremonk.codexmux
+~/Android/Sdk/platform-tools/adb shell pm path com.hardcoremonk.codexwinmux
+~/Android/Sdk/platform-tools/adb shell dumpsys package com.hardcoremonk.codexwinmux | rg "versionName|versionCode|lastUpdateTime|Package \\["
+~/Android/Sdk/platform-tools/adb shell cmd package resolve-activity --brief com.hardcoremonk.codexwinmux
 ```
 
 동일한 확인은 다음 smoke script로도 실행할 수 있습니다.
@@ -283,7 +297,7 @@ CODEXMUX_ANDROID_RESTART_APP=1 CODEXMUX_ANDROID_FOREGROUND_ROUNDS=0 corepack pnp
 `CODEXMUX_ANDROID_RESTORE_URL` 또는 기본 Tailscale Serve URL로 WebView를 되돌리고,
 해당 origin의 `readyState=complete`를 확인하지 못하면 실패합니다.
 
-정상 설치 시 `pm path`는 `/data/app/.../base.apk`를 반환하고, launcher activity는 `com.hardcoremonk.codexmux/.MainActivity`로 resolve됩니다.
+정상 설치 시 `pm path`는 `/data/app/.../base.apk`를 반환하고, launcher activity는 `com.hardcoremonk.codexwinmux/.MainActivity`로 resolve됩니다.
 
 현재 `0.4.16` debug install은 `dumpsys package`에서 `versionName=0.4.16`, `versionCode=416`로 보여야 합니다.
 

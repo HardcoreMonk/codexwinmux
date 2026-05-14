@@ -102,6 +102,7 @@ describe('Android WebView smoke helpers', () => {
       '05-03 16:47:01.500 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.',
       '05-03 16:47:02.000 E/AndroidRuntime: FATAL EXCEPTION: main',
       '05-03 16:47:03.000 I/chromium: Cannot read properties of undefined (reading triggerEvent)',
+      "05-14 19:18:16.033 W Capacitor/Console: TypeError: Cannot read properties of undefined (reading 'components')",
     ].join('\n');
 
     expect(collectBlockingLogcatLines(logcat)).toEqual([
@@ -132,5 +133,26 @@ describe('Android WebView smoke helpers', () => {
     expect(isSmokeFlagEnabled('YES')).toBe(true);
     expect(isSmokeFlagEnabled('0')).toBe(false);
     expect(isSmokeFlagEnabled(undefined)).toBe(false);
+  });
+
+  it('resolves winget platform-tools adb on Windows when SDK adb is absent', async () => {
+    const { resolveAdbPath } = await loadLib();
+    const localAppData = 'C:\\Users\\yohan\\AppData\\Local';
+    const expected = path.join(
+      localAppData,
+      'Microsoft',
+      'WinGet',
+      'Packages',
+      'Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe',
+      'platform-tools',
+      'adb.exe',
+    );
+
+    expect(resolveAdbPath({
+      env: { LOCALAPPDATA: localAppData },
+      homeDir: 'C:\\Users\\yohan',
+      platform: 'win32',
+      exists: (candidate: string) => candidate === expected,
+    })).toBe(expected);
   });
 });

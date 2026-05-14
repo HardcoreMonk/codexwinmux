@@ -39,7 +39,10 @@ import {
   findTailscaleIpv4,
   normalizeAndroidForegroundRounds,
 } from './android-runtime-v2-smoke-lib.mjs';
-import { buildElectronRuntimeV2EvalScript } from './electron-smoke-lib.mjs';
+import {
+  buildElectronRuntimeV2EvalScript,
+  stopChildProcessTree,
+} from './electron-smoke-lib.mjs';
 import {
   collectPaneNodes,
   extractCookieHeader,
@@ -47,6 +50,7 @@ import {
 } from './runtime-v2-phase2-smoke-lib.mjs';
 import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
+import { buildTsxServerInvocation } from './server-smoke-process-lib.mjs';
 
 const PASSWORD = 'android-runtime-v2-smoke';
 const DEFAULT_TIMEOUT_MS = 35_000;
@@ -120,16 +124,16 @@ const startServer = async ({ homeDir, dbPath, port }) => {
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
 
+  const invocation = buildTsxServerInvocation({ rootDir });
   const child = spawn(
-    process.platform === 'win32' ? 'cmd.exe' : 'corepack',
-    process.platform === 'win32'
-      ? ['/d', '/s', '/c', 'corepack pnpm exec tsx server.ts']
-      : ['pnpm', 'exec', 'tsx', 'server.ts'],
+    invocation.command,
+    invocation.args,
     {
-    cwd: rootDir,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+      cwd: rootDir,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
 
   let output = '';
   child.stdout.on('data', (chunk) => { output += chunk.toString(); });
@@ -147,18 +151,7 @@ const startServer = async ({ homeDir, dbPath, port }) => {
     getOutput: () => output,
     stop: async () => {
       if (child.exitCode !== null) return;
-      if (process.platform === 'win32' && child.pid) {
-        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-      } else {
-        child.kill('SIGINT');
-      }
-      await Promise.race([
-        new Promise((resolve) => child.once('exit', resolve)),
-        sleep(10_000).then(() => {
-          if (child.exitCode === null) child.kill('SIGTERM');
-          return new Promise((resolve) => child.once('exit', resolve));
-        }),
-      ]);
+      await stopChildProcessTree(child, { timeoutMs: 10_000 });
     },
   };
 };

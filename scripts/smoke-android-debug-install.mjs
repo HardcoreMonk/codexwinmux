@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import os from 'node:os';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  DEFAULT_ANDROID_ACTIVITY,
+  DEFAULT_ANDROID_APP_ID,
+  findAdb,
+} from './android-webview-smoke-lib.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const appId = 'com.hardcoremonk.codexwinmux';
-const activity = `${appId}/.MainActivity`;
+const appId = DEFAULT_ANDROID_APP_ID;
+const activity = DEFAULT_ANDROID_ACTIVITY;
 
 const fail = (code, message, details = {}) => {
   console.error(JSON.stringify({ ok: false, code, message, ...details }, null, 2));
@@ -28,12 +32,6 @@ const run = (command, args) => {
       stderr: err.stderr?.toString?.() ?? '',
     });
   }
-};
-
-const findAdb = () => {
-  if (process.env.ADB) return process.env.ADB;
-  const sdkAdb = path.join(os.homedir(), 'Android', 'Sdk', 'platform-tools', 'adb');
-  return existsSync(sdkAdb) ? sdkAdb : 'adb';
 };
 
 const parseVersion = (version) => {
