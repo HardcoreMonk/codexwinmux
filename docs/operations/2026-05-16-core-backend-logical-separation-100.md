@@ -2,12 +2,13 @@
 
 ## 결론
 
-현재 milestone 기준으로 Core/Backend 논리 분리는 완료 상태다. `default` runtime 경로에서
+현재 milestone 기준으로 Core/Backend **논리 분리**는 완료 상태다. `default` runtime 경로에서
 Core runtime v2가 terminal, storage, timeline, status, session projection의 source of truth를
 소유하고, Backend는 HTTP/API/WebSocket adapter와 orchestration 경계로만 동작한다.
 
-별도 Windows Service owner 또는 Core/Backend 개별 서비스 프로세스 분리는 이번 완료 범위가
-아니며 Phase 2 후속 작업이다.
+단, 이 문서의 "100%"는 runtime ownership과 source-of-truth 기준의 논리 완료를 뜻한다.
+Backend API host와 Core Supervisor를 별도 process/service로 나누는 **물리 process 분리**는
+완료 범위가 아니며 `Core/Backend 100% Physical Separation` milestone으로 별도 추적한다.
 
 ## 변경 요약
 
@@ -40,9 +41,16 @@ Core runtime v2가 terminal, storage, timeline, status, session projection의 so
 아니다. 외부 공개 배포를 재개할 때만 public SmartScreen reputation 확보와 public evidence smoke를
 release blocker로 승격한다.
 
+## 물리 분리 경계
+
+- 현재 runtime v2 worker boundary는 `storage-worker`, `terminal-worker`, `timeline-worker`, `status-worker` child process까지 닫혔다.
+- 현재 Windows service owner는 `codexwinmux.exe --codexwinmux-engine` combined engine process를 실행한다.
+- combined engine process 안에는 Backend API host와 Core Supervisor가 함께 있다.
+- 엄격한 물리 분리 완료 기준은 `codexwinmux-backend`와 `codexwinmux-core` 또는 동등한 별도 lifecycle/process boundary가 split smoke와 release gate를 통과하는 것이다.
+
 ## 남은 후속 작업
 
-- Phase 2: Windows Service owner 또는 Core/Backend 개별 서비스 프로세스 분리 설계와 구현.
+- Phase 2: Core/Backend 물리 process 분리 설계와 구현.
 - 외부 공개 배포 재개 시: public SmartScreen reputation 확보 후 public evidence smoke 재실행.
 - 외부 공개 배포 재개 시: published public Phase 6 target URL 지정 후 `smoke:runtime-v2:phase6-default-gate` 재실행.
 - 필요 시: non-terminal panel creation까지 runtime-owned storage command로 확장할지 별도 결정.

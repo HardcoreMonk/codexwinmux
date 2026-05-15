@@ -4,7 +4,7 @@
 
 Windows Service owner Phase 2의 첫 slice를 완료했고, 운영자 요청에 따라 같은 host에서
 실제 Windows service 등록과 시작까지 수행했다. service owner는 WinSW wrapper가 소유하고,
-packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core Engine 전용 process로
+packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core combined engine process로
 실행한다.
 
 ## 변경 요약
@@ -28,6 +28,7 @@ packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core Engine 전용 pr
 - Current status: `Running`
 - Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`, `buildTime=2026-05-15T17:43:01.396Z`.
 - Process ownership: WinSW wrapper가 parent process이고, engine process가 child로 실행된다.
+- Physical boundary: 이 service는 아직 Backend API host와 Core Supervisor를 같은 combined engine process 안에서 실행한다. `codexwinmux-backend`/`codexwinmux-core` split service는 별도 physical separation milestone에서 default-off로 추가한다.
 
 ## 승인된 운영 결정
 
@@ -75,4 +76,4 @@ corepack pnpm windows:service:uninstall
 - service-owned engine stop/restart를 Electron UI에서 어떻게 표현할지 결정한다. 현재 UI는 자신이 시작한 owned engine만 stop한다.
 - 전용 Windows service account 전환 slice를 진행한다. 포함 범위는 account 생성/권한, service profile/data dir, folder ACL, credential rotation, migration smoke다.
 - NSIS optional service install slice를 진행한다. 포함 범위는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke다.
-- Backend process와 Core worker supervisor를 서로 다른 Windows service/process로 추가 분리할지 별도 Phase 2.2로 설계한다.
+- Backend process와 Core worker supervisor를 서로 다른 Windows service/process로 분리하는 physical separation milestone을 진행한다.

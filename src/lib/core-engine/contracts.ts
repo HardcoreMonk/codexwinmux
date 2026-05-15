@@ -1,0 +1,310 @@
+import { nanoid } from 'nanoid';
+import { z } from 'zod';
+
+const emptyPayloadSchema = z.object({}).strict();
+const unknownRecordSchema = z.record(z.string(), z.unknown());
+const coreModesSchema = z.object({
+  terminalV2Mode: z.string(),
+  storageV2Mode: z.string(),
+  timelineV2Mode: z.string(),
+  statusV2Mode: z.string(),
+}).strict();
+const coreErrorSchema = z.object({
+  code: z.string().min(1),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+}).strict();
+
+const commandPayloadSchemas = {
+  'core.health': emptyPayloadSchema,
+  'core.runtime.phase6': emptyPayloadSchema,
+  'core.workspace.list': emptyPayloadSchema,
+  'core.workspace.create': z.object({
+    name: z.string().min(1),
+    defaultCwd: z.string().min(1),
+  }).strict(),
+  'core.layout.get': z.object({
+    workspaceId: z.string().min(1),
+  }).strict(),
+  'core.terminal.attach': z.object({
+    connectionId: z.string().min(1),
+    sessionName: z.string().min(1),
+    cols: z.number().int().positive().max(500),
+    rows: z.number().int().positive().max(200),
+  }).strict(),
+  'core.terminal.write': z.object({
+    connectionId: z.string().min(1),
+    sessionName: z.string().min(1),
+    data: z.string(),
+  }).strict(),
+  'core.terminal.resize': z.object({
+    connectionId: z.string().min(1),
+    sessionName: z.string().min(1),
+    cols: z.number().int().positive().max(500),
+    rows: z.number().int().positive().max(200),
+  }).strict(),
+  'core.terminal.detach': z.object({
+    connectionId: z.string().min(1),
+    sessionName: z.string().min(1),
+  }).strict(),
+  'core.timeline.list-sessions': z.object({
+    tmuxSession: z.string().min(1),
+    panelType: z.string().min(1),
+    offset: z.number().int().nonnegative(),
+    limit: z.number().int().positive().max(200),
+    cwd: z.string().optional(),
+  }).strict(),
+  'core.status.live-start': emptyPayloadSchema,
+} as const;
+
+const replyPayloadSchemas = {
+  'core.health': z.object({
+    ok: z.boolean(),
+    runtime: z.unknown().optional(),
+    workers: z.unknown().optional(),
+  }).passthrough(),
+  'core.runtime.phase6': z.object({
+    ok: z.boolean(),
+    modes: coreModesSchema,
+    checks: z.array(z.string()),
+    failures: z.array(z.string()),
+  }).strict(),
+  'core.workspace.list': z.object({
+    workspaces: z.array(unknownRecordSchema),
+  }).strict(),
+  'core.workspace.create': z.object({
+    id: z.string().min(1),
+    rootPaneId: z.string().min(1),
+  }).strict(),
+  'core.layout.get': z.object({
+    layout: z.unknown().nullable(),
+  }).strict(),
+  'core.terminal.attach': z.object({
+    subscriberId: z.string().min(1),
+  }).strict(),
+  'core.terminal.write': z.object({ ok: z.literal(true) }).strict(),
+  'core.terminal.resize': z.object({ ok: z.literal(true) }).strict(),
+  'core.terminal.detach': z.object({ ok: z.literal(true) }).strict(),
+  'core.timeline.list-sessions': z.object({
+    sessions: z.array(unknownRecordSchema),
+    total: z.number().int().nonnegative(),
+    hasMore: z.boolean(),
+  }).strict(),
+  'core.status.live-start': z.object({
+    started: z.boolean(),
+  }).strict(),
+} as const;
+
+const eventPayloadSchemas = {
+  'core.health-changed': z.object({
+    ok: z.boolean(),
+  }).passthrough(),
+  'core.terminal.stdout': z.object({
+    connectionId: z.string().min(1),
+    sessionName: z.string().min(1),
+    data: z.string(),
+  }).strict(),
+  'core.terminal.closed': z.object({
+    connectionId: z.string().min(1),
+    sessionName: z.string().min(1),
+    code: z.number().int(),
+    reason: z.string(),
+  }).strict(),
+} as const;
+
+export type TCoreCommandType = keyof typeof commandPayloadSchemas;
+export type TCoreEventType = keyof typeof eventPayloadSchemas;
+export type TCoreCommandPayload<T extends TCoreCommandType> = z.infer<(typeof commandPayloadSchemas)[T]>;
+export type TCoreReplyPayload<T extends TCoreCommandType> = z.infer<(typeof replyPayloadSchemas)[T]>;
+
+export interface ICoreCommand<T extends TCoreCommandType = TCoreCommandType> {
+  kind: 'command';
+  id: string;
+  source: 'backend';
+  target: 'core';
+  type: T;
+  payload: TCoreCommandPayload<T>;
+}
+
+export interface ICoreReply<T extends TCoreCommandType = TCoreCommandType> {
+  kind: 'reply';
+  commandId: string;
+  source: 'core';
+  target: 'backend';
+  type: `${T}.reply`;
+  ok: boolean;
+  payload: TCoreReplyPayload<T> | null;
+  error?: ICoreError;
+}
+
+export interface ICoreEvent<T extends TCoreEventType = TCoreEventType> {
+  kind: 'event';
+  id: string;
+  source: 'core';
+  target: 'backend';
+  type: T;
+  payload: z.infer<(typeof eventPayloadSchemas)[T]>;
+}
+
+export interface ICoreError {
+  code: string;
+  message: string;
+  retryable: boolean;
+}
+
+export type TCoreMessage = ICoreCommand | ICoreReply | ICoreEvent;
+
+export const coreCommandTypes = Object.keys(commandPayloadSchemas) as TCoreCommandType[];
+export const coreEventTypes = Object.keys(eventPayloadSchemas) as TCoreEventType[];
+
+export const isCoreCommandType = (value: string): value is TCoreCommandType =>
+  Object.prototype.hasOwnProperty.call(commandPayloadSchemas, value);
+
+export const parseCoreCommandPayload = <T extends TCoreCommandType>(
+  type: T,
+  payload: unknown,
+): TCoreCommandPayload<T> => {
+  try {
+    return commandPayloadSchemas[type].parse(payload) as TCoreCommandPayload<T>;
+  } catch (err) {
+    throw Object.assign(new Error(`Invalid core command payload for ${type}`), {
+      code: 'invalid-core-command-payload',
+      cause: err,
+      retryable: false,
+    });
+  }
+};
+
+export const parseCoreReplyPayload = <T extends TCoreCommandType>(
+  type: T,
+  payload: unknown,
+): TCoreReplyPayload<T> => {
+  try {
+    return replyPayloadSchemas[type].parse(payload) as TCoreReplyPayload<T>;
+  } catch (err) {
+    throw Object.assign(new Error(`Invalid core reply payload for ${type}`), {
+      code: 'invalid-core-reply-payload',
+      cause: err,
+      retryable: false,
+    });
+  }
+};
+
+export const parseCoreEventPayload = <T extends TCoreEventType>(
+  type: T,
+  payload: unknown,
+): z.infer<(typeof eventPayloadSchemas)[T]> => {
+  try {
+    return eventPayloadSchemas[type].parse(payload) as z.infer<(typeof eventPayloadSchemas)[T]>;
+  } catch (err) {
+    throw Object.assign(new Error(`Invalid core event payload for ${type}`), {
+      code: 'invalid-core-event-payload',
+      cause: err,
+      retryable: false,
+    });
+  }
+};
+
+export const createCoreCommand = <T extends TCoreCommandType>({
+  id = `core-${nanoid()}`,
+  type,
+  payload,
+}: {
+  id?: string;
+  type: T;
+  payload: TCoreCommandPayload<T>;
+}): ICoreCommand<T> => ({
+  kind: 'command',
+  id,
+  source: 'backend',
+  target: 'core',
+  type,
+  payload: parseCoreCommandPayload(type, payload),
+});
+
+export const createCoreReply = <T extends TCoreCommandType>({
+  command,
+  ok,
+  payload,
+  error,
+}: {
+  command: Pick<ICoreCommand<T>, 'id' | 'type'>;
+  ok: boolean;
+  payload: TCoreReplyPayload<T> | null;
+  error?: ICoreError;
+}): ICoreReply<T> => ({
+  kind: 'reply',
+  commandId: command.id,
+  source: 'core',
+  target: 'backend',
+  type: `${command.type}.reply`,
+  ok,
+  payload: ok && payload !== null ? parseCoreReplyPayload(command.type, payload) : null,
+  ...(error ? { error: coreErrorSchema.parse(error) } : {}),
+});
+
+export const createCoreEvent = <T extends TCoreEventType>({
+  id = `core-event-${nanoid()}`,
+  type,
+  payload,
+}: {
+  id?: string;
+  type: T;
+  payload: z.infer<(typeof eventPayloadSchemas)[T]>;
+}): ICoreEvent<T> => ({
+  kind: 'event',
+  id,
+  source: 'core',
+  target: 'backend',
+  type,
+  payload: parseCoreEventPayload(type, payload),
+});
+
+export const parseCoreReply = (message: unknown): ICoreReply => {
+  const base = z.object({
+    kind: z.literal('reply'),
+    commandId: z.string().min(1),
+    source: z.literal('core'),
+    target: z.literal('backend'),
+    type: z.string().min(1),
+    ok: z.boolean(),
+    payload: z.unknown().nullable(),
+    error: coreErrorSchema.optional(),
+  }).strict().parse(message);
+  const commandType = base.type.endsWith('.reply')
+    ? base.type.slice(0, -'.reply'.length)
+    : base.type;
+  if (!isCoreCommandType(commandType)) {
+    throw Object.assign(new Error(`Unsupported core reply type: ${base.type}`), {
+      code: 'unsupported-core-reply',
+      retryable: false,
+    });
+  }
+  return {
+    ...base,
+    type: `${commandType}.reply`,
+    payload: base.ok ? parseCoreReplyPayload(commandType, base.payload) : null,
+  } as ICoreReply;
+};
+
+export const parseCoreCommand = (message: unknown): ICoreCommand => {
+  const base = z.object({
+    kind: z.literal('command'),
+    id: z.string().min(1),
+    source: z.literal('backend'),
+    target: z.literal('core'),
+    type: z.string().min(1),
+    payload: z.unknown(),
+  }).strict().parse(message);
+  if (!isCoreCommandType(base.type)) {
+    throw Object.assign(new Error(`Unsupported core command type: ${base.type}`), {
+      code: 'unsupported-core-command',
+      retryable: false,
+    });
+  }
+  return {
+    ...base,
+    type: base.type,
+    payload: parseCoreCommandPayload(base.type, base.payload),
+  } as ICoreCommand;
+};

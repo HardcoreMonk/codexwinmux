@@ -296,3 +296,10 @@
 - Decision: `0.4.15` runtime부터 mode resolver, runtime DB path, Electron bootstrap, Windows smoke helper, lifecycle rollback parser는 `CODEXWINMUX_RUNTIME_*`만 runtime 입력으로 해석한다. 기존 `CODEXMUX_RUNTIME_*`는 strict identity/audit에서 legacy key로 감지할 수는 있지만 runtime 설정 fallback으로 읽거나 child process env로 쓰지 않는다.
 - Rationale: staged migration의 smoke fixture와 storage/timeline/import/backup utility migration이 완료되어, 더 이상 legacy runtime env를 운영 입력으로 유지하면 Windows 제품 identity와 release evidence가 흔들린다. Final removal은 잘못된 legacy drop-in이나 shell env가 조용히 적용되는 일을 막는다.
 - Consequences: runtime rollback/systemd/drop-in, smoke, Electron/Windows packaging 환경은 `CODEXWINMUX_RUNTIME_*`로 갱신해야 한다. `CODEXMUX_RUNTIME_*`만 남은 환경은 runtime v2 enable/mode/DB override로 작동하지 않는다. 비-runtime `CODEXMUX_*` 호환 입력은 각 smoke/운영 helper의 별도 migration 대상이다.
+
+## ADR-025: Core/Backend 물리 분리는 별도 lifecycle boundary로 진행한다
+
+- Status: Proposed
+- Decision: Core/Backend 논리 분리 완료와 물리 process 분리 완료를 별도 milestone으로 취급한다. 논리 분리는 runtime v2 source-of-truth, worker ownership, fail-closed fallback 기준으로 완료됐지만, 물리 분리는 Backend API host와 Core Supervisor가 서로 다른 lifecycle/process boundary를 가질 때 완료로 본다.
+- Rationale: 현재 Windows service owner는 `codexwinmux.exe --codexwinmux-engine` combined engine process를 실행한다. 이 안에서 Backend API host와 Core Supervisor가 함께 실행되고, runtime worker만 child process로 분리되어 있다. 장애 격리, 독립 restart, service upgrade, split release evidence를 요구하려면 Backend와 Core 사이에 typed command/event protocol과 별도 host process가 필요하다.
+- Consequences: 새 physical separation milestone은 `src/lib/core-engine/contracts.ts`, Core client/server adapter, `--codexwinmux-core` host, split-mode Windows service plan, split lifecycle smoke를 순서대로 추가한다. Split service는 default off로 시작하며, combined engine mode는 split-mode smoke와 release gate가 안정화될 때까지 유지한다. Backend process가 runtime Supervisor나 worker service를 직접 import하는 fallback은 split-mode evidence가 닫힌 뒤 제거한다.
