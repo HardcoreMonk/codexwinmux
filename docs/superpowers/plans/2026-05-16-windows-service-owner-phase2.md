@@ -48,6 +48,14 @@
 - [x] `codexwinmux-service.exe start`를 실행한다.
 - [x] `Get-Service`, TCP listener, `/api/health`, process tree로 실행 상태를 확인한다.
 
+## Task 5: 승인된 운영 모델 고정
+
+- [x] `LocalSystem + runbook-first`를 service host plan에 명시한다.
+- [x] 전용 service account 전환을 장기 운영 host 승격 전 gate로 남긴다.
+- [x] NSIS service install option을 deferred/default-off로 기록한다.
+- [x] `scripts/windows-service.ps1` helper를 추가한다.
+- [x] `smoke:windows:service-host`가 helper action set을 검증하도록 확장한다.
+
 ## 증거
 
 - RED: `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/windows-service-host.test.ts`는 `electron/engine-process`가 없고 canonical service owner env가 지원되지 않아 실패했다.
@@ -63,6 +71,9 @@
 - `codexwinmux-service.exe start`: 통과.
 - `Get-Service -Name codexwinmux`: `Running`, `Automatic`, `Win32OwnProcess`.
 - `Invoke-RestMethod http://127.0.0.1:8121/api/health`: `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`.
+- `corepack pnpm smoke:windows:service-host`: `windows-service-runbook-helper` check 포함 통과.
+- `corepack pnpm windows:service:status`: `codexwinmux Running Automatic Win32OwnProcess`.
+- `corepack pnpm windows:service:health`: `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`.
 
 ## 검증 명령
 

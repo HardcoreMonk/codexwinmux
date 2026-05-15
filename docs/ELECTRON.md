@@ -49,7 +49,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
 - `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
-- `smoke:windows:service-host`: 기본 tray owner plan과 Phase 2 Windows Service owner plan을 모두 확인합니다. Service owner plan은 `codexwinmux.exe --codexwinmux-engine`과 WinSW wrapper의 `install`/`uninstall`/`start`/`stop` 명령 계획을 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
+- `smoke:windows:service-host`: 기본 tray owner plan과 Phase 2 Windows Service owner plan을 모두 확인합니다. Service owner plan은 `codexwinmux.exe --codexwinmux-engine`, WinSW wrapper의 `install`/`uninstall`/`start`/`stop` 명령 계획, `scripts/windows-service.ps1` runbook helper 존재 여부를 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
 - `smoke:windows:packaged-runtime-v2`: packaged app을 runtime v2 `new-tabs` mode로 실행해 workspace/tab 생성, `/api/v2/terminal` WebSocket attach, Windows marker command output을 확인합니다.
 - `smoke:windows:installer-install`: `release/codexwinmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
 - `smoke:windows:installer-runtime-v2`: silent install한 앱에 `smoke:windows:packaged-runtime-v2`와 같은 runtime v2 terminal 검증을 적용한 뒤 silent uninstall합니다.
@@ -181,8 +181,11 @@ corepack pnpm smoke:windows:package-gate
    cleanup에서는 smoke가 시작한 engine process만 정리한다.
 7. Windows Service owner 실행 계약은 `smoke:windows:service-host`로 확인한다.
    이 smoke는 service owner plan, WinSW wrapper command, `--codexwinmux-engine`
-   bootstrap command를 검증하지만 SCM을 변경하지 않는다. 실제 service 등록은
-   관리자 권한에서 WinSW wrapper의 `install`/`start`로 수행한다.
+   bootstrap command, runbook helper를 검증하지만 SCM을 변경하지 않는다. 실제 service
+   등록은 관리자 권한에서 `corepack pnpm windows:service:install`과
+   `corepack pnpm windows:service:start`로 수행한다. 현재 승인된 운영 모델은
+   단기 `LocalSystem + runbook-first`이며, 장기 운영 host는 전용 service account와
+   NSIS optional service install smoke가 닫힌 뒤 승격한다.
 8. 비-Windows packaged foreground smoke는 legacy/manual reference로만 남긴다.
    현재 Windows 제품 release gate나 내부 배포 판단에는 포함하지 않는다.
 

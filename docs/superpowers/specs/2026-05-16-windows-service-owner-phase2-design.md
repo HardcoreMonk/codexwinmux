@@ -20,8 +20,13 @@ Backend/Core Engine process를 소유할 수 있는 실행 계약을 만든다.
   `CODEXWINMUX_ELECTRON_ENGINE_PROCESS=1`과 CLI flag를 기준으로 한다.
 - `src/lib/windows-service-host.ts`는 tray owner와 service owner를 구분하고, service owner일
   때 WinSW wrapper 명령 계획을 반환한다.
+- `scripts/windows-service.ps1`은 runbook-first 운영 helper로 service config 생성, 등록,
+  시작, 중지, 재시작, 상태, health 확인, 해제를 담당한다.
 - smoke는 Windows host에 service를 등록하거나 삭제하지 않는다.
 - 실제 운영 등록은 WinSW wrapper config를 생성한 뒤 wrapper의 `install`/`start` 명령으로 수행한다.
+- 현재 승인된 계정 모델은 단기 `LocalSystem` 유지다. 전용 service account 전환은 장기
+  운영 host 승격 전에 별도 gate로 처리한다.
+- NSIS service install option은 deferred 상태로 유지하고, 기본 installer flow에는 넣지 않는다.
 - Backend/Core는 이번 slice에서 같은 engine process 안에 남는다. Core runtime workers는
   기존 worker process boundary를 계속 사용한다.
 
@@ -29,6 +34,7 @@ Backend/Core Engine process를 소유할 수 있는 실행 계약을 만든다.
 
 - 관리자 권한 상승 UI 구현.
 - Windows installer에서 service를 자동 등록하는 동작.
+- 전용 Windows service account 생성/권한 부여/ACL migration 자동화.
 - Backend process와 Core process를 서로 다른 Windows Service로 나누는 작업.
 
 ## 실행 모델
@@ -51,6 +57,8 @@ Electron Shell Host
 
 - service owner plan이 packaged executable과 `--codexwinmux-engine` args를 포함한다.
 - service owner plan이 WinSW wrapper의 install/uninstall/start/stop command를 구조화해 반환한다.
+- service owner plan이 `LocalSystem + runbook-first`, NSIS option deferred 결정을 노출한다.
+- `smoke:windows:service-host`가 runbook helper 존재와 action set을 검증한다.
 - smoke가 tray plan과 service plan을 모두 검증하되 `mutatesSystem=false`를 유지한다.
 - Electron main이 CLI flag 또는 canonical env로 engine-only mode를 인식한다.
 - 기존 tray-first packaged lifecycle smoke와 unit test가 깨지지 않는다.

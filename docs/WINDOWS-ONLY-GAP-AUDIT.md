@@ -630,30 +630,35 @@ Validation:
 Service에서 Backend/Core Engine 전용 process로 실행될 수 있는 계약을 고정한다.
 운영자 요청 후 같은 host에서 WinSW wrapper 기반 실제 service 등록/시작도 수행했다.
 
-Resolved items:
+해결된 항목:
 
-- Added `electron/engine-process.ts`.
-- `electron/main.ts` now recognizes `--codexwinmux-engine` and
-  `CODEXWINMUX_ELECTRON_ENGINE_PROCESS=1` as canonical engine-only bootstrap
-  inputs. Existing `CODEXMUX_ELECTRON_ENGINE_PROCESS=1` remains compatible.
-- UI-owned engine launches now pass `--codexwinmux-engine` as an explicit
-  process argument instead of relying only on environment markers.
-- `src/lib/windows-service-host.ts` now prefers canonical
+- `electron/engine-process.ts`를 추가했다.
+- `electron/main.ts`는 `--codexwinmux-engine`과
+  `CODEXWINMUX_ELECTRON_ENGINE_PROCESS=1`을 canonical engine-only bootstrap
+  입력으로 인식한다. 기존 `CODEXMUX_ELECTRON_ENGINE_PROCESS=1`은 호환 입력으로 남긴다.
+- UI-owned engine launch는 environment marker에만 의존하지 않고
+  `--codexwinmux-engine` process argument를 명시한다.
+- `src/lib/windows-service-host.ts`는 canonical
   `CODEXWINMUX_WINDOWS_HOST_OWNER` / `CODEXWINMUX_WINDOWS_SERVICE_NAME` /
-  `CODEXWINMUX_WINDOWS_SERVICE_EXE` inputs.
-- Service owner plans return `hostModel=windows-service-owner-capable`,
-  `requiresElevation=true`, the packaged `codexwinmux.exe` path,
-  `--codexwinmux-engine`, the WinSW wrapper path, and structured
-  `install`, `uninstall`, `start`, `stop` wrapper command plans.
-- `smoke:windows:service-host` validates both the default tray owner plan and
-  the service owner plan while keeping `mutatesSystem=false`.
-- Actual host service evidence: `codexwinmux` installed through
+  `CODEXWINMUX_WINDOWS_SERVICE_EXE` 입력을 우선 사용한다.
+- Service owner plan은 `hostModel=windows-service-owner-capable`,
+  `requiresElevation=true`, packaged `codexwinmux.exe` path,
+  `--codexwinmux-engine`, WinSW wrapper path, structured
+  `install`, `uninstall`, `start`, `stop` wrapper command plan을 반환한다.
+- 승인된 운영 모델은 단기 `LocalSystem + runbook-first`다. 전용 service account는
+  장기 운영 host 승격 전 gate로 남기고, NSIS service install option은
+  deferred/default-off 상태로 둔다.
+- `scripts/windows-service.ps1` helper를 추가했다. `install`, `start`, `stop`,
+  `restart`, `status`, `health`, `uninstall`, `write-config` action을 제공한다.
+- `smoke:windows:service-host`는 기본 tray owner plan, service owner plan, runbook
+  helper action set을 검증하며 `mutatesSystem=false`를 유지한다.
+- 실제 host service evidence: `codexwinmux`는
   `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-service.exe`,
   `StartType=Automatic`, `Status=Running`, engine args
   `--codexwinmux-engine`, health `app=codexwinmux`, `version=0.4.17`,
   `commit=c1510c22`.
 
-Validation:
+검증:
 
 - `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/windows-service-host.test.ts`: passed.
 - `corepack pnpm smoke:windows:service-host`: passed.

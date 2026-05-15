@@ -14,7 +14,7 @@ packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core Engine 전용 pr
 - UI가 owned engine을 시작할 때 packaged mode에서도 `--codexwinmux-engine` 인자를 명시적으로 전달한다.
 - `src/lib/windows-service-host.ts`는 canonical `CODEXWINMUX_WINDOWS_HOST_OWNER`, `CODEXWINMUX_WINDOWS_SERVICE_NAME`, `CODEXWINMUX_WINDOWS_SERVICE_EXE`를 우선 사용한다.
 - service owner plan은 `hostModel=windows-service-owner-capable`, `requiresElevation=true`, `codexwinmux.exe --codexwinmux-engine`, WinSW wrapper, `install`/`uninstall`/`start`/`stop` command plan을 반환한다.
-- `smoke:windows:service-host`는 기본 tray owner plan과 service owner plan을 모두 검증한다. Smoke는 `mutatesSystem=false`이며 SCM을 변경하지 않는다.
+- `smoke:windows:service-host`는 기본 tray owner plan, service owner plan, runbook helper action set을 모두 검증한다. Smoke는 `mutatesSystem=false`이며 SCM을 변경하지 않는다.
 
 ## 실제 서비스 등록/시작 증거
 
@@ -28,6 +28,30 @@ packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core Engine 전용 pr
 - Current status: `Running`
 - Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`, `buildTime=2026-05-15T17:43:01.396Z`.
 - Process ownership: WinSW wrapper가 parent process이고, engine process가 child로 실행된다.
+
+## 승인된 운영 결정
+
+- 단기 운영 모델은 `LocalSystem + runbook-first`로 유지한다.
+- 장기 운영 host 또는 반복 배포 host로 승격하기 전에는 전용 Windows service account, service profile/data dir, folder ACL, account rotation 정책을 별도 slice에서 닫는다.
+- NSIS installer service install option은 지금 추가하지 않는다. 기본 설치 흐름은 service를 자동 등록하지 않으며, `scripts/windows-service.ps1` helper와 운영 runbook을 우선 사용한다.
+- NSIS option은 install/upgrade/uninstall/reboot/health/account-ACL smoke가 준비된 뒤 default off 고급 옵션으로 승격한다.
+
+## Runbook Helper
+
+```powershell
+corepack pnpm windows:service:write-config
+corepack pnpm windows:service:install
+corepack pnpm windows:service:start
+corepack pnpm windows:service:status
+corepack pnpm windows:service:health
+corepack pnpm windows:service:restart
+corepack pnpm windows:service:stop
+corepack pnpm windows:service:uninstall
+```
+
+`install`, `start`, `stop`, `restart`, `uninstall`은 elevated PowerShell session에서 실행한다.
+`write-config`는 wrapper/config 파일을 갱신하지만 SCM을 변경하지 않는다. `status`와
+`health`는 read-only 확인 명령이다.
 
 ## 검증 증거
 
@@ -43,11 +67,12 @@ packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core Engine 전용 pr
 - `codexwinmux-service.exe start`: 통과.
 - `Get-Service -Name codexwinmux`: `Running`, `Automatic`, `Win32OwnProcess`.
 - `Invoke-RestMethod http://127.0.0.1:8121/api/health`: 통과.
+- `corepack pnpm windows:service:status`: `codexwinmux Running Automatic Win32OwnProcess`.
+- `corepack pnpm windows:service:health`: `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`.
 
 ## 남은 후속 작업
 
-- 실제 Windows Service 등록/해제 스크립트를 repository 또는 installer 관리 flow로 승격할지 결정한다.
-- NSIS installer에서 service install option을 제공할지, 내부 운영 runbook으로만 둘지 결정한다.
 - service-owned engine stop/restart를 Electron UI에서 어떻게 표현할지 결정한다. 현재 UI는 자신이 시작한 owned engine만 stop한다.
-- `LocalSystem` 대신 전용 Windows user account로 service를 실행할지 결정한다.
+- 전용 Windows service account 전환 slice를 진행한다. 포함 범위는 account 생성/권한, service profile/data dir, folder ACL, credential rotation, migration smoke다.
+- NSIS optional service install slice를 진행한다. 포함 범위는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke다.
 - Backend process와 Core worker supervisor를 서로 다른 Windows service/process로 추가 분리할지 별도 Phase 2.2로 설계한다.

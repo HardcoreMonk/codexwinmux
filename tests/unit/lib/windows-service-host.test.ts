@@ -24,6 +24,22 @@ describe('Windows service host baseline', () => {
       owner: 'tray',
       hostModel: 'tray-first-service-capable',
       mutatesSystem: false,
+      operationDecision: {
+        serviceAccount: {
+          current: 'LocalSystem',
+          mode: 'local-system-now',
+          next: 'dedicated-account-before-long-running-ops',
+        },
+        installer: {
+          mode: 'runbook-first',
+          nsisServiceOption: 'deferred',
+          defaultEnabled: false,
+        },
+        runbook: {
+          helperScript: 'scripts/windows-service.ps1',
+          actions: ['write-config', 'install', 'start', 'stop', 'restart', 'status', 'health', 'uninstall'],
+        },
+      },
       service: {
         name: 'codexwinmux',
         displayName: 'codexwinmux',
@@ -86,6 +102,8 @@ describe('Windows service host baseline', () => {
     expect(plan.service.commands.uninstall.args).toEqual(['uninstall']);
     expect(plan.service.commands.start.args).toEqual(['start']);
     expect(plan.service.commands.stop.args).toEqual(['stop']);
+    expect(plan.operationDecision.serviceAccount.current).toBe('LocalSystem');
+    expect(plan.operationDecision.installer.mode).toBe('runbook-first');
   });
 
   it('prefers canonical Windows host owner env over legacy env', () => {

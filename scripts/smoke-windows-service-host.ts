@@ -1,4 +1,6 @@
 import { resolveWindowsServiceHostPlan } from '@/lib/windows-service-host';
+import { readFileSync } from 'fs';
+import path from 'path';
 
 const main = async (): Promise<void> => {
   const plan = resolveWindowsServiceHostPlan({
@@ -85,6 +87,18 @@ const main = async (): Promise<void> => {
   checks.push('windows-service-engine-flag');
   checks.push('windows-service-winsw-wrapper');
   checks.push('windows-service-non-mutating-commands');
+
+  const helperPath = path.join(process.cwd(), servicePlan.operationDecision.runbook.helperScript);
+  const helper = readFileSync(helperPath, 'utf8');
+  for (const action of servicePlan.operationDecision.runbook.actions) {
+    if (!helper.includes(`'${action}'`)) {
+      throw new Error(`Windows service helper is missing action ${action}: ${helperPath}`);
+    }
+  }
+  if (!helper.includes('--codexwinmux-engine')) {
+    throw new Error(`Windows service helper must write the engine-only flag: ${helperPath}`);
+  }
+  checks.push('windows-service-runbook-helper');
 
   if (!plan.paths.dataDir.endsWith('.codexwinmux') || !plan.paths.codexDir.endsWith('.codex')) {
     throw new Error(`unexpected Windows data paths: ${JSON.stringify(plan.paths)}`);

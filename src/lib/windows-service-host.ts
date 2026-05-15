@@ -35,6 +35,22 @@ export interface IWindowsServiceHostPlan {
   hostModel: TWindowsServiceHostModel;
   mutatesSystem: false;
   requiresElevation: boolean;
+  operationDecision: {
+    serviceAccount: {
+      current: 'LocalSystem';
+      mode: 'local-system-now';
+      next: 'dedicated-account-before-long-running-ops';
+    };
+    installer: {
+      mode: 'runbook-first';
+      nsisServiceOption: 'deferred';
+      defaultEnabled: false;
+    };
+    runbook: {
+      helperScript: 'scripts/windows-service.ps1';
+      actions: ['write-config', 'install', 'start', 'stop', 'restart', 'status', 'health', 'uninstall'];
+    };
+  };
   service: {
     name: string;
     displayName: string;
@@ -74,6 +90,22 @@ const defaultPort = '8121';
 const defaultHost = '127.0.0.1';
 const defaultServiceName = 'codexwinmux';
 const engineProcessFlag = '--codexwinmux-engine';
+const operationDecision: IWindowsServiceHostPlan['operationDecision'] = {
+  serviceAccount: {
+    current: 'LocalSystem',
+    mode: 'local-system-now',
+    next: 'dedicated-account-before-long-running-ops',
+  },
+  installer: {
+    mode: 'runbook-first',
+    nsisServiceOption: 'deferred',
+    defaultEnabled: false,
+  },
+  runbook: {
+    helperScript: 'scripts/windows-service.ps1',
+    actions: ['write-config', 'install', 'start', 'stop', 'restart', 'status', 'health', 'uninstall'],
+  },
+};
 
 const readEnv = (env: TWindowsServiceHostEnv, key: string): string | undefined => {
   const value = env[key]?.trim();
@@ -181,6 +213,7 @@ export const resolveWindowsServiceHostPlan = ({
     hostModel: owner === 'service' ? 'windows-service-owner-capable' : 'tray-first-service-capable',
     mutatesSystem: false,
     requiresElevation: owner === 'service',
+    operationDecision,
     service: {
       name: serviceName,
       displayName: serviceName,
