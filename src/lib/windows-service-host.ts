@@ -1,8 +1,16 @@
+import path from 'path';
 import { resolveHostPaths, type THostPathsEnv } from '@/lib/host-paths';
 import { buildRuntimeEnvAliasRecord } from '@/lib/runtime/env';
 
 export type TWindowsServiceHostOwner = 'tray' | 'service' | 'installer-background';
-export type TWindowsServiceHostModel = 'tray-first-service-capable';
+export type TWindowsServiceHostModel = 'tray-first-service-capable' | 'windows-service-owner-capable';
+
+export interface IWindowsServiceCommandPlan {
+  program: string;
+  args: string[];
+  mutatesSystem: false;
+  requiresElevation: boolean;
+}
 
 export interface IWindowsServiceHostOwnerResult {
   ok: boolean;
@@ -31,6 +39,19 @@ export interface IWindowsServiceHostPlan {
     name: string;
     displayName: string;
     description: string;
+    executablePath: string;
+    executableArgs: string[];
+    wrapper: {
+      kind: 'winsw';
+      executablePath: string;
+      configPath: string;
+    };
+    commands: {
+      install: IWindowsServiceCommandPlan;
+      uninstall: IWindowsServiceCommandPlan;
+      start: IWindowsServiceCommandPlan;
+      stop: IWindowsServiceCommandPlan;
+    };
   };
   process: {
     command: string;
@@ -52,11 +73,75 @@ export interface IWindowsServiceHostPlan {
 const defaultPort = '8121';
 const defaultHost = '127.0.0.1';
 const defaultServiceName = 'codexwinmux';
+const engineProcessFlag = '--codexwinmux-engine';
+
+const readEnv = (env: TWindowsServiceHostEnv, key: string): string | undefined => {
+  const value = env[key]?.trim();
+  return value ? value : undefined;
+};
+
+const buildWindowsServiceCommandPlan = (
+  program: string,
+  args: string[],
+  requiresElevation: boolean,
+): IWindowsServiceCommandPlan => ({
+  program,
+  args,
+  mutatesSystem: false,
+  requiresElevation,
+});
+
+const resolveServiceExecutablePath = (
+  env: TWindowsServiceHostEnv,
+  appDir: string,
+): string =>
+  readEnv(env, 'CODEXWINMUX_WINDOWS_SERVICE_EXE')
+  || readEnv(env, 'CODEXMUX_WINDOWS_SERVICE_EXE')
+  || readEnv(env, 'CODEXWINMUX_WINDOWS_PACKAGED_APP_PATH')
+  || readEnv(env, 'CODEXMUX_WINDOWS_PACKAGED_APP_PATH')
+  || (appDir.toLowerCase().endsWith('.exe') ? appDir : `${appDir}\\codexwinmux.exe`);
+
+const resolveServiceWrapperPaths = (
+  env: TWindowsServiceHostEnv,
+  localAppData: string | undefined,
+) => {
+  const serviceDir = localAppData
+    ? path.win32.join(localAppData, 'codexwinmux', 'service')
+    : path.win32.join('C:\\ProgramData', 'codexwinmux', 'service');
+  const executablePath = readEnv(env, 'CODEXWINMUX_WINDOWS_SERVICE_WRAPPER_EXE')
+    || readEnv(env, 'CODEXMUX_WINDOWS_SERVICE_WRAPPER_EXE')
+    || path.win32.join(serviceDir, 'codexwinmux-service.exe');
+  const configPath = readEnv(env, 'CODEXWINMUX_WINDOWS_SERVICE_CONFIG')
+    || readEnv(env, 'CODEXMUX_WINDOWS_SERVICE_CONFIG')
+    || path.win32.join(path.win32.dirname(executablePath), 'codexwinmux-service.xml');
+
+  return {
+    kind: 'winsw' as const,
+    executablePath,
+    configPath,
+  };
+};
+
+const buildServiceCommands = ({
+  wrapperPath,
+}: {
+  wrapperPath: string;
+}) => {
+  return {
+    install: buildWindowsServiceCommandPlan(wrapperPath, ['install'], true),
+    uninstall: buildWindowsServiceCommandPlan(wrapperPath, ['uninstall'], true),
+    start: buildWindowsServiceCommandPlan(wrapperPath, ['start'], true),
+    stop: buildWindowsServiceCommandPlan(wrapperPath, ['stop'], true),
+  };
+};
 
 export const resolveWindowsServiceHostOwner = (
   env: TWindowsServiceHostEnv,
 ): IWindowsServiceHostOwnerResult => {
-  const value = env.CODEXMUX_WINDOWS_HOST_OWNER?.trim().toLowerCase();
+  const value = (
+    readEnv(env, 'CODEXWINMUX_WINDOWS_HOST_OWNER')
+    || readEnv(env, 'CODEXMUX_WINDOWS_HOST_OWNER')
+  )?.toLowerCase();
   if (!value) return { ok: true, owner: 'tray' };
   if (value === 'tray' || value === 'service' || value === 'installer-background') {
     return { ok: true, owner: value };
@@ -76,9 +161,15 @@ export const resolveWindowsServiceHostPlan = ({
   const ownerResult = resolveWindowsServiceHostOwner(env);
   const owner = ownerResult.ok ? ownerResult.owner! : 'tray';
   const hostPaths = resolveHostPaths({ platform, env });
-  const serviceName = env.CODEXMUX_WINDOWS_SERVICE_NAME?.trim() || defaultServiceName;
-  const port = env.PORT?.trim() || defaultPort;
-  const host = env.HOST?.trim() || defaultHost;
+  const serviceName = readEnv(env, 'CODEXWINMUX_WINDOWS_SERVICE_NAME')
+    || readEnv(env, 'CODEXMUX_WINDOWS_SERVICE_NAME')
+    || defaultServiceName;
+  const port = readEnv(env, 'PORT') || defaultPort;
+  const host = readEnv(env, 'HOST') || defaultHost;
+  const executablePath = resolveServiceExecutablePath(env, appDir);
+  const executableArgs = [engineProcessFlag];
+  const description = 'Runs the local codexwinmux Windows service host.';
+  const wrapper = resolveServiceWrapperPaths(env, hostPaths.localAppData);
 
   return {
     platform,
@@ -87,13 +178,19 @@ export const resolveWindowsServiceHostPlan = ({
       ? ownerResult.error ?? null
       : 'windows-service-host-only-runs-on-win32',
     owner,
-    hostModel: 'tray-first-service-capable',
+    hostModel: owner === 'service' ? 'windows-service-owner-capable' : 'tray-first-service-capable',
     mutatesSystem: false,
     requiresElevation: owner === 'service',
     service: {
       name: serviceName,
       displayName: serviceName,
-      description: 'Runs the local codexwinmux Windows service host.',
+      description,
+      executablePath,
+      executableArgs,
+      wrapper,
+      commands: buildServiceCommands({
+        wrapperPath: wrapper.executablePath,
+      }),
     },
     process: {
       command: 'corepack',

@@ -30,7 +30,7 @@ corepack pnpm smoke:windows:release-gate
 - `audit:windows-platform`
 - `smoke:runtime-v2:terminal-windows`
 - `smoke:windows:preflight`
-- `smoke:windows:service-host`
+- `smoke:windows:service-host` — 기본 tray owner plan과 Phase 2 Windows Service owner plan을 모두 검증한다. WinSW wrapper의 service `install`/`uninstall`/`start`/`stop` 명령은 계획만 확인하고 실제 등록/시작/중지는 하지 않는다.
 - `smoke:windows:host-diagnostics`
 - `smoke:windows:electron-env`
 - `smoke:windows:electron-packaging`

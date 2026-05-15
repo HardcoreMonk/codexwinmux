@@ -5,6 +5,7 @@ import { applyElectronBootstrapEnv, buildFileImportSpecifier, buildPackagedNodeP
 import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smoke';
 import { applyAutoUpdaterRuntimeDefaults } from './updater-config';
 import { resolveTrayIconPath } from './tray-icon';
+import { buildEngineProcessArgs, isEngineProcessLaunch } from './engine-process';
 import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog, Tray, nativeImage } from 'electron';
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { spawn } from 'child_process';
@@ -18,7 +19,7 @@ const isDev = process.env.NODE_ENV === 'development';
 const devUrl = process.env.ELECTRON_DEV_URL;
 const APP_DISPLAY_NAME = 'codexwinmux';
 const APP_PROCESS_NAME = 'codexwinmux';
-const isEngineProcess = process.env.CODEXMUX_ELECTRON_ENGINE_PROCESS === '1';
+const isEngineProcess = isEngineProcessLaunch(process.argv, process.env);
 
 const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
   process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
@@ -517,8 +518,6 @@ const showEngineError = async (message: string) => {
   });
 };
 
-const buildEngineProcessArgs = () => (app.isPackaged ? [] : [app.getAppPath()]);
-
 const buildReservedPortsEnv = () => {
   const ports = new Set(
     (process.env.CODEXMUX_RESERVED_PORTS || '')
@@ -537,14 +536,19 @@ const buildReservedPortsEnv = () => {
 };
 
 const launchEngineProcess = () => {
-  const child = spawn(process.execPath, buildEngineProcessArgs(), {
+  const child = spawn(process.execPath, buildEngineProcessArgs({
+    isPackaged: app.isPackaged,
+    appPath: app.getAppPath(),
+  }), {
     cwd: process.cwd(),
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
     env: {
       ...process.env,
+      CODEXWINMUX_ELECTRON_ENGINE_PROCESS: '1',
       CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
+      CODEXWINMUX_WINDOWS_HOST_OWNER: process.env.CODEXWINMUX_WINDOWS_HOST_OWNER || 'tray',
       ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_V2', '1'),
       ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
       ...buildCodexwinmuxAliasEnv('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),

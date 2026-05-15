@@ -55,18 +55,47 @@ describe('Windows service host baseline', () => {
       platform: 'win32',
       env: {
         ...env,
-        CODEXMUX_WINDOWS_HOST_OWNER: 'service',
-        CODEXMUX_WINDOWS_SERVICE_NAME: 'codexmux-dev',
+        CODEXWINMUX_WINDOWS_HOST_OWNER: 'service',
+        CODEXWINMUX_WINDOWS_SERVICE_NAME: 'codexwinmux-dev',
+        CODEXWINMUX_WINDOWS_SERVICE_EXE: 'D:\\apps\\codexwinmux\\codexwinmux.exe',
+        CODEXWINMUX_WINDOWS_SERVICE_WRAPPER_EXE: 'C:\\Users\\cmux\\AppData\\Local\\codexwinmux\\service\\codexwinmux-service.exe',
         PORT: '9133',
       },
       appDir: 'D:\\apps\\codexmux',
     });
 
     expect(plan.owner).toBe('service');
-    expect(plan.service.name).toBe('codexmux-dev');
+    expect(plan.service.name).toBe('codexwinmux-dev');
     expect(plan.process.env.PORT).toBe('9133');
     expect(plan.requiresElevation).toBe(true);
     expect(plan.mutatesSystem).toBe(false);
+    expect(plan.hostModel).toBe('windows-service-owner-capable');
+    expect(plan.service.executablePath).toBe('D:\\apps\\codexwinmux\\codexwinmux.exe');
+    expect(plan.service.executableArgs).toEqual(['--codexwinmux-engine']);
+    expect(plan.service.wrapper).toMatchObject({
+      kind: 'winsw',
+      executablePath: 'C:\\Users\\cmux\\AppData\\Local\\codexwinmux\\service\\codexwinmux-service.exe',
+      configPath: path.win32.join('C:\\Users\\cmux\\AppData\\Local', 'codexwinmux', 'service', 'codexwinmux-service.xml'),
+    });
+    expect(plan.service.commands.install).toMatchObject({
+      program: 'C:\\Users\\cmux\\AppData\\Local\\codexwinmux\\service\\codexwinmux-service.exe',
+      args: ['install'],
+      mutatesSystem: false,
+      requiresElevation: true,
+    });
+    expect(plan.service.commands.uninstall.args).toEqual(['uninstall']);
+    expect(plan.service.commands.start.args).toEqual(['start']);
+    expect(plan.service.commands.stop.args).toEqual(['stop']);
+  });
+
+  it('prefers canonical Windows host owner env over legacy env', () => {
+    expect(resolveWindowsServiceHostOwner({
+      CODEXWINMUX_WINDOWS_HOST_OWNER: 'service',
+      CODEXMUX_WINDOWS_HOST_OWNER: 'tray',
+    })).toEqual({
+      ok: true,
+      owner: 'service',
+    });
   });
 
   it('keeps owner parsing fail-closed for unsupported host owners', () => {

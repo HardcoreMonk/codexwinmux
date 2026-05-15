@@ -46,6 +46,46 @@ const main = async (): Promise<void> => {
   }
   checks.push('windows-process-inspector-adapter');
 
+  const servicePlan = resolveWindowsServiceHostPlan({
+    platform: process.platform,
+    env: {
+      ...process.env,
+      CODEXWINMUX_WINDOWS_HOST_OWNER: 'service',
+      CODEXWINMUX_WINDOWS_SERVICE_EXE: process.env.CODEXWINMUX_WINDOWS_SERVICE_EXE
+        || `${process.cwd()}\\release\\win-unpacked\\codexwinmux.exe`,
+    },
+    appDir: process.cwd(),
+  });
+
+  if (servicePlan.owner !== 'service') {
+    throw new Error(`Windows service owner plan did not select service owner: ${JSON.stringify(servicePlan)}`);
+  }
+  if (servicePlan.hostModel !== 'windows-service-owner-capable') {
+    throw new Error(`unexpected Windows service owner model: ${servicePlan.hostModel}`);
+  }
+  if (!servicePlan.requiresElevation) {
+    throw new Error('Windows service owner plan must require elevation.');
+  }
+  if (servicePlan.mutatesSystem) {
+    throw new Error('Windows service owner plan must remain non-mutating in smoke.');
+  }
+  if (!servicePlan.service.executableArgs.includes('--codexwinmux-engine')) {
+    throw new Error(`Windows service owner plan must launch engine-only mode: ${JSON.stringify(servicePlan.service)}`);
+  }
+  if (servicePlan.service.commands.install.mutatesSystem || servicePlan.service.commands.start.mutatesSystem) {
+    throw new Error(`Windows service commands must be planned, not executed: ${JSON.stringify(servicePlan.service.commands)}`);
+  }
+  if (servicePlan.service.wrapper.kind !== 'winsw') {
+    throw new Error(`Windows service owner plan must use WinSW wrapper: ${JSON.stringify(servicePlan.service.wrapper)}`);
+  }
+  if (servicePlan.service.commands.install.args.join(' ') !== 'install') {
+    throw new Error(`Windows service install command must use WinSW install: ${JSON.stringify(servicePlan.service.commands.install)}`);
+  }
+  checks.push('windows-service-owner-plan');
+  checks.push('windows-service-engine-flag');
+  checks.push('windows-service-winsw-wrapper');
+  checks.push('windows-service-non-mutating-commands');
+
   if (!plan.paths.dataDir.endsWith('.codexwinmux') || !plan.paths.codexDir.endsWith('.codex')) {
     throw new Error(`unexpected Windows data paths: ${JSON.stringify(plan.paths)}`);
   }
@@ -56,6 +96,12 @@ const main = async (): Promise<void> => {
     checks,
     owner: plan.owner,
     hostModel: plan.hostModel,
+    serviceOwner: {
+      owner: servicePlan.owner,
+      hostModel: servicePlan.hostModel,
+      requiresElevation: servicePlan.requiresElevation,
+      service: servicePlan.service,
+    },
     requiresElevation: plan.requiresElevation,
     service: plan.service,
     process: plan.process,

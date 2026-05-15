@@ -3,7 +3,8 @@
 codexwinmux의 Electron 앱은 Windows 설치형 제품의 Shell Host입니다. 로컬 모드는
 기존 `127.0.0.1:8121` Backend/Core Engine에 attach하거나, 없으면 같은 packaged
 executable을 engine process로 시작합니다. 창 닫기는 UI를 tray로 숨기며 engine을
-중지하지 않습니다.
+중지하지 않습니다. Phase 2 service owner slice부터 packaged executable은
+`--codexwinmux-engine` 인자로 Backend/Core Engine 전용 bootstrap을 시작할 수 있습니다.
 
 ## 명령
 
@@ -48,6 +49,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
 - `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
+- `smoke:windows:service-host`: 기본 tray owner plan과 Phase 2 Windows Service owner plan을 모두 확인합니다. Service owner plan은 `codexwinmux.exe --codexwinmux-engine`과 WinSW wrapper의 `install`/`uninstall`/`start`/`stop` 명령 계획을 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
 - `smoke:windows:packaged-runtime-v2`: packaged app을 runtime v2 `new-tabs` mode로 실행해 workspace/tab 생성, `/api/v2/terminal` WebSocket attach, Windows marker command output을 확인합니다.
 - `smoke:windows:installer-install`: `release/codexwinmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
 - `smoke:windows:installer-runtime-v2`: silent install한 앱에 `smoke:windows:packaged-runtime-v2`와 같은 runtime v2 terminal 검증을 적용한 뒤 silent uninstall합니다.
@@ -68,6 +70,7 @@ Windows NSIS installer는 `build-resources/installer.nsh`를 include해 설치�
 | --- | --- |
 | `electron/main.ts` | BrowserWindow, 메뉴, local/remote 서버 모드, updater |
 | `electron/engine-controller.ts` | 기존 engine health probe, owned engine 시작/재시작/중지, UI 수명과 engine 수명 분리 |
+| `electron/engine-process.ts` | `--codexwinmux-engine` CLI flag와 engine-only process launch args |
 | `electron/preload.ts` | 안전한 renderer IPC bridge |
 | `electron/browser-bridge.ts` | Electron webview 기반 browser panel bridge |
 | `electron/runtime-env.ts` | local server bootstrap의 platform별 PATH와 `NODE_PATH` 구분자 처리 |
@@ -107,6 +110,7 @@ EOF(`0x04`)로 전달됩니다.
 - 앱 실행 시 기존 `127.0.0.1:8121` engine health를 먼저 확인합니다.
 - 기존 engine이 healthy codexwinmux이면 UI는 그대로 attach합니다.
 - healthy engine이 없으면 Shell Host가 같은 packaged executable을 engine process로 시작합니다.
+- engine process는 canonical `--codexwinmux-engine` CLI flag 또는 `CODEXWINMUX_ELECTRON_ENGINE_PROCESS=1`로 구분합니다. 기존 `CODEXMUX_ELECTRON_ENGINE_PROCESS=1`은 호환 입력입니다.
 - engine host mode에서는 기본 포트 `8121`을 고정하고, 다른 process가 점유한 포트로 조용히 fallback하지 않습니다.
 - 창 닫기는 BrowserWindow를 tray로 숨기며 engine을 중지하지 않습니다.
 - UI 종료는 engine을 남겨 둡니다. `UI와 엔진 종료` 메뉴를 명시적으로 선택한 경우에만 이 UI가 시작한 owned engine을 중지합니다.
@@ -175,7 +179,11 @@ corepack pnpm smoke:windows:package-gate
 6. UI 수명과 engine 수명 분리는 `smoke:windows:engine-lifecycle`로 확인한다.
    이 smoke는 UI quit 이후에도 `127.0.0.1:8121/api/health`가 살아 있는지 보고,
    cleanup에서는 smoke가 시작한 engine process만 정리한다.
-7. 비-Windows packaged foreground smoke는 legacy/manual reference로만 남긴다.
+7. Windows Service owner 실행 계약은 `smoke:windows:service-host`로 확인한다.
+   이 smoke는 service owner plan, WinSW wrapper command, `--codexwinmux-engine`
+   bootstrap command를 검증하지만 SCM을 변경하지 않는다. 실제 service 등록은
+   관리자 권한에서 WinSW wrapper의 `install`/`start`로 수행한다.
+8. 비-Windows packaged foreground smoke는 legacy/manual reference로만 남긴다.
    현재 Windows 제품 release gate나 내부 배포 판단에는 포함하지 않는다.
 
 ## 빌드 산출물

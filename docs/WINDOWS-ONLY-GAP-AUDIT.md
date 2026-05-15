@@ -622,3 +622,38 @@ Validation:
 - `corepack pnpm smoke:windows:engine-lifecycle`: passed. Evidence included
   `ui-quit-engine-survival`, `healthAfterUiQuit.app=codexmux`, and post-smoke
   cleanup closing `127.0.0.1:8121`.
+
+## Windows Service Owner Phase 2 Follow-up
+
+2026-05-16 slice는 tray-first Engine Host 이후 첫 Windows Service owner 경계를
+추가했다. smoke 단계는 SCM을 실제로 변경하지 않고, packaged executable이 Windows
+Service에서 Backend/Core Engine 전용 process로 실행될 수 있는 계약을 고정한다.
+운영자 요청 후 같은 host에서 WinSW wrapper 기반 실제 service 등록/시작도 수행했다.
+
+Resolved items:
+
+- Added `electron/engine-process.ts`.
+- `electron/main.ts` now recognizes `--codexwinmux-engine` and
+  `CODEXWINMUX_ELECTRON_ENGINE_PROCESS=1` as canonical engine-only bootstrap
+  inputs. Existing `CODEXMUX_ELECTRON_ENGINE_PROCESS=1` remains compatible.
+- UI-owned engine launches now pass `--codexwinmux-engine` as an explicit
+  process argument instead of relying only on environment markers.
+- `src/lib/windows-service-host.ts` now prefers canonical
+  `CODEXWINMUX_WINDOWS_HOST_OWNER` / `CODEXWINMUX_WINDOWS_SERVICE_NAME` /
+  `CODEXWINMUX_WINDOWS_SERVICE_EXE` inputs.
+- Service owner plans return `hostModel=windows-service-owner-capable`,
+  `requiresElevation=true`, the packaged `codexwinmux.exe` path,
+  `--codexwinmux-engine`, the WinSW wrapper path, and structured
+  `install`, `uninstall`, `start`, `stop` wrapper command plans.
+- `smoke:windows:service-host` validates both the default tray owner plan and
+  the service owner plan while keeping `mutatesSystem=false`.
+- Actual host service evidence: `codexwinmux` installed through
+  `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-service.exe`,
+  `StartType=Automatic`, `Status=Running`, engine args
+  `--codexwinmux-engine`, health `app=codexwinmux`, `version=0.4.17`,
+  `commit=c1510c22`.
+
+Validation:
+
+- `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/windows-service-host.test.ts`: passed.
+- `corepack pnpm smoke:windows:service-host`: passed.
