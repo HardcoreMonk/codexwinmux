@@ -2,6 +2,13 @@
 
 작성일: 2026-05-14
 
+상태 갱신: 2026-05-16 기준 이 기록의 live/public gate 보류 문구는
+`docs/RUNTIME-V2-CUTOVER.md`의 내부 폐쇄망 release scope로 대체한다. 현재
+codexwinmux는 내부 폐쇄망 전용 배포이므로 public SmartScreen reputation과
+published/public Phase 6 evidence는 외부 공개 배포 전용 gate이며, 내부 legacy JSON
+fallback 제거는 signed/local package, 폐쇄망 Phase 6 target, status/timeline stale UI
+evidence 기준으로 재개한다.
+
 ## 처리한 항목
 
 - CLI plain terminal tab 생성 경로를 runtime v2 Supervisor/Storage Worker 경로로 이동했다.
@@ -37,5 +44,5 @@
 
 - 운영/live URL을 `CODEXWINMUX_RUNTIME_V2_PHASE6_GATE_URL`로 지정한 뒤 `corepack pnpm smoke:runtime-v2:phase6-default-gate` 재실행.
 - `smoke:runtime-v2:status-default`와 `smoke:runtime-v2:timeline-websocket-default`를 Windows runtime adapter 또는 tmux-free fixture로 전환해 status/timeline stale UI evidence를 수집한다.
-- live/public Phase 6 evidence와 Windows-compatible status/timeline smoke가 닫히기 전까지 legacy JSON fallback 제거는 보류한다.
+- 내부 폐쇄망 기준 legacy JSON fallback 제거는 signed/local package, 폐쇄망 Phase 6 target, Windows-compatible status/timeline smoke 기준으로 재개한다. Public Phase 6와 public SmartScreen evidence는 외부 공개 배포 전용 gate로 분리한다.
 - 현재 추가 검증은 Windows `codexwinmux` 로컬 앱 범위로 한정했다. Linux `codexmux` live service와 Tailscale Serve 운영 상태는 변경하지 않았다.

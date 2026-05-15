@@ -3,6 +3,9 @@ type TRuntimeScriptEnv = NodeJS.ProcessEnv | Record<string, string | undefined>;
 const hasEnvValue = (value: string | undefined): value is string =>
   value !== undefined && value !== '';
 
+const isLegacyRuntimeEnvKey = (key: string): boolean =>
+  key.startsWith('CODEXMUX_RUNTIME_');
+
 export const preferredRuntimeEnvKey = (legacyKey: string): string =>
   legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_');
 
@@ -20,6 +23,11 @@ export const buildRuntimeEnvAlias = (
 ): Record<string, string> => ({
   [preferredRuntimeEnvKey(legacyKey)]: value,
 });
+
+export const stripLegacyRuntimeEnv = (env: TRuntimeScriptEnv): NodeJS.ProcessEnv =>
+  Object.fromEntries(
+    Object.entries(env).filter(([key]) => !isLegacyRuntimeEnvKey(key)),
+  ) as NodeJS.ProcessEnv;
 
 export const writeRuntimeEnvAlias = (
   env: TRuntimeScriptEnv,

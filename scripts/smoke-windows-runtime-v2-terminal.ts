@@ -7,16 +7,13 @@ import {
   createWindowsRuntimeV2TerminalSmokeEnv,
   hasWindowsRuntimeSmokeMarker,
 } from './windows-runtime-v2-terminal-smoke-lib';
+import { readRuntimeEnvAlias } from './runtime-env-alias';
 
 const rootDir = process.cwd();
-
-const isRuntimeLegacyKey = (legacyKey: string): boolean =>
-  legacyKey.startsWith('CODEXMUX_RUNTIME_');
 
 const readCodexwinmuxAlias = (legacyKey: string): string | undefined => {
   const preferred = process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')];
   if (preferred) return preferred;
-  if (isRuntimeLegacyKey(legacyKey)) return undefined;
   return process.env[legacyKey];
 };
 
@@ -64,7 +61,7 @@ const main = async (): Promise<void> => {
   const configuredHomeDir = readCodexwinmuxAlias('CODEXMUX_WINDOWS_TERMINAL_SMOKE_HOME');
   const homeDir = configuredHomeDir
     || await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-windows-terminal-smoke-'));
-  const dbPath = readCodexwinmuxAlias('CODEXWINMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
+  const dbPath = readRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_DB') || path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
 
   const env = createWindowsRuntimeV2TerminalSmokeEnv({

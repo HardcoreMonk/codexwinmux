@@ -31,7 +31,7 @@ import {
 } from './runtime-v2-phase2-smoke-lib.mjs';
 import { writeSmokeArtifact } from './smoke-artifact-lib.mjs';
 import { buildWindowsPackagedLaunchArtifactPayload } from './windows-package-smoke-artifact-lib.mjs';
-import { preferredCodexwinmuxEnvKey, readEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
+import { buildEnvAlias, readEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 const PASSWORD = 'windows-packaged-runtime-v2-smoke';
@@ -69,11 +69,6 @@ const fail = async (code, message, details = {}) => {
 
 const resolveAppPath = () =>
   path.resolve(readEnvAlias(process.env, 'CODEXMUX_WINDOWS_PACKAGED_APP_PATH') || path.join(rootDir, 'release', 'win-unpacked', 'codexwinmux.exe'));
-
-const buildEnvAlias = (legacyKey, value) => ({
-  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
-  ...(String(legacyKey).startsWith('CODEXMUX_RUNTIME_') ? {} : { [legacyKey]: value }),
-});
 
 const buildIsolatedEnv = (homeDir, { reservedPorts = [] } = {}) => ({
   ...stripLegacyRuntimeEnv(process.env),

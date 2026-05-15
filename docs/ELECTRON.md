@@ -43,7 +43,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:zip-artifact`: `release/*-win.zip` archive 안에 exe, `app.asar`, runtime v2 workers, Windows native terminal/runtime modules가 있는지 확인합니다.
 - `smoke:windows:update-metadata`: `release/latest.yml`이 실제 NSIS installer, installer size, sha512, blockmap artifact와 일치하고, packaged `app-update.yml`이 GitHub publish provider와 같은 owner/repo를 가리키는지 확인합니다.
 - `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 `internal-not-required` 또는 `internal-trusted-root` 상태를 signed/timestamped artifact와 함께 기록할 수 있습니다. 비-runtime 기존 `CODEXMUX_*` env는 호환 fallback입니다. Runtime 입력은 `0.4.15`부터 `CODEXWINMUX_RUNTIME_*`만 사용합니다.
-- `smoke:windows:smartscreen-public-evidence`: GitHub Release 같은 HTTPS public download URL에서 Chromium download로 installer를 내려받고, Internet ZoneId=3과 `Start-Process` launch/exit 증거를 확인해 public SmartScreen `passed` evidence JSON을 생성합니다. 이 smoke는 temp install/uninstall을 수행하므로 Windows 사용자 설치 상태를 임시로 변경합니다.
+- `smoke:windows:smartscreen-public-evidence`: GitHub Release 같은 HTTPS public download URL에서 Chromium download로 installer를 내려받고, Internet ZoneId=3과 `Start-Process` launch/exit 증거를 확인해 public SmartScreen `passed` evidence JSON을 생성합니다. 이 smoke는 외부 공개 배포 전용 gate이며, 내부 폐쇄망 전용 릴리스에서는 실행하지 않아도 됩니다. 실행 시 temp install/uninstall을 수행하므로 Windows 사용자 설치 상태를 임시로 변경합니다.
 - `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다.
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
@@ -250,6 +250,12 @@ artifact를 전제로 `internal-not-required` 또는 `internal-trusted-root` 상
 있습니다. `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1` 모드에서는 internal-only 상태와
 단순 `CODEXWINMUX_SMARTSCREEN_STATUS=passed` shorthand를 허용하지 않습니다.
 
+현재 제품 범위가 내부 폐쇄망 전용이면 public SmartScreen reputation은 release
+blocker가 아닙니다. 내부 gate는 signed/timestamped artifact, 내부 trusted root 배포,
+`internal-not-required` 또는 `internal-trusted-root` SmartScreen scope,
+`smoke:windows:package-gate`, 폐쇄망 또는 local target의
+`smoke:runtime-v2:phase6-default-gate` 통과를 기준으로 판단합니다.
+
 ```bash
 CODEXWINMUX_SMARTSCREEN_DOWNLOAD_URL=https://github.com/HardcoreMonk/codexwinmux/releases/download/v<version>/codexwinmux-Setup-<version>.exe CODEXWINMUX_SMARTSCREEN_EXPECTED_SHA256=<installer-sha256> CODEXWINMUX_SMARTSCREEN_PUBLIC_EVIDENCE_OUTPUT=artifacts/smartscreen-v<version>-public.json corepack pnpm smoke:windows:smartscreen-public-evidence
 CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1 CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH=artifacts/smartscreen-v<version>-public.json corepack pnpm smoke:windows:signing-evidence
@@ -311,6 +317,8 @@ Chromium download, SHA match, Internet ZoneId=3까지 통과했지만 Windows
 `Start-Process` launch evidence가 취소/SmartScreen reputation 단계에서 실패했습니다.
 따라서 public SmartScreen `passed` evidence는 아직 확보되지 않았고, 다음 공개
 릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.17+` 새 version으로 발행해야 합니다.
+이 public evidence 미확보 상태는 내부 폐쇄망 릴리스나 내부 legacy fallback 제거의
+blocker로 사용하지 않습니다.
 다음 공개/내부 릴리스는 기존 tag나 asset을 덮어쓰지 말고 새 version/tag로
 발행합니다. `v0.4.14` tag와 asset은 불변 historical evidence로 유지합니다.
 

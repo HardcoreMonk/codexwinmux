@@ -43,6 +43,12 @@ const legacyRuntimeAliasCallPatterns = [
   /\bwriteRuntimeEnvAlias\(.*'CODEXMUX_RUNTIME_/,
 ];
 
+const centralizedLegacyRuntimeCompatibilityFiles = new Set([
+  'electron/main.ts',
+  'electron/runtime-env.ts',
+  'src/lib/runtime/env.ts',
+]);
+
 describe('runtime env namespace policy', () => {
   it('uses CODEXWINMUX runtime keys at active smoke and bootstrap call sites', () => {
     const offenders = activeRuntimeEnvFiles.flatMap((relativePath) => {
@@ -51,6 +57,19 @@ describe('runtime env namespace policy', () => {
         legacyRuntimeAliasCallPatterns
           .filter((pattern) => pattern.test(line))
           .map((pattern) => `${relativePath}:${index + 1}: ${pattern.source}`));
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('keeps raw CODEXMUX runtime checks inside centralized compatibility helpers', () => {
+    const offenders = activeRuntimeEnvFiles.flatMap((relativePath) => {
+      if (centralizedLegacyRuntimeCompatibilityFiles.has(relativePath)) return [];
+      const content = fs.readFileSync(path.join(process.cwd(), relativePath), 'utf8');
+      return content.split(/\r?\n/).flatMap((line, index) =>
+        line.includes('CODEXMUX_RUNTIME_')
+          ? [`${relativePath}:${index + 1}: raw CODEXMUX_RUNTIME_ reference`]
+          : []);
     });
 
     expect(offenders).toEqual([]);

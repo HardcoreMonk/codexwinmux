@@ -398,6 +398,10 @@ Authenticode로 서명됐는지, timestamp가 있는지, 명시적인 SmartScree
 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 signed/timestamped artifact를
 전제로 `internal-not-required` 또는 `internal-trusted-root`를 사용할 수 있다.
 서명되지 않은 artifact는 `windows-smartscreen-blocked-unsigned`로 실패한다.
+내부 폐쇄망 전용 릴리스에서는 public SmartScreen reputation smoke를 release
+blocker로 두지 않는다. 이 경우 내부 signing evidence, `smoke:windows:package-gate`,
+폐쇄망 또는 local target의 `smoke:runtime-v2:phase6-default-gate`를 authoritative
+evidence로 사용한다.
 `CODEXWINMUX_SMARTSCREEN_PUBLIC_RELEASE=1`을 설정하면 internal-only status와 단순
 `STATUS=passed` shorthand를 허용하지 않고,
 `smoke:windows:smartscreen-public-evidence`가 만든 public launch evidence JSON만

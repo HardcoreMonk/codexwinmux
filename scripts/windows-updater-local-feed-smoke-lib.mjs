@@ -1,5 +1,5 @@
 import path from 'path';
-import { preferredCodexwinmuxEnvKey, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
+import { buildEnvAlias, stripLegacyRuntimeEnv } from './env-alias-lib.mjs';
 
 const requiredInstallEvents = [
   {
@@ -56,11 +56,6 @@ export const buildWindowsUpdaterLocalFeedLatestMetadata = ({
     ? latestMetadata.files.map((file) => ({ ...file }))
     : latestMetadata?.files,
   releaseDate,
-});
-
-const buildEnvAlias = (legacyKey, value) => ({
-  [preferredCodexwinmuxEnvKey(legacyKey)]: value,
-  ...(String(legacyKey).startsWith('CODEXMUX_RUNTIME_') ? {} : { [legacyKey]: value }),
 });
 
 export const buildWindowsUpdaterSmokeEnv = ({

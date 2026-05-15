@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRuntimeEnvAlias,
   readRuntimeEnvAlias,
+  stripLegacyRuntimeEnv,
   writeRuntimeEnvAlias,
 } from '../../../scripts/runtime-env-alias';
 
@@ -15,6 +16,18 @@ describe('script runtime env alias helpers', () => {
     expect(readRuntimeEnvAlias(env, 'CODEXWINMUX_RUNTIME_DB')).toBe('C:\\Temp\\state.db');
     expect(buildRuntimeEnvAlias('CODEXWINMUX_RUNTIME_V2', '1')).toEqual({
       CODEXWINMUX_RUNTIME_V2: '1',
+    });
+  });
+
+  it('strips legacy CODEXMUX runtime keys from child process env snapshots', () => {
+    expect(stripLegacyRuntimeEnv({
+      CODEXMUX_RUNTIME_V2: '1',
+      CODEXMUX_RUNTIME_DB: 'C:\\Legacy\\state.db',
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
+    })).toEqual({
+      CODEXWINMUX_RUNTIME_V2: '1',
+      CODEXMUX_PROCESS_INSPECTOR_ADAPTER: 'windows',
     });
   });
 });
