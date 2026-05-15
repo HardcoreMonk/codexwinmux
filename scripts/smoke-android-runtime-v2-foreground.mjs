@@ -6,7 +6,6 @@ import { spawn } from 'child_process';
 import {
   DEFAULT_ANDROID_ACTIVITY,
   DEFAULT_ANDROID_APP_ID,
-  DEFAULT_ANDROID_SMOKE_URL,
   adbArgsFor,
   attachConsoleCollectors,
   backgroundAndroidApp,
@@ -238,7 +237,9 @@ const main = async () => {
     : undefined;
   const appId = process.env.CODEXMUX_ANDROID_APP_ID || DEFAULT_ANDROID_APP_ID;
   const activity = process.env.CODEXMUX_ANDROID_ACTIVITY || DEFAULT_ANDROID_ACTIVITY;
-  const restoreUrl = normalizeSmokeUrl(process.env.CODEXMUX_ANDROID_RESTORE_URL || DEFAULT_ANDROID_SMOKE_URL);
+  const restoreUrl = process.env.CODEXMUX_ANDROID_RESTORE_URL
+    ? normalizeSmokeUrl(process.env.CODEXMUX_ANDROID_RESTORE_URL)
+    : null;
 
   const adb = findAdb();
   const serial = selectAndroidSerial(adb);
@@ -257,7 +258,7 @@ const main = async () => {
     forward = await discoverDevtoolsTarget({
       adb,
       adbArgs,
-      expectedUrl: targetUrl || restoreUrl,
+      expectedUrl: targetUrl || restoreUrl || 'https://localhost',
       requestedPort,
       timeoutMs,
     });
@@ -433,7 +434,7 @@ const main = async () => {
         // best-effort cleanup
       }
     }
-    if (cdp && process.env.CODEXMUX_ANDROID_RUNTIME_V2_RESTORE !== '0') {
+    if (cdp && restoreUrl && process.env.CODEXMUX_ANDROID_RUNTIME_V2_RESTORE !== '0') {
       try {
         await navigateCdp(cdp, restoreUrl);
       } catch {

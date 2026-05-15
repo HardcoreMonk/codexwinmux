@@ -45,7 +45,7 @@ const result = spawnSync('keytool', [
   '-validity',
   '10000',
   '-dname',
-  'CN=codexmux, OU=codexmux, O=HardcoreMonk, L=Seoul, ST=Seoul, C=KR',
+  'CN=codexwinmux, OU=codexwinmux, O=HardcoreMonk, L=Seoul, ST=Seoul, C=KR',
 ], { stdio: 'inherit' });
 
 if (result.status !== 0) {

@@ -11,6 +11,7 @@ const packageJsonPath = path.join(rootDir, 'package.json');
 const propertiesPath = path.join(androidDir, 'keystore.properties');
 const defaultAabPath = path.join(androidDir, 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
 const aabPath = process.env.CODEXMUX_ANDROID_RELEASE_AAB || defaultAabPath;
+const supportsPosixSecretMode = process.platform !== 'win32';
 
 const fail = (code, message, details = {}) => {
   console.error(JSON.stringify({ ok: false, code, message, ...details }, null, 2));
@@ -66,7 +67,7 @@ const assertSecretFile = (filePath, label) => {
     fail(`${label}-missing`, `${label} is missing`, { path: path.relative(rootDir, filePath) });
   }
   const stat = fs.statSync(filePath);
-  if ((stat.mode & 0o077) !== 0) {
+  if (supportsPosixSecretMode && (stat.mode & 0o077) !== 0) {
     fail(`${label}-permissions-too-open`, `${label} must not be readable by group or others`, {
       path: path.relative(rootDir, filePath),
       mode: (stat.mode & 0o777).toString(8).padStart(3, '0'),
@@ -166,7 +167,7 @@ console.log(JSON.stringify({
   expectedVersionCode,
   checks: [
     'keystore-properties-present',
-    'secret-file-permissions-600',
+    supportsPosixSecretMode ? 'secret-file-permissions-600' : 'secret-file-permissions-posix-skipped-on-windows',
     'secret-files-gitignored',
     'aab-present-and-fresh',
     'aab-required-entries',

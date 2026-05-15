@@ -2,7 +2,6 @@
 import {
   DEFAULT_ANDROID_ACTIVITY,
   DEFAULT_ANDROID_APP_ID,
-  DEFAULT_ANDROID_SMOKE_URL,
   adbArgsFor,
   attachConsoleCollectors,
   backgroundAndroidApp,
@@ -20,9 +19,9 @@ import {
   isExpectedRemoteState,
   isSmokeFlagEnabled,
   navigateCdp,
-  normalizeSmokeUrl,
   readWebViewState,
   removeForward,
+  resolveAndroidSmokeUrl,
   selectAndroidSerial,
   sleep,
   startAndroidApp,
@@ -85,7 +84,7 @@ const triggerAndroidRestart = (cdp) =>
   })()`);
 
 const main = async () => {
-  const targetUrl = normalizeSmokeUrl(process.env.CODEXMUX_ANDROID_SMOKE_URL || DEFAULT_ANDROID_SMOKE_URL);
+  const targetUrl = resolveAndroidSmokeUrl(process.env.CODEXMUX_ANDROID_SMOKE_URL);
   const backgroundMs = envNumber('CODEXMUX_ANDROID_BACKGROUND_MS', 12_000);
   const rounds = envNumber('CODEXMUX_ANDROID_FOREGROUND_ROUNDS', 2);
   const settleMs = envNumber('CODEXMUX_ANDROID_RECONNECT_SETTLE_MS', 3_000);

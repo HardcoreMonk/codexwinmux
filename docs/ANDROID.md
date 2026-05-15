@@ -1,10 +1,11 @@
 # Android Development
 
-codexmux Android 앱은 Capacitor 기반 WebView shell입니다. Android 기기에서 Codex나 tmux를 직접 실행하지 않고, 데스크톱 또는 서버에서 실행 중인 codexmux에 접속합니다.
+codexwinmux Android 앱은 Capacitor 기반 WebView shell입니다. Android 기기에서 Codex나 Windows runtime을 직접 실행하지 않고, Windows 기기에서 실행 중인 codexwinmux에 접속합니다.
 
 ## Commands
 
 ```bash
+corepack pnpm dev:lan
 corepack pnpm android:sync
 corepack pnpm android:open
 corepack pnpm android:run
@@ -16,12 +17,13 @@ corepack pnpm android:build:release
 corepack pnpm android:bundle:release
 corepack pnpm smoke:android:release-aab
 corepack pnpm smoke:android:install
-corepack pnpm smoke:android:foreground
-corepack pnpm smoke:android:recovery
+CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 corepack pnpm smoke:android:foreground
+CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 corepack pnpm smoke:android:recovery
 corepack pnpm smoke:android:runtime-v2
 corepack pnpm smoke:android:timeline-foreground
 ```
 
+- `dev:lan`: Windows host에서 Android 기기가 접근할 LAN 개발 서버를 띄웁니다. `HOST=0.0.0.0`, `PORT=8121`, runtime v2 default, Windows terminal adapter를 `CODEXWINMUX_*` 환경변수로 고정합니다.
 - `android:sync`: `android-web/` asset과 Capacitor 설정을 `android/` 프로젝트에 반영합니다.
 - `android:open`: Android Studio를 엽니다.
 - `android:run`: 연결된 기기 또는 에뮬레이터에서 실행합니다.
@@ -32,10 +34,10 @@ corepack pnpm smoke:android:timeline-foreground
 - `android:bundle:release`: signed release AAB를 생성합니다.
 - `smoke:android:release-aab`: 로컬 keystore 권한, git ignore, fresh AAB, 필수 bundle entry, signature를 확인합니다.
 - `smoke:android:install`: 연결된 debug APK의 package/version/activity 상태를 확인합니다.
-- `smoke:android:foreground`: Android WebView DevTools와 ADB로 foreground/background 복귀, native bridge, console/logcat 오류를 확인합니다.
-- `smoke:android:recovery`: network, HTTP 4xx, SSL 실패 후 native launcher 복귀와 서버 재연결을 확인합니다.
+- `smoke:android:foreground`: `CODEXMUX_ANDROID_SMOKE_URL`에 지정한 codexwinmux 서버를 대상으로 Android WebView DevTools와 ADB로 foreground/background 복귀, native bridge, console/logcat 오류를 확인합니다.
+- `smoke:android:recovery`: `CODEXMUX_ANDROID_SMOKE_URL`에 지정한 codexwinmux 서버를 대상으로 network, HTTP 4xx, SSL 실패 후 native launcher 복귀와 서버 재연결을 확인합니다.
 - `smoke:android:runtime-v2`: temp runtime v2 서버를 Tailscale IP 또는 명시 target URL로 노출하고 Android WebView에서 `/api/v2/terminal` attach와 foreground reconnect marker output을 확인합니다.
-- `smoke:android:timeline-foreground`: temp runtime v2 서버를 Tailscale IP로 노출하고 Android WebView page context에서 `/api/timeline` init freshness와 foreground reconnect를 확인한 뒤, 종료 전에 운영 restore URL 로드 완료를 검증합니다.
+- `smoke:android:timeline-foreground`: temp runtime v2 서버를 Tailscale IP 또는 명시 target URL로 노출하고 Android WebView page context에서 `/api/timeline` init freshness와 foreground reconnect를 확인합니다. `CODEXMUX_ANDROID_RESTORE_URL`을 지정한 경우 종료 전에 해당 codexwinmux URL 로드 완료도 검증합니다.
 
 ## Versioning
 
@@ -48,7 +50,7 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 
 예: `0.3.0`은 `versionName=0.3`, `versionCode=300`입니다. `0.3.1`은 `versionName=0.3.1`, `versionCode=301`입니다. CI나 수동 배포에서 `ANDROID_VERSION_CODE` 환경변수를 주면 `versionCode`만 override할 수 있습니다.
 
-현재 repo/release version은 `0.4.16`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.16`, `versionCode=416`입니다.
+현재 repo/release version은 `0.4.17`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.17`, `versionCode=417`입니다.
 
 버전 증가 규칙:
 
@@ -96,17 +98,18 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 ## Connection Flow
 
 1. 앱에 저장된 서버 URL이 있으면 바로 자동 재접속합니다.
-2. 저장된 URL이 없으면 기본 서버 URL을 저장한 뒤 자동 연결합니다.
-3. 최근 서버 목록에서 이전 서버를 바로 다시 선택할 수 있습니다.
-4. 서버를 바꿔야 하면 런처의 변경 버튼으로 URL을 수정합니다.
-5. 변경한 URL은 `localStorage`에 저장되고 다음 실행부터 우선 사용됩니다.
-6. 원격 서버로 이동하기 전 `/api/health`를 확인합니다.
-7. CORS가 가능한 HTTPS 서버는 `GET /api/health` `200 OK`를 확인하고, 구버전 서버나 일부 WebView 환경은 `no-cors` fallback으로 접근 가능성만 확인합니다.
-8. 런처가 `https://localhost`에서 실행되는 Android WebView 특성상 `http://` 개발 서버는 mixed-content fetch가 차단되므로 health probe를 건너뛰고 바로 이동합니다. 실패 시 native WebViewClient가 런처로 복귀시킵니다.
-9. timeout, network, HTTP 4xx/5xx, SSL 오류는 런처로 되돌아와 원인별 안내와 재시도/변경 흐름을 제공합니다.
-10. 앱 정보 영역에서 versionName, versionCode, package, device, Android version을 확인하고 앱을 재시작할 수 있습니다.
+2. 저장된 URL이 없으면 서버 URL 입력 화면에서 대기합니다. codexwinmux Android 런처는 public `codexmux` 기본 서버를 자동 저장하거나 자동 연결하지 않습니다.
+3. 런처 저장 키는 `codexwinmux:server-url`과 `codexwinmux:recent-server-urls`입니다. 기존 `codexmux:*` 값은 자동 연결하지 않으며, 이전 public `gti12.tail73c4be.ts.net` 값은 migration 후보에서 제외합니다.
+4. 최근 서버 목록에서 이전 서버를 바로 다시 선택할 수 있습니다.
+5. 서버를 바꿔야 하면 런처의 변경 버튼으로 URL을 수정합니다.
+6. 변경한 URL은 `localStorage`에 저장되고 다음 실행부터 우선 사용됩니다.
+7. 원격 서버로 이동하기 전 `/api/health`를 확인합니다.
+8. CORS가 가능한 HTTPS 서버는 `GET /api/health` `200 OK`를 확인하고, 구버전 서버나 일부 WebView 환경은 `no-cors` fallback으로 접근 가능성만 확인합니다.
+9. 런처가 `https://localhost`에서 실행되는 Android WebView 특성상 `http://` 개발 서버는 mixed-content fetch가 차단되므로 health probe를 건너뛰고 바로 이동합니다. 실패 시 native WebViewClient가 런처로 복귀시킵니다.
+10. timeout, network, HTTP 4xx/5xx, SSL 오류는 런처로 되돌아와 원인별 안내와 재시도/변경 흐름을 제공합니다.
+11. 앱 정보 영역에서 versionName, versionCode, package, device, Android version을 확인하고 앱을 재시작할 수 있습니다.
 
-Tailscale Serve HTTPS 주소를 우선 사용합니다. 로컬 개발용 `http://` 접근은 manifest와 Capacitor 설정에서 허용하지만, 실사용은 HTTPS가 더 안정적입니다.
+현재 내부 LAN 검증은 `http://<windows-host-ip>:8121`을 사용합니다. Tailscale을 쓰는 경우에도 Linux `codexmux`와 공유하지 않는 codexwinmux 전용 tailnet/Serve 주소를 별도로 저장해야 합니다.
 
 Capacitor Android의 `allowNavigation` wildcard는 domain label 개수를 정확히 맞춰야 합니다. Tailscale Serve 주소가 보통 `<machine>.<tailnet>.ts.net` 형태이므로 `capacitor.config.ts`에는 `*.ts.net`뿐 아니라 `*.*.ts.net`도 함께 허용합니다.
 
@@ -135,6 +138,27 @@ browser pane에도 적용된다.
 로그인 화면처럼 인증 전 public route에서는 status/native notification/Web Push/service worker runtime service를 마운트하지 않는다. fresh install 또는 app data clear 후 `/login`에 도착했을 때 `/api/status` WebSocket auth 실패나 service worker registration console error가 생기지 않아야 한다. `/sw.js` 자체는 PWA/Web Push 설치용 static script라 인증 redirect 없이 내려온다.
 
 서버가 내려주는 React 코드만 바뀌는 경우에는 APK 재배포가 필요 없습니다. Linux user service 운영에서는 `corepack pnpm deploy:local`로 build, service restart, health check를 수행하면 기존 Android 앱 WebView가 새 reconnect 로직을 받습니다. native bridge를 바꾸는 앱 정보/재시작 기능 변경은 debug/release APK를 다시 빌드해 기기에 설치해야 합니다.
+
+## 2026-05-15 Android 0.4.17 Version Bump Result
+
+2026-05-15 Windows host 기준:
+
+| 항목 | 결과 |
+| --- | --- |
+| source version | `package.json` `0.4.17` |
+| release immutability | `corepack pnpm smoke:release-immutability` 통과, `v0.4.17` local tag/remote tag/GitHub Release 모두 사용 가능 |
+| debug APK build | `JAVA_HOME=C:\Program Files\Android\openjdk\jdk-21.0.8`, `ANDROID_HOME=C:\Program Files (x86)\Android\android-sdk`, `.\gradlew.bat assembleDebug` 통과 |
+| APK manifest | `aapt dump badging android/app/build/outputs/apk/debug/app-debug.apk`에서 `package=com.hardcoremonk.codexwinmux`, `versionName=0.4.17`, `versionCode=417`, `application-label=codexwinmux`, `application-label-ko=codexwinmux` 확인 |
+| launcher icon | Android launcher icon PNG를 밀도별 `CWM` 워드마크로 교체했고 adaptive icon background를 `#080D1C`로 변경. `aapt dump badging`에서 `application-icon-*`가 `res/mipmap-anydpi-v26/ic_launcher.xml`을 가리키는 것을 확인 |
+| launcher branding/storage | `android-web/index.html`의 visible title/headline/help text를 `codexwinmux`로 정정했고, 런처 저장 키를 `codexwinmux:*`로 분리했다. `cap sync android` 뒤 `android/app/src/main/assets/public/index.html`에도 오래된 visible `codexmux` launcher 문구가 남지 않음을 확인 |
+| device install smoke | SM-S928N `R3CX10RTWFH` 인식 후 `corepack pnpm android:install` 통과. `corepack pnpm smoke:android:install`은 `versionName=0.4.17`, `versionCode=417`, `lastUpdateTime=2026-05-15 23:45:03`, `com.hardcoremonk.codexwinmux/.MainActivity` resolve 확인 |
+| launcher legacy codexmux guard | 기존 기기 데이터에 `codexmux:server-url=https://gti12.tail73c4be.ts.net`가 남아 있어도 앱 재실행 시 `https://localhost/` 런처의 서버 입력 화면에서 대기하고 public `codexmux`로 자동 이동하지 않음을 DevTools로 확인 |
+| foreground smoke | `CODEXMUX_ANDROID_SMOKE_URL=http://192.168.3.74:8121 CODEXMUX_ANDROID_FOREGROUND_ROUNDS=1 corepack pnpm smoke:android:foreground` 통과. target `http://192.168.3.74:8121/login`, appInfo `versionName=0.4.17`, blocking console/logcat 0 |
+| launcher recovery full matrix | `CODEXMUX_ANDROID_SMOKE_URL=http://192.168.3.74:8121 corepack pnpm smoke:android:recovery` 통과. network, HTTP 404, SSL failure 모두 launcher 복귀 후 `codexwinmux:*` 저장 키로 `http://192.168.3.74:8121/login` 재연결, blocking console/logcat 0 |
+| Windows LAN server smoke | Windows host `192.168.3.74:8121`을 `HOST=localhost,192.168.0.0/16`으로 띄운 뒤 Android `R3CX10RTWFH`에서 `http://192.168.3.74:8121/api/health` 접근 통과. Android Wi-Fi는 `192.168.1.4/24`지만 `192.168.1.1` 경유로 Windows host ping과 HTTP 접근이 모두 통과했다 |
+| Windows LAN WebView branding | `CODEXMUX_ANDROID_SMOKE_URL=http://192.168.3.74:8121 CODEXMUX_ANDROID_FOREGROUND_ROUNDS=1 corepack pnpm smoke:android:foreground` 통과. 최종 WebView URL은 `http://192.168.3.74:8121/login`, title은 `로그인 - codexwinmux`, visible logo text는 `windows native codexwinmux`, blocking console/logcat 0 |
+| release APK/AAB signing | `corepack pnpm android:keystore`, `corepack pnpm android:build:release`, `corepack pnpm android:bundle:release`, `corepack pnpm smoke:android:release-aab` 통과. release AAB size `3004070` bytes, `expectedVersionName=0.4.17`, `expectedVersionCode=417`, APK `apksigner verify --print-certs` signer DN `CN=codexwinmux, OU=codexwinmux, O=HardcoreMonk, L=Seoul, ST=Seoul, C=KR` 확인 |
+| runtime v2 foreground smoke | `adb reverse tcp:2579 tcp:2579`와 `CODEXMUX_ANDROID_RUNTIME_V2_URL=http://127.0.0.1:2579`로 `corepack pnpm smoke:android:runtime-v2` 통과. runtime v2 tab `runtimeVersion=2`, initial/foreground-1/foreground-2 marker output, blocking console/logcat 0 |
 
 ## 2026-05-14 Runtime v2 Android Smoke Result
 
@@ -191,7 +215,7 @@ React/server foreground reconnect 변경은 APK 재배포 없이 live server dep
 | logcat 오류 검색 | `Cannot read properties`, `triggerEvent`, terminal/timeline connection error 매칭 없음 |
 | debug install | `versionName=0.3.3`, `versionCode=303`, `MainActivity` resolve |
 
-`smoke:android:foreground`는 `CODEXMUX_ANDROID_BACKGROUND_MS`와 `CODEXMUX_ANDROID_FOREGROUND_ROUNDS`로 장시간/반복 강도를 늘릴 수 있고, `CODEXMUX_ANDROID_RESTART_APP=1`이면 `CodexmuxAndroid.restartApp()`까지 호출한다. 60초 로그인 app surface, native restart smoke, runtime v2 `/api/v2/terminal` foreground smoke는 통과했다. logged-in session의 수십 분 이상 background, iPad Safari/Home Screen은 다음 릴리스 gate에 남긴다.
+`smoke:android:foreground`는 `CODEXMUX_ANDROID_SMOKE_URL`로 codexwinmux target을 명시해야 한다. `CODEXMUX_ANDROID_BACKGROUND_MS`와 `CODEXMUX_ANDROID_FOREGROUND_ROUNDS`로 장시간/반복 강도를 늘릴 수 있고, `CODEXMUX_ANDROID_RESTART_APP=1`이면 `CodexmuxAndroid.restartApp()`까지 호출한다. 60초 로그인 app surface, native restart smoke, runtime v2 `/api/v2/terminal` foreground smoke는 통과했다. logged-in session의 수십 분 이상 background, iPad Safari/Home Screen은 다음 릴리스 gate에 남긴다.
 
 ## Runtime v2 Smoke
 
@@ -286,20 +310,20 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ```bash
 corepack pnpm smoke:android:install
-corepack pnpm smoke:android:foreground
-corepack pnpm smoke:android:recovery
+CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 corepack pnpm smoke:android:foreground
+CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 corepack pnpm smoke:android:recovery
 corepack pnpm smoke:android:runtime-v2
 corepack pnpm smoke:android:timeline-foreground
-CODEXMUX_ANDROID_RESTART_APP=1 CODEXMUX_ANDROID_FOREGROUND_ROUNDS=0 corepack pnpm smoke:android:foreground
+CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 CODEXMUX_ANDROID_RESTART_APP=1 CODEXMUX_ANDROID_FOREGROUND_ROUNDS=0 corepack pnpm smoke:android:foreground
 ```
 
-`smoke:android:timeline-foreground`는 임시 Tailscale IP/port target을 사용하므로 종료 cleanup에서
-`CODEXMUX_ANDROID_RESTORE_URL` 또는 기본 Tailscale Serve URL로 WebView를 되돌리고,
+`smoke:android:timeline-foreground`는 임시 target을 사용하므로 종료 cleanup에서
+`CODEXMUX_ANDROID_RESTORE_URL` 또는 명시된 codexwinmux smoke target으로 WebView를 되돌리고,
 해당 origin의 `readyState=complete`를 확인하지 못하면 실패합니다.
 
 정상 설치 시 `pm path`는 `/data/app/.../base.apk`를 반환하고, launcher activity는 `com.hardcoremonk.codexwinmux/.MainActivity`로 resolve됩니다.
 
-현재 `0.4.16` debug install은 `dumpsys package`에서 `versionName=0.4.16`, `versionCode=416`로 보여야 합니다.
+현재 `0.4.17` debug install은 `dumpsys package`에서 `versionName=0.4.17`, `versionCode=417`로 보여야 합니다.
 
 Signed release APK:
 
@@ -321,13 +345,13 @@ corepack pnpm android:bundle:release
 corepack pnpm smoke:android:release-aab
 ```
 
-`android/release.keystore`와 `android/keystore.properties`는 로컬 비밀 파일이며 git에 커밋하지 않습니다. 새 환경에서는 `corepack pnpm android:keystore`로 생성하거나 기존 keystore를 복원합니다. 두 파일은 git ignore 상태여야 하고 권한은 `600`이어야 합니다. `android:keystore`는 기존 파일을 덮어쓰지 않으며, 기존/신규 secret file 권한을 `600`으로 보정합니다.
+`android/release.keystore`와 `android/keystore.properties`는 로컬 비밀 파일이며 git에 커밋하지 않습니다. 새 환경에서는 `corepack pnpm android:keystore`로 생성하거나 기존 keystore를 복원합니다. 두 파일은 git ignore 상태여야 하고 POSIX 권한을 지원하는 환경에서는 권한이 `600`이어야 합니다. Windows에서는 POSIX mode가 authoritative하지 않으므로 smoke가 git ignore와 서명 검증을 확인하고 POSIX 권한 검사는 skip으로 기록합니다. `android:keystore`는 기존 파일을 덮어쓰지 않으며, 기존/신규 secret file 권한을 `600`으로 보정합니다.
 
 `smoke:android:release-aab`는 secret 값을 출력하지 않고 다음만 검증합니다.
 
-- `android/release.keystore`와 `android/keystore.properties` 존재, git ignore, `600` 권한.
+- `android/release.keystore`와 `android/keystore.properties` 존재, git ignore, POSIX 환경의 `600` 권한.
 - `android/app/build/outputs/bundle/release/app-release.aab`가 Android release input보다 새로움.
 - AAB에 `BundleConfig.pb`, base manifest, dex, launcher asset, native bridge, JAR manifest가 포함됨.
 - `jarsigner -verify`가 release AAB signature를 검증함.
 
-2026-05-05 로컬 release signing/AAB smoke 기준 `corepack pnpm android:bundle:release`는 `BUILD SUCCESSFUL`, `corepack pnpm smoke:android:release-aab`는 `expectedVersionName=0.4.1`, `expectedVersionCode=401`, AAB size `3030142` bytes로 통과했습니다.
+2026-05-15 Windows 로컬 release signing/AAB smoke 기준 `corepack pnpm android:build:release`, `corepack pnpm android:bundle:release`는 `BUILD SUCCESSFUL`, `corepack pnpm smoke:android:release-aab`는 `expectedVersionName=0.4.17`, `expectedVersionCode=417`, AAB size `3004070` bytes로 통과했습니다. APK `apksigner verify --print-certs` 기준 signer DN은 `CN=codexwinmux, OU=codexwinmux, O=HardcoreMonk, L=Seoul, ST=Seoul, C=KR`입니다.

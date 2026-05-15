@@ -45,6 +45,16 @@ describe('Android WebView smoke helpers', () => {
       .toBe('https://localhost/');
   });
 
+  it('reconnects the launcher with codexwinmux storage keys only', async () => {
+    const { reconnectLauncherToServer } = await loadLib();
+    const source = reconnectLauncherToServer.toString();
+
+    expect(source).toContain("localStorage.setItem('codexwinmux:server-url'");
+    expect(source).toContain("localStorage.setItem('codexwinmux:recent-server-urls'");
+    expect(source).toContain("localStorage.removeItem('codexmux:server-url'");
+    expect(source).toContain("localStorage.removeItem('codexmux:recent-server-urls'");
+  });
+
   it('collects Android bridge and reconnect console failures', async () => {
     const { collectBlockingConsoleEvents } = await loadLib();
     const events = [
@@ -135,6 +145,43 @@ describe('Android WebView smoke helpers', () => {
     expect(isSmokeFlagEnabled(undefined)).toBe(false);
   });
 
+  it('requires an explicit codexwinmux Android smoke URL by default', async () => {
+    const { DEFAULT_ANDROID_SMOKE_URL, resolveAndroidSmokeUrl } = await loadLib();
+
+    expect(DEFAULT_ANDROID_SMOKE_URL).toBe('');
+    expect(() => resolveAndroidSmokeUrl(undefined)).toThrow(/CODEXMUX_ANDROID_SMOKE_URL is required/);
+    expect(resolveAndroidSmokeUrl('http://192.168.3.74:8121')).toBe('http://192.168.3.74:8121');
+  });
+
+  it('uses an external HTTP 404 URL for the HTTP recovery scenario so auth redirects do not mask main-frame errors', async () => {
+    const { buildAndroidRecoveryScenarioUrl } = await loadLib();
+
+    expect(buildAndroidRecoveryScenarioUrl('http', 'http://192.168.3.74:8121')).toBe('https://httpstat.us/404');
+    expect(buildAndroidRecoveryScenarioUrl('http', 'http://192.168.3.74:8121', {
+      CODEXMUX_ANDROID_HTTP_BAD_URL: 'http://192.168.3.74:8121/custom-404',
+    })).toBe('http://192.168.3.74:8121/custom-404');
+  });
+
+  it('wakes Android before DevTools discovery in recovery smoke scripts', async () => {
+    const { wakeAndroidDevice } = await loadLib();
+    const calls: string[][] = [];
+
+    wakeAndroidDevice({
+      adb: 'adb',
+      adbArgs: ['-s', 'device'],
+      run: (_command: string, args: string[]) => {
+        calls.push(args);
+        return '';
+      },
+    });
+
+    expect(calls).toEqual([
+      ['-s', 'device', 'shell', 'input', 'keyevent', 'KEYCODE_WAKEUP'],
+      ['-s', 'device', 'shell', 'wm', 'dismiss-keyguard'],
+      ['-s', 'device', 'shell', 'input', 'keyevent', 'KEYCODE_MENU'],
+    ]);
+  });
+
   it('resolves winget platform-tools adb on Windows when SDK adb is absent', async () => {
     const { resolveAdbPath } = await loadLib();
     const localAppData = 'C:\\Users\\yohan\\AppData\\Local';
@@ -150,6 +197,28 @@ describe('Android WebView smoke helpers', () => {
 
     expect(resolveAdbPath({
       env: { LOCALAPPDATA: localAppData },
+      homeDir: 'C:\\Users\\yohan',
+      platform: 'win32',
+      exists: (candidate: string) => candidate === expected,
+    })).toBe(expected);
+  });
+
+  it('resolves the Program Files Android SDK adb on Windows when user SDK adb is absent', async () => {
+    const { resolveAdbPath } = await loadLib();
+    const programFilesX86 = 'C:\\Program Files (x86)';
+    const expected = path.join(
+      programFilesX86,
+      'Android',
+      'android-sdk',
+      'platform-tools',
+      'adb.exe',
+    );
+
+    expect(resolveAdbPath({
+      env: {
+        LOCALAPPDATA: 'C:\\Users\\yohan\\AppData\\Local',
+        'ProgramFiles(x86)': programFilesX86,
+      },
       homeDir: 'C:\\Users\\yohan',
       platform: 'win32',
       exists: (candidate: string) => candidate === expected,

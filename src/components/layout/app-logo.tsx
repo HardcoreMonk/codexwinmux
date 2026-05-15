@@ -17,8 +17,7 @@ const AppLogo = ({ shimmer = false, size = 'sm', className }: IAppLogoProps) => 
       <Terminal className={cn(iconSize, 'shrink-0 text-brand')} />
       <span className={cn('min-w-0 truncate', textSize, shimmer ? 'animate-shimmer' : 'text-brand')}>
         <span className="font-medium">windows native </span>
-        <span className="font-bold">codex</span>
-        <span className="font-normal">mux</span>
+        <span className="font-bold">{APP_DISPLAY_NAME}</span>
       </span>
     </div>
   );

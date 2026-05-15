@@ -29,7 +29,7 @@ public class CodexmuxWebViewClient extends BridgeWebViewClient {
 
     @Override
     public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-        if (shouldShowLauncher(request) && errorResponse != null && errorResponse.getStatusCode() >= 400) {
+        if (shouldShowLauncherForHttpError(view, request) && errorResponse != null && errorResponse.getStatusCode() >= 400) {
             loadLauncher(view, "http");
             return;
         }
@@ -57,6 +57,14 @@ public class CodexmuxWebViewClient extends BridgeWebViewClient {
     private boolean shouldShowLauncher(WebResourceRequest request) {
         if (request == null || !request.isForMainFrame() || request.getUrl() == null) return false;
         return shouldShowLauncher(request.getUrl().toString(), true);
+    }
+
+    private boolean shouldShowLauncherForHttpError(WebView view, WebResourceRequest request) {
+        if (request == null || request.getUrl() == null) return false;
+        if (shouldShowLauncher(request)) return true;
+        String requestUrl = request.getUrl().toString();
+        String currentUrl = view != null ? view.getUrl() : null;
+        return currentUrl != null && currentUrl.equals(requestUrl) && shouldShowLauncher(requestUrl, true);
     }
 
     private boolean shouldShowLauncher(String url, boolean mainFrame) {

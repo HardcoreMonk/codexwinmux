@@ -2,9 +2,9 @@
 import {
   DEFAULT_ANDROID_ACTIVITY,
   DEFAULT_ANDROID_APP_ID,
-  DEFAULT_ANDROID_SMOKE_URL,
   adbArgsFor,
   attachConsoleCollectors,
+  buildAndroidRecoveryScenarioUrl,
   clearLogcat,
   collectBlockingConsoleEvents,
   collectBlockingLogcatLines,
@@ -16,28 +16,22 @@ import {
   forceStopAndroidApp,
   isExpectedRemoteState,
   navigateCdp,
-  normalizeSmokeUrl,
   readWebViewState,
   reconnectLauncherToServer,
   removeForward,
+  resolveAndroidSmokeUrl,
   selectAndroidSerial,
   sleep,
   startAndroidApp,
   waitFor,
   waitForExpectedRemoteState,
   waitForLauncherState,
+  wakeAndroidDevice,
 } from './android-webview-smoke-lib.mjs';
 
 const fail = (code, message, details = {}) => {
   console.error(JSON.stringify({ ok: false, code, message, ...details }, null, 2));
   process.exit(1);
-};
-
-const scenarioUrl = (scenario, targetUrl) => {
-  if (scenario === 'network') return process.env.CODEXMUX_ANDROID_NETWORK_BAD_URL || 'http://127.0.0.1:1';
-  if (scenario === 'http') return process.env.CODEXMUX_ANDROID_HTTP_BAD_URL || new URL('/__codexmux-smoke-http-404', targetUrl).toString();
-  if (scenario === 'ssl') return process.env.CODEXMUX_ANDROID_SSL_BAD_URL || 'https://expired.badssl.com/';
-  throw new Error(`unsupported recovery scenario: ${scenario}`);
 };
 
 const parseScenarios = () =>
@@ -55,7 +49,7 @@ const envNumber = (name, fallback) => {
 };
 
 const main = async () => {
-  const targetUrl = normalizeSmokeUrl(process.env.CODEXMUX_ANDROID_SMOKE_URL || DEFAULT_ANDROID_SMOKE_URL);
+  const targetUrl = resolveAndroidSmokeUrl(process.env.CODEXMUX_ANDROID_SMOKE_URL);
   const requestedPort = process.env.CODEXMUX_ANDROID_DEVTOOLS_PORT
     ? Number(process.env.CODEXMUX_ANDROID_DEVTOOLS_PORT)
     : undefined;
@@ -100,24 +94,36 @@ const main = async () => {
         : null;
     }, 35_000);
 
+  const settleOnTarget = async () => {
+    const state = await readWebViewState(cdp);
+    if (!isExpectedRemoteState(state, targetUrl)) {
+      await navigateWithReconnect(targetUrl);
+    }
+    return await waitForExpectedRemoteState(cdp, targetUrl, 35_000);
+  };
+
   try {
     clearLogcat({ adb, adbArgs });
+    wakeAndroidDevice({ adb, adbArgs });
     forceStopAndroidApp({ adb, adbArgs, appId });
     startAndroidApp({ adb, adbArgs, activity });
     await sleep(1_000);
     await connectWebView();
+    await settleOnTarget();
 
     for (let i = 0; i < scenarios.length; i += 1) {
       const scenario = scenarios[i];
       if (i > 0) {
+        wakeAndroidDevice({ adb, adbArgs });
         forceStopAndroidApp({ adb, adbArgs, appId });
         startAndroidApp({ adb, adbArgs, activity });
         await sleep(1_000);
         await connectWebView();
+        await settleOnTarget();
         checks.push(`${scenario}-app-restart`);
       }
 
-      const badUrl = scenarioUrl(scenario, targetUrl);
+      const badUrl = buildAndroidRecoveryScenarioUrl(scenario, targetUrl);
       await navigateWithReconnect(badUrl);
       const launcherState = await waitForLauncherState(cdp, 30_000);
       checks.push(`${scenario}-launcher`);

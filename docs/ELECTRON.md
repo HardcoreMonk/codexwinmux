@@ -279,7 +279,7 @@ macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사
 ## 패키징 메모
 
 현재 패키징 metadata는 제품명, app id, data dir, executable/artifact name을
-`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.16`이며, 새
+`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.17`이며, 새
 published update evidence를 주장하려면 같은 버전의 `latest.yml`,
 `codexwinmux-Setup-<version>.exe`, matching `.blockmap`을 GitHub Release에 발행한 뒤
 published/updater smoke를 다시 실행해야 합니다.
@@ -310,7 +310,7 @@ public launch evidence JSON 기반 `passed` evidence를 요구합니다.
 Chromium download, SHA match, Internet ZoneId=3까지 통과했지만 Windows
 `Start-Process` launch evidence가 취소/SmartScreen reputation 단계에서 실패했습니다.
 따라서 public SmartScreen `passed` evidence는 아직 확보되지 않았고, 다음 공개
-릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.16+` 새 version으로 발행해야 합니다.
+릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.17+` 새 version으로 발행해야 합니다.
 다음 공개/내부 릴리스는 기존 tag나 asset을 덮어쓰지 말고 새 version/tag로
 발행합니다. `v0.4.14` tag와 asset은 불변 historical evidence로 유지합니다.
 

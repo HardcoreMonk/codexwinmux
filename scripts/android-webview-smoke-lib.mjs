@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
 
 export const DEFAULT_ANDROID_APP_ID = 'com.hardcoremonk.codexwinmux';
 export const DEFAULT_ANDROID_ACTIVITY = `${DEFAULT_ANDROID_APP_ID}/.MainActivity`;
-export const DEFAULT_ANDROID_SMOKE_URL = 'https://gti12.tail73c4be.ts.net';
+export const DEFAULT_ANDROID_SMOKE_URL = '';
 
 const COMMAND_TIMEOUT_MS = 30_000;
 const FETCH_TIMEOUT_MS = 5_000;
@@ -25,6 +25,21 @@ export const normalizeSmokeUrl = (raw) => {
   const url = new URL(withScheme);
   url.hash = '';
   return url.toString().replace(/\/$/, '');
+};
+
+export const resolveAndroidSmokeUrl = (raw, envName = 'CODEXMUX_ANDROID_SMOKE_URL') => {
+  const value = String(raw || DEFAULT_ANDROID_SMOKE_URL || '').trim();
+  if (!value) {
+    throw new Error(`${envName} is required for codexwinmux Android smoke; set it to the codexwinmux server URL`);
+  }
+  return normalizeSmokeUrl(value);
+};
+
+export const buildAndroidRecoveryScenarioUrl = (scenario, targetUrl, env = process.env) => {
+  if (scenario === 'network') return env.CODEXMUX_ANDROID_NETWORK_BAD_URL || 'http://127.0.0.1:1';
+  if (scenario === 'http') return env.CODEXMUX_ANDROID_HTTP_BAD_URL || 'https://httpstat.us/404';
+  if (scenario === 'ssl') return env.CODEXMUX_ANDROID_SSL_BAD_URL || 'https://expired.badssl.com/';
+  throw new Error(`unsupported recovery scenario: ${scenario}`);
 };
 
 const safeUrl = (raw) => {
@@ -154,6 +169,10 @@ export const resolveAdbPath = ({
         adbName,
       ),
     ] : []),
+    ...(platform === 'win32' ? [
+      path.join(env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Android', 'android-sdk', 'platform-tools', adbName),
+      path.join(env.ProgramFiles || 'C:\\Program Files', 'Android', 'android-sdk', 'platform-tools', adbName),
+    ] : []),
   ];
 
   return candidates.find((candidate) => exists(candidate)) ?? 'adb';
@@ -183,6 +202,12 @@ export const selectAndroidSerial = (adb, requestedSerial = process.env.ANDROID_S
 };
 
 export const adbArgsFor = (serial) => (serial ? ['-s', serial] : []);
+
+export const wakeAndroidDevice = ({ adb, adbArgs, run = runCommand }) => {
+  run(adb, [...adbArgs, 'shell', 'input', 'keyevent', 'KEYCODE_WAKEUP'], { allowFailure: true });
+  run(adb, [...adbArgs, 'shell', 'wm', 'dismiss-keyguard'], { allowFailure: true });
+  run(adb, [...adbArgs, 'shell', 'input', 'keyevent', 'KEYCODE_MENU'], { allowFailure: true });
+};
 
 export const getFreePort = () =>
   new Promise((resolve, reject) => {
@@ -397,8 +422,10 @@ export const navigateCdp = async (cdp, url) => {
 export const reconnectLauncherToServer = async (cdp, targetUrl) => {
   const normalized = normalizeSmokeUrl(targetUrl);
   await evaluate(cdp, `(() => {
-    localStorage.setItem('codexmux:server-url', ${JSON.stringify(normalized)});
-    localStorage.setItem('codexmux:recent-server-urls', JSON.stringify([${JSON.stringify(normalized)}]));
+    localStorage.removeItem('codexmux:server-url');
+    localStorage.removeItem('codexmux:recent-server-urls');
+    localStorage.setItem('codexwinmux:server-url', ${JSON.stringify(normalized)});
+    localStorage.setItem('codexwinmux:recent-server-urls', JSON.stringify([${JSON.stringify(normalized)}]));
     const button = document.getElementById('connect-current');
     if (button && !button.disabled) {
       button.click();

@@ -15,7 +15,7 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 | 저장소 | <https://github.com/HardcoreMonk/codexwinmux> |
 | 제품 표시명 | `codexwinmux` |
 | 실행 파일/패키지명 | `codexwinmux` |
-| 현재 버전 | `0.4.16` |
+| 현재 버전 | `0.4.17` |
 | 대상 플랫폼 | Windows 전용 |
 | 기본 URL | `http://127.0.0.1:8121` |
 | UI 기본 언어 | 한국어 |
@@ -65,6 +65,14 @@ corepack pnpm install
 
 ```bash
 corepack pnpm dev
+```
+
+Android 실기기나 같은 LAN의 다른 기기에서 붙일 Windows 개발 서버는 아래 명령을
+사용합니다. 이 명령은 `HOST=0.0.0.0`, `PORT=8121`, runtime v2 default,
+Windows terminal adapter를 `CODEXWINMUX_*` 환경변수로 고정합니다.
+
+```bash
+corepack pnpm dev:lan
 ```
 
 Electron Shell Host와 로컬 서버를 함께 실행합니다.
@@ -240,7 +248,7 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
   배포를 시작할 때만 public SmartScreen reputation을 별도 gate로 둡니다. Public
   gate는 `smoke:windows:smartscreen-public-evidence`가 만든 public launch evidence
   JSON이 있어야 통과합니다.
-- 다음 릴리스는 이미 발행된 `v0.4.15`를 덮어쓰지 않고 `0.4.16` 이상 새 버전으로만
+- 다음 릴리스는 이미 발행된 `v0.4.15`를 덮어쓰지 않고 `0.4.17` 이상 새 버전으로만
   발행합니다. `v0.4.14` tag와 release asset은 historical evidence로 불변 유지하며
   덮어쓰지 않습니다.
 

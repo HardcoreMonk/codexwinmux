@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>windows native codexmux</title>
+    <title>codexwinmux</title>
     <style>
       :root {
         color-scheme: dark light;
@@ -298,8 +298,8 @@
   <body>
     <main>
       <section>
-        <h1>codexmux</h1>
-        <p>실행 중인 codexmux 서버에 연결합니다.</p>
+        <h1>codexwinmux</h1>
+        <p>실행 중인 codexwinmux 서버에 연결합니다.</p>
 
         <div class="server-panel" id="server-panel" hidden>
           <div class="source" id="server-source"></div>
@@ -319,7 +319,7 @@
               type="url"
               inputmode="url"
               autocomplete="url"
-              placeholder="https://machine.tailnet.ts.net"
+              placeholder="http://<windows-host-ip>:8121"
               required
             />
           </label>
@@ -336,12 +336,12 @@
         <div class="troubleshooting" id="troubleshooting" hidden>
           <div class="troubleshooting-title">서버에 접근할 수 없습니다</div>
           <ul>
-            <li>Tailscale 앱이 연결됨 상태인지 확인하세요.</li>
-            <li>codexmux 서버가 실행 중이고 Tailscale Serve 또는 8121 포트가 열려 있는지 확인하세요.</li>
-            <li>서버 주소가 <code>https://...ts.net</code> 또는 Tailscale IP 주소인지 확인하세요.</li>
+            <li>Android 기기와 Windows 기기가 같은 네트워크에 있는지 확인하세요.</li>
+            <li>codexwinmux 서버가 실행 중이고 8121 포트 접근이 허용되어 있는지 확인하세요.</li>
+            <li>서버 주소가 <code>http://&lt;windows-host-ip&gt;:8121</code> 또는 별도 codexwinmux 전용 주소인지 확인하세요.</li>
           </ul>
         </div>
-        <p class="hint">기본 서버와 최근 서버를 저장해 다음 실행부터 자동 연결합니다.</p>
+        <p class="hint">저장한 codexwinmux 서버에 다음 실행부터 자동 연결합니다.</p>
 
         <details>
           <summary>앱 정보</summary>
@@ -359,9 +359,12 @@
       </section>
     </main>
     <script>
-      const DEFAULT_SERVER_URL = 'https://gti12.tail73c4be.ts.net';
-      const CURRENT_KEY = 'codexmux:server-url';
-      const RECENT_KEY = 'codexmux:recent-server-urls';
+      const DEFAULT_SERVER_URL = '';
+      const CURRENT_KEY = 'codexwinmux:server-url';
+      const RECENT_KEY = 'codexwinmux:recent-server-urls';
+      const LEGACY_CURRENT_KEY = 'codexmux:server-url';
+      const LEGACY_RECENT_KEY = 'codexmux:recent-server-urls';
+      const BLOCKED_LEGACY_HOSTS = new Set(['gti12.tail73c4be.ts.net']);
       const MAX_RECENT = 5;
       const CONNECT_TIMEOUT_MS = 8000;
 
@@ -387,6 +390,8 @@
       const hasConnectionFailure = params.get('connection') === 'failed';
       const connectionFailureReason = params.get('reason') || 'native';
 
+      useDefault.hidden = !DEFAULT_SERVER_URL;
+
       let autoConnectTimer = null;
       let currentUrl = '';
       let isConnecting = false;
@@ -404,13 +409,32 @@
         }
       };
 
-      const readRecent = () => {
+      const isBlockedLegacyServer = (url) => {
         try {
-          const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+          return BLOCKED_LEGACY_HOSTS.has(new URL(url).hostname.toLowerCase());
+        } catch {
+          return false;
+        }
+      };
+
+      const readRecentFromKey = (key) => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || '[]');
           return Array.isArray(parsed) ? parsed.map(normalizeUrl).filter(Boolean) : [];
         } catch {
           return [];
         }
+      };
+
+      const readRecent = () => {
+        const unique = [];
+        for (const url of [
+          ...readRecentFromKey(RECENT_KEY),
+          ...readRecentFromKey(LEGACY_RECENT_KEY).filter((legacyUrl) => !isBlockedLegacyServer(legacyUrl)),
+        ]) {
+          if (!unique.includes(url)) unique.push(url);
+        }
+        return unique.slice(0, MAX_RECENT);
       };
 
       const writeRecent = (urls) => {
@@ -427,6 +451,13 @@
         localStorage.setItem(CURRENT_KEY, normalized);
         writeRecent([normalized, ...readRecent()]);
         return normalized;
+      };
+
+      const migrateLegacyServerCandidate = () => {
+        const legacy = normalizeUrl(localStorage.getItem(LEGACY_CURRENT_KEY));
+        if (!legacy || isBlockedLegacyServer(legacy)) return '';
+        writeRecent([legacy, ...readRecent()]);
+        return legacy;
       };
 
       const setStatus = (message, tone = 'normal') => {
@@ -448,11 +479,11 @@
 
       const showConnectionFailure = (reason) => {
         const messages = {
-          ssl: 'HTTPS 인증서 확인에 실패했습니다. Tailscale Serve 주소를 다시 확인해 주세요.',
-          http: '서버가 오류 응답을 반환했습니다. codexmux 서버 상태를 확인해 주세요.',
-          timeout: '서버 응답이 없습니다. Tailscale 연결 상태와 서버 실행 여부를 확인해 주세요.',
-          network: '네트워크 연결에 실패했습니다. Tailscale 앱과 서버 주소를 확인해 주세요.',
-          native: '서버에 연결하지 못했습니다. 네트워크와 Tailscale 상태를 확인한 뒤 다시 시도해 주세요.',
+          ssl: 'HTTPS 인증서 확인에 실패했습니다. codexwinmux 전용 주소를 다시 확인해 주세요.',
+          http: '서버가 오류 응답을 반환했습니다. codexwinmux 서버 상태를 확인해 주세요.',
+          timeout: '서버 응답이 없습니다. 같은 네트워크 연결과 서버 실행 여부를 확인해 주세요.',
+          network: '네트워크 연결에 실패했습니다. Windows 기기 IP와 서버 주소를 확인해 주세요.',
+          native: '서버에 연결하지 못했습니다. 네트워크와 서버 상태를 확인한 뒤 다시 시도해 주세요.',
         };
         setStatus(messages[reason] || messages.native, 'error');
         troubleshooting.hidden = false;
@@ -576,7 +607,13 @@
           showServer(saved, 'saved', true);
           return;
         }
-        showServer(DEFAULT_SERVER_URL, 'default', true);
+        const migrated = migrateLegacyServerCandidate();
+        showForm(migrated || DEFAULT_SERVER_URL);
+        if (hasConnectionFailure) {
+          showConnectionFailure(connectionFailureReason);
+          return;
+        }
+        setStatus(migrated ? '이전 서버 주소를 확인한 뒤 연결하세요.' : 'Windows codexwinmux 서버 주소를 입력하세요.');
       };
 
       const getNativeAppInfo = () => {
@@ -617,6 +654,7 @@
       });
 
       useDefault.addEventListener('click', () => {
+        if (!DEFAULT_SERVER_URL) return;
         const nextUrl = rememberServer(DEFAULT_SERVER_URL);
         if (nextUrl) void openServer(nextUrl);
       });

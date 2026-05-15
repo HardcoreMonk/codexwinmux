@@ -14,7 +14,7 @@
 - Codex-only 모델: `codex` panel type과 `agent*` metadata 유지.
 - 한국어/영어 locale만 유지하고 기본 locale을 한국어로 전환.
 - Electron 개발/빌드 flow와 Android Capacitor shell 추가.
-- Android 런처: 저장 서버, 최근 서버, 기본 Tailscale 서버 자동 연결, 실패 복구, 앱 정보 표시, 앱 재시작.
+- Android 런처: 저장 codexwinmux 서버 자동 재접속, 최근 서버, legacy codexmux 저장값 자동 연결 차단, 실패 복구, 앱 정보 표시, 앱 재시작.
 - Android 연결 방어: `/api/health` probe, timeout/network/HTTP/SSL 실패 복구, CORS header.
 - Release automation: `release:patch|minor|major`로 version bump, 검증, release commit/tag/push를 묶고, `deploy:local`로 build/service restart/health 확인을 수행.
 - 모바일 UI: Android 런처와 모바일 sheet/header/tab bar의 터치/focus 상태 정리.
@@ -236,7 +236,7 @@ P0/P1/P2/P3 후속 상태:
 3. stats smoke test: `/api/stats/*` endpoint와 실제 `~/.codex/sessions` 집계 확인.
 4. daily report smoke test: `codex exec` 성공/실패, cache 재사용 확인.
 5. macOS packaging: Linux release host에서는 `corepack pnpm build:electron`까지 확인하고, `.app`/`.dmg` 산출물은 macOS host에서 `corepack pnpm pack:electron:dev`로 생성한다.
-6. Android packaging: `corepack pnpm android:build:debug`, `corepack pnpm android:install`, `corepack pnpm smoke:android:install`로 package install state 확인. release AAB는 `corepack pnpm android:keystore`, `corepack pnpm android:bundle:release`, `corepack pnpm smoke:android:release-aab` 순서로 확인한다. 현재 `0.4.16` 기준 `versionName=0.4.16`, `versionCode=416`이어야 한다.
+6. Android packaging: `corepack pnpm android:build:debug`, `corepack pnpm android:install`, `corepack pnpm smoke:android:install`로 package install state 확인. release AAB는 `corepack pnpm android:keystore`, `corepack pnpm android:bundle:release`, `corepack pnpm smoke:android:release-aab` 순서로 확인한다. 현재 `0.4.17` 기준 `versionName=0.4.17`, `versionCode=417`이어야 한다.
 7. 모바일 reconnect smoke test: Android WebView는 `smoke:android:foreground`로 반복 확인한다. iPad/PWA install readiness는 `corepack pnpm smoke:pwa`로 manifest/head/icon/splash/service worker/iPad viewport console을 먼저 확인한다. iOS startup image는 `scripts/generate-splash.js`가 만든 `codexmux` branding이어야 하며, 기존 Home Screen 앱의 오래된 splash는 iOS cache 때문에 앱 재추가로 확인한다. 실제 iPad Home Screen 장시간 background와 입력 draft 보존, timeline 중복 출력 방지는 별도 수동 smoke로 남긴다.
 8. Android Tailscale 실패 smoke test: `smoke:android:recovery`가 network/HTTP 4xx/SSL을 자동 확인한다. 실제 Tailscale 미연결과 서버 장시간 중지는 별도 수동 smoke로 남긴다.
 9. Android app info/restart smoke test: launcher와 server 접속 후 mobile navigation에서 앱 정보가 표시되고 앱 재시작 버튼이 WebView/Activity를 다시 여는지 확인.
