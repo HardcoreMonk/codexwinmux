@@ -152,9 +152,10 @@ import하지만 production source-of-truth를 바꾸지는 않는다.
 layout JSON write 직후 SQLite projection과 status metadata mirror가 갱신되는지 temp
 HOME/DB로 확인한다.
 `smoke:runtime-v2:storage-default-read`는 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서
-workspace/layout/message-history read가 SQLite projection을 우선 사용하고, legacy JSON write와
-`updateActive()` 이후 mirror된 SQLite 값을 다시 읽으며 message-history JSON fallback mirror가
-유지되는지 temp HOME/DB로 확인한다.
+workspace/layout/message-history read가 SQLite projection을 사용하고, legacy JSON write와
+`updateActive()` 이후 runtime SQLite 값을 다시 읽으며 message-history rollback JSON mirror가
+유지되는지 temp HOME/DB로 확인한다. Runtime default read failure는 legacy JSON으로 내려가지
+않고 typed error로 fail closed되어야 한다.
 
 Storage shadow compare smoke:
 

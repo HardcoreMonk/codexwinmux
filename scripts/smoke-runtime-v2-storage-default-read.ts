@@ -156,8 +156,8 @@ const main = async (): Promise<void> => {
     const updatedHistory = await readMessageHistory('ws-default');
     assert(updatedHistory[0]?.id === addedHistory.id, 'default write did not update SQLite message history');
     writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'off');
-    const fallbackHistory = await readMessageHistory('ws-default');
-    assert(fallbackHistory[0]?.id === addedHistory.id, 'default write did not mirror message history JSON fallback');
+    const rollbackHistory = await readMessageHistory('ws-default');
+    assert(rollbackHistory[0]?.id === addedHistory.id, 'default write did not mirror message history rollback JSON');
     writeRuntimeEnvAlias(process.env, 'CODEXWINMUX_RUNTIME_STORAGE_V2_MODE', 'default');
     await deleteMessageHistory('ws-default', addedHistory.id);
     const deletedHistory = await readMessageHistory('ws-default');
@@ -175,7 +175,7 @@ const main = async (): Promise<void> => {
         'legacy-layout-write-mirror-default-read',
         'legacy-workspace-ui-write-mirror-default-read',
         'message-history-default-read',
-        'message-history-json-fallback-mirror',
+        'message-history-json-rollback-mirror',
       ],
     }, null, 2));
   } finally {

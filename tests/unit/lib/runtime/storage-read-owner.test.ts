@@ -220,4 +220,175 @@ describe('runtime storage v2 default read ownership', () => {
     });
     expect(await getActiveWorkspaceId()).toBeNull();
   });
+
+  it('throws instead of falling back to stale workspace JSON when runtime default storage is unavailable', async () => {
+    homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-no-workspace-fallback-'));
+    const dataDir = path.join(homeDir, '.codexwinmux');
+    const blockingPath = path.join(homeDir, 'runtime-db-parent-file');
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(blockingPath, 'not a directory');
+    await fs.writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify({
+      workspaces: [{ id: 'ws-json', name: 'stale JSON', directories: [homeDir] }],
+      groups: [],
+      activeWorkspaceId: 'ws-json',
+      sidebarCollapsed: false,
+      sidebarWidth: 240,
+      updatedAt: '2026-05-16T00:00:00.000Z',
+    }), { mode: 0o600 });
+
+    process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = path.join(blockingPath, 'state.db');
+    vi.resetModules();
+
+    const { getWorkspaces } = await import('@/lib/workspace-store');
+
+    await expect(getWorkspaces()).rejects.toMatchObject({
+      code: 'runtime-storage-unavailable',
+    });
+  });
+
+  it('throws instead of falling back to stale layout JSON when runtime default layout read is unavailable', async () => {
+    homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-no-layout-fallback-'));
+    const dataDir = path.join(homeDir, '.codexwinmux');
+    const layoutDir = path.join(dataDir, 'workspaces', 'ws-json');
+    const blockingPath = path.join(homeDir, 'runtime-db-parent-file');
+    await fs.mkdir(layoutDir, { recursive: true });
+    await fs.writeFile(blockingPath, 'not a directory');
+    await fs.writeFile(path.join(layoutDir, 'layout.json'), JSON.stringify({
+      root: {
+        type: 'pane',
+        id: 'pane-json',
+        activeTabId: null,
+        tabs: [],
+      },
+      activePaneId: 'pane-json',
+      updatedAt: '2026-05-16T00:00:00.000Z',
+    }), { mode: 0o600 });
+
+    process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = path.join(blockingPath, 'state.db');
+    vi.resetModules();
+
+    const { readLayoutFile, resolveLayoutFile } = await import('@/lib/layout-store');
+
+    await expect(readLayoutFile(resolveLayoutFile('ws-json'))).rejects.toMatchObject({
+      code: 'runtime-storage-unavailable',
+    });
+  });
+
+  it('throws instead of falling back to message history JSON when runtime default workspace projection is missing', async () => {
+    homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-no-history-fallback-'));
+    const dataDir = path.join(homeDir, '.codexwinmux');
+    const historyDir = path.join(dataDir, 'workspaces', 'ws-json');
+    const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');
+    await fs.mkdir(historyDir, { recursive: true });
+    await fs.writeFile(path.join(historyDir, 'message-history.json'), JSON.stringify({
+      entries: [{ id: 'hist-json', message: 'stale JSON history', sentAt: '2026-05-16T00:00:00.000Z' }],
+    }), { mode: 0o600 });
+    openRuntimeDatabase(dbPath).close();
+
+    process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = dbPath;
+    vi.resetModules();
+
+    const { readMessageHistory } = await import('@/lib/message-history-store');
+
+    await expect(readMessageHistory('ws-json')).rejects.toMatchObject({
+      code: 'runtime-storage-unavailable',
+    });
+  });
+
+  it('throws instead of silently ignoring workspace UI writes when runtime default storage is unavailable', async () => {
+    homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-no-ui-write-fallback-'));
+    const dataDir = path.join(homeDir, '.codexwinmux');
+    const blockingPath = path.join(homeDir, 'runtime-db-parent-file');
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(blockingPath, 'not a directory');
+    await fs.writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify({
+      workspaces: [{ id: 'ws-json', name: 'stale JSON', directories: [homeDir] }],
+      groups: [],
+      activeWorkspaceId: 'ws-json',
+      sidebarCollapsed: false,
+      sidebarWidth: 240,
+      updatedAt: '2026-05-16T00:00:00.000Z',
+    }), { mode: 0o600 });
+
+    process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = path.join(blockingPath, 'state.db');
+    vi.resetModules();
+
+    const { updateActive } = await import('@/lib/workspace-store');
+
+    await expect(updateActive({ sidebarWidth: 320 })).rejects.toMatchObject({
+      code: 'runtime-storage-unavailable',
+    });
+    const raw = JSON.parse(await fs.readFile(path.join(dataDir, 'workspaces.json'), 'utf-8')) as IWorkspacesData;
+    expect(raw.sidebarWidth).toBe(240);
+  });
+
+  it('updates workspace directories in SQLite instead of JSON when runtime default storage owns workspace state', async () => {
+    homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-storage-directory-write-'));
+    const dataDir = path.join(homeDir, '.codexwinmux');
+    const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');
+    const workspacesData: IWorkspacesData = {
+      workspaces: [{ id: 'ws-a', name: 'Workspace A', directories: ['/runtime/original'] }],
+      groups: [],
+      activeWorkspaceId: 'ws-a',
+      sidebarCollapsed: false,
+      sidebarWidth: 240,
+      updatedAt: '2026-05-16T00:00:00.000Z',
+    };
+    const layout: ILayoutData = {
+      root: {
+        type: 'pane',
+        id: 'pane-a',
+        activeTabId: 'tab-a',
+        tabs: [{ id: 'tab-a', sessionName: 'pt-ws-a-pane-a-tab-a', name: '', order: 0, runtimeVersion: 1 }],
+      },
+      activePaneId: 'pane-a',
+      updatedAt: '2026-05-16T00:00:00.000Z',
+    };
+
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(path.join(dataDir, 'workspaces.json'), JSON.stringify({
+      ...workspacesData,
+      workspaces: [{ id: 'ws-a', name: 'Workspace A', directories: ['/json/original'] }],
+    }), { mode: 0o600 });
+    const db = openRuntimeDatabase(dbPath);
+    importLegacyStorageSnapshot(db, {
+      workspacesData,
+      layoutsByWorkspaceId: { 'ws-a': layout },
+      importedAt: '2026-05-16T00:00:00.000Z',
+    });
+    db.close();
+
+    process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
+    process.env.CODEXWINMUX_RUNTIME_V2 = '1';
+    process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
+    process.env.CODEXWINMUX_RUNTIME_DB = dbPath;
+    vi.resetModules();
+
+    const { updateWorkspaceDirectories, getWorkspaceById } = await import('@/lib/workspace-store');
+
+    await updateWorkspaceDirectories('ws-a', ['/runtime/next', '/runtime/next/sub']);
+
+    await expect(getWorkspaceById('ws-a')).resolves.toMatchObject({
+      directories: ['/runtime/next', '/runtime/next/sub'],
+    });
+    const raw = JSON.parse(await fs.readFile(path.join(dataDir, 'workspaces.json'), 'utf-8')) as IWorkspacesData;
+    expect(raw.workspaces[0].directories).toEqual(['/json/original']);
+  });
 });

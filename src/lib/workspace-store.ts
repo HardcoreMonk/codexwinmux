@@ -21,6 +21,7 @@ import { getVisuallyOrderedWorkspaces } from '@/lib/workspace-order';
 import { mirrorLegacyStorageToRuntimeV2BestEffort } from '@/lib/runtime/storage-mirror';
 import {
   readRuntimeStorageWorkspaces,
+  replaceRuntimeWorkspaceDirectories,
   shouldReadRuntimeStorageV2,
   writeRuntimeWorkspaceUiState,
 } from '@/lib/runtime/storage-read-owner';
@@ -522,6 +523,13 @@ export const updateActive = async (updates: {
 
 export const updateWorkspaceDirectories = async (workspaceId: string, directories: string[]): Promise<void> =>
   withLock(async () => {
+    if (shouldReadRuntimeStorageV2()) {
+      if (replaceRuntimeWorkspaceDirectories(workspaceId, directories)) {
+        broadcastSync({ type: 'workspace' });
+      }
+      return;
+    }
+
     const data = await readWorkspacesFile();
     if (!data) return;
     const ws = data.workspaces.find((w) => w.id === workspaceId);

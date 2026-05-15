@@ -25,7 +25,7 @@ describe('runtime storage v2 message history ownership', () => {
     }
   });
 
-  it('reads and writes message history through SQLite in default mode while mirroring JSON fallback', async () => {
+  it('reads and writes message history through SQLite in default mode while mirroring rollback JSON', async () => {
     homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexmux-message-history-'));
     const dataDir = path.join(homeDir, '.codexwinmux');
     const dbPath = path.join(dataDir, 'runtime-v2', 'state.db');

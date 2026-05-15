@@ -21,6 +21,28 @@ export interface IRuntimeStorageReadOwnerOptions {
 
 const log = createLogger('runtime-storage');
 
+export class RuntimeStorageUnavailableError extends Error {
+  readonly code = 'runtime-storage-unavailable';
+  readonly retryable = true;
+
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = 'RuntimeStorageUnavailableError';
+    if (cause !== undefined) {
+      (this as Error & { cause?: unknown }).cause = cause;
+    }
+  }
+}
+
+const describeRuntimeStorageCause = (cause: unknown): string =>
+  cause instanceof Error ? cause.message : String(cause);
+
+const runtimeStorageUnavailable = (message: string, cause?: unknown): RuntimeStorageUnavailableError =>
+  new RuntimeStorageUnavailableError(
+    cause === undefined ? message : `${message}: ${describeRuntimeStorageCause(cause)}`,
+    cause,
+  );
+
 const getDefaultDataDir = (): string =>
   readRuntimeStorageMirrorDataDirEnv()
   || path.join(os.homedir(), '.codexwinmux');
@@ -44,8 +66,9 @@ export const readRuntimeStorageWorkspaces = (): IWorkspacesData | null => {
     const snapshot = createStorageRepository(db).getWorkspaceSnapshot();
     return snapshot;
   } catch (err) {
-    log.warn(`runtime v2 workspace read failed, falling back to JSON: ${err instanceof Error ? err.message : err}`);
-    return null;
+    const failure = runtimeStorageUnavailable('runtime v2 workspace read failed', err);
+    log.warn(failure.message);
+    throw failure;
   } finally {
     db?.close();
   }
@@ -64,8 +87,35 @@ export const writeRuntimeWorkspaceUiState = (input: {
     createStorageRepository(db).setWorkspaceUiState(input);
     return true;
   } catch (err) {
-    log.warn(`runtime v2 workspace UI state write failed: ${err instanceof Error ? err.message : err}`);
-    return false;
+    const failure = runtimeStorageUnavailable('runtime v2 workspace UI state write failed', err);
+    log.warn(failure.message);
+    throw failure;
+  } finally {
+    db?.close();
+  }
+};
+
+export const replaceRuntimeWorkspaceDirectories = (
+  workspaceId: string,
+  directories: readonly string[],
+): boolean => {
+  if (!shouldReadRuntimeStorageV2()) return false;
+
+  let db: ReturnType<typeof openRuntimeDatabase> | null = null;
+  try {
+    db = openRuntimeDatabase(getDefaultDbPath());
+    const repo = createStorageRepository(db);
+    if (!repo.hasWorkspace(workspaceId)) {
+      throw runtimeStorageUnavailable(`runtime v2 workspace not found: ${workspaceId}`);
+    }
+    repo.replaceWorkspaceDirectories(workspaceId, directories);
+    return true;
+  } catch (err) {
+    const failure = err instanceof RuntimeStorageUnavailableError
+      ? err
+      : runtimeStorageUnavailable('runtime v2 workspace directory write failed', err);
+    log.warn(failure.message);
+    throw failure;
   } finally {
     db?.close();
   }
@@ -77,10 +127,17 @@ export const readRuntimeStorageLayout = (workspaceId: string): ILayoutData | nul
   let db: ReturnType<typeof openRuntimeDatabase> | null = null;
   try {
     db = openRuntimeDatabase(getDefaultDbPath());
-    return createStorageRepository(db).getWorkspaceLayout(workspaceId);
+    const layout = createStorageRepository(db).getWorkspaceLayout(workspaceId);
+    if (!layout) {
+      throw runtimeStorageUnavailable(`runtime v2 layout not found: ${workspaceId}`);
+    }
+    return layout;
   } catch (err) {
-    log.warn(`runtime v2 layout read failed, falling back to JSON: ${err instanceof Error ? err.message : err}`);
-    return null;
+    const failure = err instanceof RuntimeStorageUnavailableError
+      ? err
+      : runtimeStorageUnavailable('runtime v2 layout read failed', err);
+    log.warn(failure.message);
+    throw failure;
   } finally {
     db?.close();
   }
@@ -93,11 +150,16 @@ export const readRuntimeMessageHistory = (workspaceId: string): IHistoryEntry[] 
   try {
     db = openRuntimeDatabase(getDefaultDbPath());
     const repo = createStorageRepository(db);
-    if (!repo.hasWorkspace(workspaceId)) return null;
+    if (!repo.hasWorkspace(workspaceId)) {
+      throw runtimeStorageUnavailable(`runtime v2 message history workspace not found: ${workspaceId}`);
+    }
     return repo.listMessageHistory(workspaceId);
   } catch (err) {
-    log.warn(`runtime v2 message history read failed, falling back to JSON: ${err instanceof Error ? err.message : err}`);
-    return null;
+    const failure = err instanceof RuntimeStorageUnavailableError
+      ? err
+      : runtimeStorageUnavailable('runtime v2 message history read failed', err);
+    log.warn(failure.message);
+    throw failure;
   } finally {
     db?.close();
   }
@@ -113,12 +175,17 @@ export const replaceRuntimeMessageHistory = (
   try {
     db = openRuntimeDatabase(getDefaultDbPath());
     const repo = createStorageRepository(db);
-    if (!repo.hasWorkspace(workspaceId)) return false;
+    if (!repo.hasWorkspace(workspaceId)) {
+      throw runtimeStorageUnavailable(`runtime v2 message history workspace not found: ${workspaceId}`);
+    }
     repo.replaceMessageHistory(workspaceId, entries);
     return true;
   } catch (err) {
-    log.warn(`runtime v2 message history write failed: ${err instanceof Error ? err.message : err}`);
-    return false;
+    const failure = err instanceof RuntimeStorageUnavailableError
+      ? err
+      : runtimeStorageUnavailable('runtime v2 message history write failed', err);
+    log.warn(failure.message);
+    throw failure;
   } finally {
     db?.close();
   }
@@ -134,8 +201,9 @@ export const patchRuntimeTabStatusMetadata = (
     db = openRuntimeDatabase(getDefaultDbPath());
     return createStorageRepository(db).patchTabStatusMetadata(input);
   } catch (err) {
-    log.warn(`runtime v2 tab status metadata write failed: ${err instanceof Error ? err.message : err}`);
-    return null;
+    const failure = runtimeStorageUnavailable('runtime v2 tab status metadata write failed', err);
+    log.warn(failure.message);
+    throw failure;
   } finally {
     db?.close();
   }
