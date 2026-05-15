@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCoreProcessArgs,
   buildEngineProcessArgs,
+  coreProcessFlag,
   engineProcessFlag,
+  isCoreProcessLaunch,
   isEngineProcessLaunch,
+  resolveElectronProcessRole,
 } from '../../../electron/engine-process';
 
 describe('Electron engine process launch contract', () => {
@@ -23,6 +27,22 @@ describe('Electron engine process launch contract', () => {
     expect(isEngineProcessLaunch(['codexwinmux.exe'], {})).toBe(false);
   });
 
+  it('recognizes the canonical core-only CLI flag', () => {
+    expect(isCoreProcessLaunch(['codexwinmux.exe', coreProcessFlag], {})).toBe(true);
+  });
+
+  it('recognizes the canonical core-only environment marker', () => {
+    expect(isCoreProcessLaunch(['codexwinmux.exe'], {
+      CODEXWINMUX_ELECTRON_CORE_PROCESS: '1',
+    })).toBe(true);
+  });
+
+  it('keeps engine and core launch roles mutually exclusive', () => {
+    expect(resolveElectronProcessRole(['codexwinmux.exe', coreProcessFlag], {})).toBe('core');
+    expect(resolveElectronProcessRole(['codexwinmux.exe', engineProcessFlag], {})).toBe('engine');
+    expect(resolveElectronProcessRole(['codexwinmux.exe'], {})).toBe('ui');
+  });
+
   it('passes the engine-only flag directly to packaged app launches', () => {
     expect(buildEngineProcessArgs({
       isPackaged: true,
@@ -35,5 +55,16 @@ describe('Electron engine process launch contract', () => {
       isPackaged: false,
       appPath: 'D:\\projects\\codexwinmux',
     })).toEqual(['D:\\projects\\codexwinmux', engineProcessFlag]);
+  });
+
+  it('passes the core-only flag to packaged and development launches', () => {
+    expect(buildCoreProcessArgs({
+      isPackaged: true,
+      appPath: 'D:\\apps\\codexwinmux\\resources\\app.asar',
+    })).toEqual([coreProcessFlag]);
+    expect(buildCoreProcessArgs({
+      isPackaged: false,
+      appPath: 'D:\\projects\\codexwinmux',
+    })).toEqual(['D:\\projects\\codexwinmux', coreProcessFlag]);
   });
 });

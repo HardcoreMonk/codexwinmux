@@ -81,11 +81,19 @@
 - Test: `tests/unit/electron/engine-process.test.ts`
 - Test: `tests/unit/lib/core-engine/process-host.test.ts`
 
-- [ ] `--codexwinmux-core` CLI flag를 추가한다.
-- [ ] core host는 BrowserWindow를 만들지 않고 single-instance UI lock을 잡지 않는다.
-- [ ] core host는 runtime Supervisor와 runtime workers를 시작하고 `core.health`에 응답한다.
-- [ ] graceful shutdown에서 terminal/timeline/status subscribers를 정리한다.
-- [ ] 검증: `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/core-engine/process-host.test.ts`.
+- [x] `--codexwinmux-core` CLI flag를 추가한다.
+- [x] core host는 BrowserWindow를 만들지 않고 single-instance UI lock을 잡지 않는다.
+- [x] core host는 runtime Supervisor와 runtime workers를 시작하고 `core.health`에 응답한다.
+- [x] graceful shutdown에서 terminal/timeline/status subscribers를 정리한다.
+- [x] 검증: `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/core-engine/process-host.test.ts`.
+
+**P2 evidence:**
+
+- RED: `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/core-engine/process-host.test.ts` failed because core launch helpers and `@/lib/core-engine/process-host` did not exist.
+- GREEN: `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/core-engine/process-host.test.ts`: 12 tests passed.
+- Type/lint regression: `corepack pnpm tsc --noEmit` passed, `corepack pnpm lint` passed.
+- Bundle regression: `corepack pnpm build:server` produced `dist/workers/core-engine-host.js`; `corepack pnpm build:electron:main` produced `dist-electron/main.js`.
+- 운영 기본값: P2는 `--codexwinmux-core` standalone host를 추가하지만, Windows service와 UI 기본 실행은 아직 combined engine mode를 유지한다. Backend API/WebSocket Core client 전환은 P3 범위다.
 
 ### P3: Backend를 Core client adapter로 축소
 

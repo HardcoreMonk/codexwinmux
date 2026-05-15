@@ -5,7 +5,8 @@ import { applyElectronBootstrapEnv, buildFileImportSpecifier, buildPackagedNodeP
 import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smoke';
 import { applyAutoUpdaterRuntimeDefaults } from './updater-config';
 import { resolveTrayIconPath } from './tray-icon';
-import { buildEngineProcessArgs, isEngineProcessLaunch } from './engine-process';
+import { bootstrapCoreOnly, shutdownCoreOnly } from './core-process';
+import { buildEngineProcessArgs, resolveElectronProcessRole } from './engine-process';
 import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog, Tray, nativeImage } from 'electron';
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { spawn } from 'child_process';
@@ -19,7 +20,9 @@ const isDev = process.env.NODE_ENV === 'development';
 const devUrl = process.env.ELECTRON_DEV_URL;
 const APP_DISPLAY_NAME = 'codexwinmux';
 const APP_PROCESS_NAME = 'codexwinmux';
-const isEngineProcess = isEngineProcessLaunch(process.argv, process.env);
+const electronProcessRole = resolveElectronProcessRole(process.argv, process.env);
+const isEngineProcess = electronProcessRole === 'engine';
+const isCoreProcess = electronProcessRole === 'core';
 
 const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
   process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
@@ -1139,7 +1142,7 @@ ipcMain.handle('get-system-resources', () => {
   };
 });
 
-app.on('ready', isEngineProcess ? bootstrapEngineOnly : bootstrap);
+app.on('ready', isCoreProcess ? bootstrapCoreOnly : isEngineProcess ? bootstrapEngineOnly : bootstrap);
 
 const flushDefaultSessionStorage = async (): Promise<void> => {
   try {
@@ -1155,7 +1158,7 @@ const flushDefaultSessionStorage = async (): Promise<void> => {
 };
 
 app.on('activate', () => {
-  if (isEngineProcess) return;
+  if (isEngineProcess || isCoreProcess) return;
   const primary = getPrimaryWindow();
   if (primary) {
     primary.show();
@@ -1166,7 +1169,7 @@ app.on('activate', () => {
 });
 
 app.on('window-all-closed', async () => {
-  if (isEngineProcess || process.platform === 'darwin' || !isQuitting) return;
+  if (isEngineProcess || isCoreProcess || process.platform === 'darwin' || !isQuitting) return;
 });
 
 // Cmd+Q 등으로 will-quit이 먼저 도달하는 경우,
@@ -1188,7 +1191,11 @@ app.on('will-quit', async (event) => {
     serverShutdown = null;
   }
 
-  if (!isEngineProcess && stopEngineOnQuit) {
+  if (isCoreProcess) {
+    await shutdownCoreOnly();
+  }
+
+  if (!isEngineProcess && !isCoreProcess && stopEngineOnQuit) {
     await stopOwnedEngine();
   }
 
@@ -1197,7 +1204,7 @@ app.on('will-quit', async (event) => {
   app.exit(0);
 });
 
-if (!isEngineProcess) {
+if (!isEngineProcess && !isCoreProcess) {
   app.requestSingleInstanceLock();
   app.on('second-instance', () => {
     showPrimaryWindow();

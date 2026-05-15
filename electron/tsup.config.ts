@@ -8,4 +8,9 @@ export default defineConfig({
   clean: true,
   external: ['electron'],
   noExternal: ['electron-updater', 'builder-util-runtime'],
+  esbuildOptions(options) {
+    options.alias = {
+      '@': './src',
+    };
+  },
 });
