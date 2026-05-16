@@ -656,6 +656,15 @@ Service에서 Backend/Core Engine 전용 process로 실행될 수 있는 계약�
   folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 닫히기 전에는
   전환하지 않는다. NSIS service install option은 같은 gate 전까지 installer 기본 흐름에
   넣지 않고 deferred/default-off로 둔다.
+- `scripts/windows-service-account.ps1`은 `plan`, `prepare-profile`, `migrate-data`,
+  `apply-acl`, `configure-service-logon`, `rotate-password`, `verify`,
+  `verify-reboot-readiness` action을 제공한다. 기본 plan/smoke는 read-only이고,
+  mutating action은 elevated PowerShell과
+  `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD` 또는
+  `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD`가 필요하다.
+- `smoke:windows:service-account`는 전용 계정 승격 plan, sensitive migration 표시,
+  secret redaction, ACL target, rotation helper, profile env service config, package
+  scripts를 확인한다.
   `0.4.18`부터 runbook 기본 service topology는 split mode다.
 - `scripts/windows-service.ps1` helper를 추가했다. `install`, `start`, `stop`,
   `restart`, `status`, `health`, `uninstall`, `write-config` action을 제공한다.

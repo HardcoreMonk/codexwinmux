@@ -54,10 +54,46 @@ corepack pnpm windows:service:uninstall
 `write-config`는 wrapper/config 파일을 갱신하지만 SCM을 변경하지 않는다. `status`와
 `health`는 read-only 확인 명령이다.
 
+## 전용 Service Account 승격 Runbook
+
+기본 확인은 read-only다.
+
+```powershell
+corepack pnpm windows:service-account:plan
+corepack pnpm smoke:windows:service-account
+```
+
+실제 `codexwinmux-svc` 생성과 service logon 전환은 elevated PowerShell에서만 실행한다.
+비밀번호 값은 문서나 로그에 남기지 않고 env로만 전달한다.
+
+```powershell
+$env:CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD='<secure-password>'
+corepack pnpm windows:service-account:prepare-profile
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 migrate-data -IncludeCodexCredentials
+corepack pnpm windows:service-account:apply-acl
+corepack pnpm windows:service-account:configure-service-logon
+corepack pnpm windows:service:restart
+corepack pnpm windows:service:health
+```
+
+Password rotation은 별도 env를 사용한다.
+
+```powershell
+$env:CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD='<new-secure-password>'
+corepack pnpm windows:service-account:rotate-password
+corepack pnpm windows:service:restart
+corepack pnpm windows:service:health
+```
+
+승격 완료 evidence는 `verify`, `verify-reboot-readiness`,
+`smoke:windows:updater-local-feed`, `smoke:windows:installer-install`, 실제 reboot 후
+`windows:service:health` 순서로 수집한다.
+
 ## 검증 증거
 
 - `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/windows-service-host.test.ts tests/unit/electron/engine-controller.test.ts tests/unit/electron/runtime-env.test.ts`: 통과.
 - `corepack pnpm smoke:windows:service-host`: 통과.
+- `corepack pnpm smoke:windows:service-account`: 통과.
 - `corepack pnpm tsc --noEmit`: 통과.
 - `corepack pnpm lint`: 통과.
 - `corepack pnpm test`: 174개 파일 통과, 1개 skipped; 821개 테스트 통과, 1개 skipped.
@@ -74,6 +110,6 @@ corepack pnpm windows:service:uninstall
 ## 남은 후속 작업
 
 - service-owned engine stop/restart를 Electron UI에서 어떻게 표현할지 결정한다. 현재 UI는 자신이 시작한 owned engine만 stop한다.
-- 전용 Windows service account 전환 slice는 `codexwinmux-svc` 생성/권한, service profile/data dir, Codex credential/session migration, folder ACL, credential rotation, migration smoke를 포함한다.
+- 전용 Windows service account 전환 slice의 non-mutating plan/runbook/smoke는 반영됐다. 실제 `codexwinmux-svc` 생성과 service logon 전환은 password env, credential copy, ACL, upgrade/uninstall/reboot/health evidence를 수집하는 mutating run에서 닫는다.
 - NSIS optional service install slice는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke가 준비된 뒤 진행한다.
 - P2 Core host foundation은 source/build에 포함됐다. 다음 physical separation 작업은 Backend API/WebSocket Core client adapter 전환, `codexwinmux-backend`/`codexwinmux-core` split service default-off plan, 독립 restart lifecycle smoke 순서로 진행한다.

@@ -59,7 +59,7 @@ const main = async (): Promise<void> => {
   if (!diagnostics.paths.codexDir.endsWith('.codex')) {
     throw new Error(`unexpected Windows Codex directory: ${diagnostics.paths.codexDir}`);
   }
-  if (!diagnostics.paths.logDir.endsWith('\\codexmux\\logs')) {
+  if (!diagnostics.paths.logDir.endsWith('\\codexwinmux\\logs')) {
     throw new Error(`unexpected Windows log directory: ${diagnostics.paths.logDir}`);
   }
   checks.push('windows-data-and-log-paths');

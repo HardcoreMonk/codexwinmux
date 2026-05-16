@@ -204,6 +204,12 @@ corepack pnpm smoke:windows:package-gate
    folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 닫힌 뒤에만
    전환한다. NSIS service install option도 같은 gate 전까지 installer 기본 흐름에 넣지
    않고 deferred/default-off로 유지한다.
+   전용 계정 승격 준비 상태는 `corepack pnpm windows:service-account:plan`과
+   `corepack pnpm smoke:windows:service-account`로 확인한다. 실제 계정 생성,
+   credential/session copy, ACL 부여, service logon 변경, password rotation은
+   `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD` 또는
+   `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD`를 설정한 elevated
+   PowerShell에서만 실행한다.
 8. 비-Windows packaged foreground smoke는 legacy/manual reference로만 남긴다.
    현재 Windows 제품 release gate나 내부 배포 판단에는 포함하지 않는다.
 

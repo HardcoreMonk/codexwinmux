@@ -14,6 +14,7 @@ describe('Windows release gate helpers', () => {
       'windows-runtime-v2-terminal',
       'windows-preflight',
       'windows-service-host',
+      'windows-service-account',
       'windows-core-engine-ipc',
       'windows-core-backend-external-transport',
       'windows-core-backend-split-lifecycle',
@@ -35,6 +36,7 @@ describe('Windows release gate helpers', () => {
 
     expect(result.ok).toBe(false);
     expect(result.missingScriptIds).toContain('smoke:runtime-v2:terminal-windows');
+    expect(result.missingScriptIds).toContain('smoke:windows:service-account');
     expect(result.missingScriptIds).toContain('smoke:windows:core-engine-ipc');
     expect(result.missingScriptIds).toContain('smoke:windows:core-backend-external-transport');
     expect(result.missingScriptIds).toContain('smoke:windows:core-backend-split-lifecycle');

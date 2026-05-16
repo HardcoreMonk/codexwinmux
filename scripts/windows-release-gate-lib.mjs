@@ -19,6 +19,10 @@ export const getWindowsReleaseGateSteps = () => [
     script: 'smoke:windows:service-host',
   },
   {
+    id: 'windows-service-account',
+    script: 'smoke:windows:service-account',
+  },
+  {
     id: 'windows-core-engine-ipc',
     script: 'smoke:windows:core-engine-ipc',
   },

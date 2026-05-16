@@ -19,7 +19,11 @@ param(
   [string]$HostName = '127.0.0.1',
   [int]$Port = 8121,
   [string]$CoreEngineHost = '127.0.0.1',
-  [int]$CoreEnginePort = 8122
+  [int]$CoreEnginePort = 8122,
+  [string]$ServiceUserProfilePath,
+  [string]$ServiceLocalAppDataPath,
+  [string]$ServiceAppDataPath,
+  [string]$ServiceLogPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -52,10 +56,22 @@ $AppAsarUnpackedPath = Join-Path $WorkingDirectory 'resources\app.asar.unpacked'
 $PackagedNodePath = "$(Join-Path $AppAsarUnpackedPath '.next\standalone\node_modules');$(Join-Path $AppAsarPath '.next\standalone\node_modules')"
 $BackendServerScriptPath = Join-Path $AppAsarPath 'dist\server.js'
 $CoreHostScriptPath = Join-Path $AppAsarUnpackedPath 'dist\workers\core-engine-host.js'
-$UserProfilePath = $DefaultUserProfilePath
-$LocalAppDataPath = $DefaultLocalAppDataPath
-$AppDataPath = $DefaultAppDataPath
-$LogPath = Join-Path $LocalAppDataPath 'codexwinmux\logs'
+$UserProfilePath = if ($ServiceUserProfilePath) { $ServiceUserProfilePath } else { $DefaultUserProfilePath }
+$LocalAppDataPath = if ($ServiceLocalAppDataPath) {
+  $ServiceLocalAppDataPath
+} elseif ($ServiceUserProfilePath) {
+  Join-Path $ServiceUserProfilePath 'AppData\Local'
+} else {
+  $DefaultLocalAppDataPath
+}
+$AppDataPath = if ($ServiceAppDataPath) {
+  $ServiceAppDataPath
+} elseif ($ServiceUserProfilePath) {
+  Join-Path $ServiceUserProfilePath 'AppData\Roaming'
+} else {
+  $DefaultAppDataPath
+}
+$LogPath = if ($ServiceLogPath) { $ServiceLogPath } else { Join-Path $LocalAppDataPath 'codexwinmux\logs' }
 $ServiceArguments = "`"$BackendServerScriptPath`""
 $ServiceProcessEnvName = 'ELECTRON_RUN_AS_NODE'
 $CoreEngineTransport = 'tcp'
