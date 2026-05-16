@@ -324,7 +324,7 @@ macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사
 ## 패키징 메모
 
 현재 패키징 metadata는 제품명, app id, data dir, executable/artifact name을
-`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.18`이며, 새
+`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.19`이며, 새
 published update evidence를 주장하려면 같은 버전의 `latest.yml`,
 `codexwinmux-Setup-<version>.exe`, matching `.blockmap`을 GitHub Release에 발행한 뒤
 published/updater smoke를 다시 실행해야 합니다.
@@ -345,6 +345,11 @@ Authenticode `Valid`, DigiCert RFC3161 timestamp present로 통과했습니다. 
 서명된 `0.4.16` 산출물 기준 `smoke:windows:package-gate`가 zip/update metadata,
 local updater, packaged launch, engine lifecycle, packaged runtime v2, installer
 runtime v2를 모두 통과했습니다.
+2026-05-17 `0.4.19` Windows package는 같은 내부 code signing certificate와
+DigiCert RFC3161 timestamp server로 재생성했습니다. `smoke:windows:signing-evidence`는
+installer와 `win-unpacked` exe 모두 Authenticode `Valid`, timestamp present,
+internal SmartScreen scope accepted로 통과했고, signed artifact 기준
+`smoke:windows:package-gate`와 `smoke:windows:release-gate`도 통과했습니다.
 내부 전용 배포에서는 `CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required`를
 trusted root distribution 범위의 SmartScreen evidence로 기록합니다. 외부 공개 배포를
 시작할 때만 public SmartScreen reputation을 별도 release blocker로 둡니다.
@@ -355,7 +360,7 @@ public launch evidence JSON 기반 `passed` evidence를 요구합니다.
 Chromium download, SHA match, Internet ZoneId=3까지 통과했지만 Windows
 `Start-Process` launch evidence가 취소/SmartScreen reputation 단계에서 실패했습니다.
 따라서 public SmartScreen `passed` evidence는 아직 확보되지 않았고, 다음 공개
-릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.18+` 새 version으로 발행해야 합니다.
+릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.19+` 새 version으로 발행해야 합니다.
 이 public evidence 미확보 상태는 내부 폐쇄망 릴리스나 내부 legacy fallback 제거의
 blocker로 사용하지 않습니다.
 다음 공개/내부 릴리스는 기존 tag나 asset을 덮어쓰지 말고 새 version/tag로

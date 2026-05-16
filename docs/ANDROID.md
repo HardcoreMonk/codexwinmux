@@ -50,7 +50,7 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 
 예: `0.3.0`은 `versionName=0.3`, `versionCode=300`입니다. `0.3.1`은 `versionName=0.3.1`, `versionCode=301`입니다. CI나 수동 배포에서 `ANDROID_VERSION_CODE` 환경변수를 주면 `versionCode`만 override할 수 있습니다.
 
-현재 repo/release version은 `0.4.18`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.18`, `versionCode=418`입니다.
+현재 repo/release version은 `0.4.19`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.19`, `versionCode=419`입니다.
 
 버전 증가 규칙:
 
@@ -336,7 +336,7 @@ CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 CODEXMUX_ANDROID_RESTAR
 
 정상 설치 시 `pm path`는 `/data/app/.../base.apk`를 반환하고, launcher activity는 `com.hardcoremonk.codexwinmux/.MainActivity`로 resolve됩니다.
 
-현재 `0.4.18` debug install은 `dumpsys package`에서 `versionName=0.4.18`, `versionCode=418`로 보여야 합니다.
+현재 `0.4.19` debug install은 `dumpsys package`에서 `versionName=0.4.19`, `versionCode=419`로 보여야 합니다.
 
 Signed release APK:
 

@@ -232,6 +232,22 @@ packaged artifact를 재점검했다.
 | Android 0.4.18 device/release smoke | 통과 | SM-S928N `R3CX10RTWFH`에서 `corepack pnpm android:build:debug`, `corepack pnpm android:install`, `corepack pnpm smoke:android:install` 통과. 설치 상태는 `versionName=0.4.18`, `versionCode=418`이다. `corepack pnpm android:bundle:release`와 `corepack pnpm smoke:android:release-aab`도 통과했고 AAB는 `expectedVersionName=0.4.18`, `expectedVersionCode=418`, `jarsigner-verify`를 확인했다. `corepack pnpm smoke:android:runtime-v2`는 foreground 2회 marker와 blocking console/logcat 0으로 통과했다 |
 | Android LAN recovery full matrix | 통과 | Launcher reconnect smoke helper가 stale saved-server button을 클릭하지 않고 target URL로 직접 이동하도록 조정했다. Windows LAN dev server `http://<windows-host-lan-ip>:8132` 기준 `corepack pnpm smoke:android:recovery`가 network, HTTP 404, SSL failure 모두 launcher 복귀와 target 재연결, blocking console/logcat 0으로 통과했다 |
 
+### 2026-05-17 Windows 0.4.19 signed rebuild
+
+`20662fad` status/timeline stale UI source commit을 포함해 Windows artifact를 새 버전으로
+재생성했다. 기존 `v0.4.18` tag/asset은 건드리지 않고, `v0.4.19` tag와 release asset을
+새로 발행하는 경로만 허용한다.
+
+| 항목 | 상태 | 근거 |
+| --- | --- | --- |
+| Source version bump | 반영 | `package.json` version을 `0.4.19`로 올렸다. Android 다음 빌드도 같은 package version에서 `versionName=0.4.19`, `versionCode=419`로 계산된다 |
+| Release immutability | 통과 | `corepack pnpm smoke:release-immutability`가 `v0.4.19` local tag, remote tag, GitHub Release 모두 사용 가능하다고 확인했다 |
+| Signed Windows package build | 통과 | `CODEXWINMUX_WINDOWS_CERTIFICATE_SHA1=8C5F3B5030D3A54B1150C2C30CFD9868800DF0C6`, `CODEXWINMUX_WINDOWS_PUBLISHER_NAME=PureCVisor Desktop Node Internal Code Signing`, `CODEXWINMUX_WINDOWS_TIMESTAMP_SERVER=http://timestamp.digicert.com`를 지정해 `corepack pnpm pack:electron`을 재실행했다. `release/codexwinmux-Setup-0.4.19.exe`, `release/codexwinmux-0.4.19-win.zip`, `release/latest.yml`, blockmap, `win-unpacked`를 생성했다 |
+| Code signing / timestamp | 통과 | `CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required CODEXWINMUX_SMARTSCREEN_ENVIRONMENT=internal-trusted-root-distribution corepack pnpm smoke:windows:signing-evidence`가 installer와 `win-unpacked/codexwinmux.exe` 모두 Authenticode `Valid`, DigiCert RFC3161 timestamp present, internal SmartScreen scope accepted로 확인했다 |
+| Windows package gate | 통과 | signed artifact 기준 `corepack pnpm smoke:windows:package-gate`가 zip/update metadata/updater local feed/packaged launch/engine lifecycle/Core IPC/Backend external Core attach/split lifecycle dry-run/packaged runtime v2/installer runtime v2를 통과했다. Local feed smoke는 signed installer signature validation과 post-update launch까지 확인했다 |
+| Windows release gate | 통과 | `corepack pnpm smoke:windows:release-gate`가 package script audit, Windows terminal runtime, preflight, service host/account, Core IPC, Backend external Core attach, split lifecycle dry-run, host diagnostics, Electron env/packaging, Codex session detection을 통과했다 |
+| Regression / service health | 통과 | `corepack pnpm test`는 183 files / 874 tests passed, 1 skipped였고 `corepack pnpm tsc --noEmit`, `corepack pnpm lint`, `git diff --check`도 통과했다. `corepack pnpm windows:service-account:health`는 `version=0.4.19`, `commit=20662fad`, `buildTime=2026-05-16T21:32:26.563Z`를 반환했고 `verify-reboot-readiness`도 split service `Running/Automatic` 상태로 통과했다 |
+
 ### 2026-05-05 P2 -> P3 runtime v2 storage preflight
 
 P2 terminal gate evidence를 보강하고 P3 storage default rollout 전 preflight를 실제
@@ -284,7 +300,7 @@ P0/P1/P2/P3 후속 상태:
 3. stats smoke test: `/api/stats/*` endpoint와 실제 `~/.codex/sessions` 집계 확인.
 4. daily report smoke test: `codex exec` 성공/실패, cache 재사용 확인.
 5. macOS packaging: Linux release host에서는 `corepack pnpm build:electron`까지 확인하고, `.app`/`.dmg` 산출물은 macOS host에서 `corepack pnpm pack:electron:dev`로 생성한다.
-6. Android packaging: `corepack pnpm android:build:debug`, `corepack pnpm android:install`, `corepack pnpm smoke:android:install`로 package install state 확인. release AAB는 `corepack pnpm android:keystore`, `corepack pnpm android:bundle:release`, `corepack pnpm smoke:android:release-aab` 순서로 확인한다. 현재 `0.4.18` 기준 `versionName=0.4.18`, `versionCode=418`이어야 한다.
+6. Android packaging: `corepack pnpm android:build:debug`, `corepack pnpm android:install`, `corepack pnpm smoke:android:install`로 package install state 확인. release AAB는 `corepack pnpm android:keystore`, `corepack pnpm android:bundle:release`, `corepack pnpm smoke:android:release-aab` 순서로 확인한다. 현재 `0.4.19` 기준 `versionName=0.4.19`, `versionCode=419`이어야 한다.
 7. 모바일 reconnect smoke test: Android WebView는 `smoke:android:foreground`로 반복 확인한다. iPad/PWA install readiness는 `corepack pnpm smoke:pwa`로 manifest/head/icon/splash/service worker/iPad viewport console을 먼저 확인한다. iOS startup image는 `scripts/generate-splash.js`가 만든 `codexmux` branding이어야 하며, 기존 Home Screen 앱의 오래된 splash는 iOS cache 때문에 앱 재추가로 확인한다. 실제 iPad Home Screen 장시간 background와 입력 draft 보존, timeline 중복 출력 방지는 별도 수동 smoke로 남긴다.
 8. Android Tailscale 실패 smoke test: `smoke:android:recovery`가 network/HTTP 4xx/SSL을 자동 확인한다. 실제 Tailscale 미연결과 서버 장시간 중지는 별도 수동 smoke로 남긴다.
 9. Android app info/restart smoke test: launcher와 server 접속 후 mobile navigation에서 앱 정보가 표시되고 앱 재시작 버튼이 WebView/Activity를 다시 여는지 확인.
