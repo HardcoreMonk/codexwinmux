@@ -1,12 +1,20 @@
 import { createCoreProcessHost, type ICoreProcessHostTransport } from '@/lib/core-engine/process-host';
+import { createCoreEngineTcpServerTransport, type ICoreEngineTcpServerTransport } from '@/lib/core-engine/tcp-transport';
+import { resolveCoreEngineHostTransportConfig } from '@/lib/core-engine/transport-config';
 import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
 
 const createProcessTransport = (): ICoreProcessHostTransport => {
   const send = process.send?.bind(process);
+  if (!send) {
+    throw Object.assign(new Error('Process IPC is not available for the Core process host'), {
+      code: 'core-process-ipc-unavailable',
+      retryable: false,
+    });
+  }
 
   return {
     send(message): void {
-      send?.(message);
+      send(message);
     },
     onMessage(handler): () => void {
       const wrapped = (message: unknown) => handler(message);
@@ -16,13 +24,12 @@ const createProcessTransport = (): ICoreProcessHostTransport => {
   };
 };
 
-const host = createCoreProcessHost({
-  supervisor: getRuntimeSupervisor(),
-  transport: createProcessTransport(),
-});
+let host: ReturnType<typeof createCoreProcessHost> | null = null;
+let tcpTransport: ICoreEngineTcpServerTransport | null = null;
 
 const shutdown = async (): Promise<void> => {
-  await host.shutdown();
+  await host?.shutdown();
+  await tcpTransport?.close();
   process.exit(0);
 };
 
@@ -37,7 +44,23 @@ process.once('SIGTERM', () => {
   void shutdown();
 });
 
-host.start().catch((err) => {
+const start = async (): Promise<void> => {
+  const config = resolveCoreEngineHostTransportConfig();
+  const transport = config.mode === 'tcp'
+    ? createCoreEngineTcpServerTransport({ host: config.host, port: config.port })
+    : createProcessTransport();
+  if (config.mode === 'tcp') {
+    tcpTransport = transport as ICoreEngineTcpServerTransport;
+    await tcpTransport.start();
+  }
+  host = createCoreProcessHost({
+    supervisor: getRuntimeSupervisor(),
+    transport,
+  });
+  await host.start();
+};
+
+start().catch((err) => {
   console.error('[core-engine-host] failed to start:', err);
   process.exit(1);
 });

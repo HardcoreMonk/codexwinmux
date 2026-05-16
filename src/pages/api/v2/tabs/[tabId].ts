@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { parseRuntimeApiBody, sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { broadcastSync } from '@/lib/sync-server';
 
 const querySchema = z.object({
@@ -26,9 +26,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const { tabId } = parseRuntimeApiBody(querySchema, req.query);
-    const supervisor = getRuntimeSupervisor();
-    await supervisor.ensureStarted();
-    const result = await supervisor.deleteTerminalTab(tabId);
+    const runtime = getCoreRuntimeApi();
+    await runtime.ensureStarted();
+    const result = await runtime.deleteTerminalTab(tabId);
     if (result.deleted && result.workspaceId) broadcastSync({ type: 'layout', workspaceId: result.workspaceId });
     return res.status(200).json(result);
   } catch (err) {

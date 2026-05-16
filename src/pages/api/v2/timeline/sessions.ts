@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { normalizePanelType } from '@/lib/panel-type';
 import type { TPanelType } from '@/types/terminal';
 
@@ -41,8 +41,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const supervisor = getRuntimeSupervisor();
-    const page = await supervisor.listTimelineSessions({
+    const page = await getCoreRuntimeApi().listTimelineSessions({
       tmuxSession,
       cwd: firstQueryValue(req.query.cwd),
       panelType: parsePanelType(req.query.panelType),

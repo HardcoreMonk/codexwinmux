@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { parseRuntimeApiBody, sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { broadcastSync } from '@/lib/sync-server';
 
 const createWorkspaceBodySchema = z.object({
@@ -27,15 +27,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const supervisor = getRuntimeSupervisor();
-    await supervisor.ensureStarted();
+    const runtime = getCoreRuntimeApi();
+    await runtime.ensureStarted();
     if (req.method === 'GET') {
-      const workspaces = await supervisor.listWorkspaces();
+      const workspaces = await runtime.listWorkspaces();
       return res.status(200).json({ workspaces });
     }
 
     const body = parseRuntimeApiBody(createWorkspaceBodySchema, req.body ?? {});
-    const workspace = await supervisor.createWorkspace({
+    const workspace = await runtime.createWorkspace({
       name: body.name ?? 'Runtime Workspace',
       defaultCwd: body.defaultCwd ?? os.homedir(),
     });

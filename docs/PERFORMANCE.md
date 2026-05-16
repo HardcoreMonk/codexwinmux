@@ -4,7 +4,7 @@
 
 ## 배경
 
-Rust + Tauri 도입은 `docs/TAURI-EVALUATION.md` 기준으로 보류한다. Tauri는 Electron shell 경량화에는 후보가 될 수 있지만, codexmux의 실제 성능 병목은 desktop shell보다 Node server, WebSocket, tmux, Codex JSONL, React render 경로에 있을 가능성이 높다.
+Rust + Tauri 도입은 `docs/TAURI-EVALUATION.md` 기준으로 보류한다. Tauri는 Electron shell 경량화에는 후보가 될 수 있지만, codexwinmux의 실제 성능 병목은 desktop shell보다 Node server, WebSocket, runtime workers, tmux adapter, Codex JSONL, React render 경로에 있을 가능성이 높다.
 
 따라서 후속 성능 최적화는 다음 원칙으로 진행한다.
 
@@ -100,7 +100,7 @@ Rust + Tauri 도입은 `docs/TAURI-EVALUATION.md` 기준으로 보류한다. Tau
 
 ### 2026-05-02 7차 구현 상태
 
-- Session index refresh 결과가 이전 persisted snapshot과 같으면 `~/.codexmux/session-index.json` write를 건너뛴다. 15초 백그라운드 refresh에서 파일 metadata가 모두 cache hit인 구간의 디스크 churn을 줄인다.
+- Session index refresh 결과가 이전 persisted snapshot과 같으면 `~/.codexwinmux/session-index.json` write를 건너뛴다. 15초 백그라운드 refresh에서 파일 metadata가 모두 cache hit인 구간의 디스크 churn을 줄인다.
 - `/api/debug/perf`의 `sessionIndex` snapshot에 `persistWrites`, `persistSkips`, `lastPersistedAt`을 추가해 index build와 persist 비용을 분리해서 볼 수 있게 했다.
 
 ### 2026-05-02 8차 구현 상태

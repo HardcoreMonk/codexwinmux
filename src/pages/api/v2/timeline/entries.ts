@@ -3,7 +3,7 @@ import { isAllowedJsonlPath } from '@/lib/path-validation';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 
 const DEFAULT_LIMIT = 64;
 const MAX_LIMIT = 200;
@@ -46,8 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const supervisor = getRuntimeSupervisor();
-    const result = await supervisor.readTimelineEntriesBefore({
+    const result = await getCoreRuntimeApi().readTimelineEntriesBefore({
       jsonlPath,
       beforeByte,
       limit: parseLimit(firstQueryValue(req.query.limit)),

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { parseRuntimeApiBody, sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { broadcastSync } from '@/lib/sync-server';
 
 const createTabBodySchema = z.object({
@@ -29,9 +29,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const body = parseRuntimeApiBody(createTabBodySchema, req.body ?? {});
-    const supervisor = getRuntimeSupervisor();
-    await supervisor.ensureStarted();
-    const tab = await supervisor.createTerminalTab({
+    const runtime = getCoreRuntimeApi();
+    await runtime.ensureStarted();
+    const tab = await runtime.createTerminalTab({
       workspaceId: body.workspaceId,
       paneId: body.paneId,
       cwd: body.cwd ?? os.homedir(),

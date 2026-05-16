@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { isAllowedJsonlPath } from '@/lib/path-validation';
 import { getProviderByPanelType } from '@/lib/providers';
 import { sendRuntimeApiError } from '@/lib/runtime/api-handler';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { shouldUseRuntimeTimelineV2Reads } from '@/lib/runtime/timeline-mode';
 
 const DEFAULT_LIMIT = 64;
@@ -37,7 +37,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (shouldUseRuntimeTimelineV2Reads()) {
     try {
-      const result = await getRuntimeSupervisor().readTimelineEntriesBefore({
+      const result = await getCoreRuntimeApi().readTimelineEntriesBefore({
         jsonlPath,
         beforeByte,
         limit: Math.min(MAX_LIMIT, Math.max(1, limit)),

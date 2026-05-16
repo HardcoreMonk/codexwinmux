@@ -23,8 +23,23 @@ const commandPayloadSchemas = {
     name: z.string().min(1),
     defaultCwd: z.string().min(1),
   }).strict(),
+  'core.workspace.delete': z.object({
+    workspaceId: z.string().min(1),
+  }).strict(),
   'core.layout.get': z.object({
     workspaceId: z.string().min(1),
+  }).strict(),
+  'core.terminal-tab.create': z.object({
+    workspaceId: z.string().min(1),
+    paneId: z.string().min(1),
+    cwd: z.string().min(1),
+    ensureWorkspacePane: z.object({
+      workspaceName: z.string().min(1),
+      defaultCwd: z.string().min(1),
+    }).strict().optional(),
+  }).strict(),
+  'core.terminal-tab.delete': z.object({
+    tabId: z.string().min(1),
   }).strict(),
   'core.terminal.attach': z.object({
     connectionId: z.string().min(1),
@@ -54,7 +69,33 @@ const commandPayloadSchemas = {
     limit: z.number().int().positive().max(200),
     cwd: z.string().optional(),
   }).strict(),
+  'core.timeline.read-entries-before': z.object({
+    jsonlPath: z.string().min(1),
+    beforeByte: z.number().int().nonnegative(),
+    limit: z.number().int().positive().max(200),
+    panelType: z.string().min(1),
+  }).strict(),
+  'core.timeline.message-counts': z.object({
+    jsonlPath: z.string().min(1),
+  }).strict(),
   'core.status.live-start': emptyPayloadSchema,
+  'core.status.live-hook-event': z.object({
+    tmuxSession: z.string().min(1),
+    event: z.string().min(1),
+    notificationType: z.string().min(1).optional(),
+  }).strict(),
+  'core.status.live-poll': emptyPayloadSchema,
+  'core.status.live-register-tab': z.object({
+    tabId: z.string().min(1),
+    entry: z.unknown(),
+  }).strict(),
+  'core.status.live-remove-tab': z.object({
+    tabId: z.string().min(1),
+  }).strict(),
+  'core.status.live-device-visibility': z.object({
+    deviceId: z.string().min(1),
+    visible: z.boolean(),
+  }).strict(),
 } as const;
 
 const replyPayloadSchemas = {
@@ -76,9 +117,12 @@ const replyPayloadSchemas = {
     id: z.string().min(1),
     rootPaneId: z.string().min(1),
   }).strict(),
+  'core.workspace.delete': z.unknown(),
   'core.layout.get': z.object({
     layout: z.unknown().nullable(),
   }).strict(),
+  'core.terminal-tab.create': z.unknown(),
+  'core.terminal-tab.delete': z.unknown(),
   'core.terminal.attach': z.object({
     subscriberId: z.string().min(1),
   }).strict(),
@@ -90,9 +134,16 @@ const replyPayloadSchemas = {
     total: z.number().int().nonnegative(),
     hasMore: z.boolean(),
   }).strict(),
+  'core.timeline.read-entries-before': z.unknown(),
+  'core.timeline.message-counts': z.unknown(),
   'core.status.live-start': z.object({
     started: z.boolean(),
   }).strict(),
+  'core.status.live-hook-event': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.live-poll': z.object({ polled: z.boolean() }).strict(),
+  'core.status.live-register-tab': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.live-remove-tab': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.live-device-visibility': z.object({ accepted: z.boolean() }).strict(),
 } as const;
 
 const eventPayloadSchemas = {
@@ -285,6 +336,28 @@ export const parseCoreReply = (message: unknown): ICoreReply => {
     type: `${commandType}.reply`,
     payload: base.ok ? parseCoreReplyPayload(commandType, base.payload) : null,
   } as ICoreReply;
+};
+
+export const parseCoreEvent = (message: unknown): ICoreEvent => {
+  const base = z.object({
+    kind: z.literal('event'),
+    id: z.string().min(1),
+    source: z.literal('core'),
+    target: z.literal('backend'),
+    type: z.string().min(1),
+    payload: z.unknown(),
+  }).strict().parse(message);
+  if (!Object.prototype.hasOwnProperty.call(eventPayloadSchemas, base.type)) {
+    throw Object.assign(new Error(`Unsupported core event type: ${base.type}`), {
+      code: 'unsupported-core-event',
+      retryable: false,
+    });
+  }
+  return {
+    ...base,
+    type: base.type,
+    payload: parseCoreEventPayload(base.type as TCoreEventType, base.payload),
+  } as ICoreEvent;
 };
 
 export const parseCoreCommand = (message: unknown): ICoreCommand => {

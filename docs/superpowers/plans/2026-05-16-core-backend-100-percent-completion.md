@@ -10,10 +10,13 @@ runtime v2 기본 경로에서는 Core가 terminal, storage, timeline, status, s
 
 ## 아키텍처 범위
 
-이번 완료 범위는 Phase 1 논리 분리다. Electron Shell Host는 UI, tray, packaged lifecycle을
-담당하고, Backend/Core Engine은 같은 local engine process 안에서 동작하되 명확한 API
-경계를 유지한다. 별도 Windows Service owner 또는 Core/Backend 개별 서비스 프로세스
-분리는 Phase 2 후속 범위로 둔다.
+이번 계획의 완료 범위는 Phase 1 논리 분리였다. Electron Shell Host는 UI, tray,
+packaged lifecycle을 담당하고, Backend/Core Engine은 같은 local engine process 안에서
+동작하되 명확한 API 경계를 유지한다. 이후 Windows Service owner combined mode와
+`--codexwinmux-core` Core process host foundation은 별도 slice에서 완료됐다. 엄격한
+Backend/Core 개별 service/process 분리는
+`docs/superpowers/plans/2026-05-16-core-backend-physical-separation-100.md`의 P3 이후
+후속 범위다.
 
 ## 완료 정의
 

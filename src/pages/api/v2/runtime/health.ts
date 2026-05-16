@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { getRuntimeTerminalV2Mode } from '@/lib/runtime/terminal-mode';
 import { getRuntimeStorageV2Mode } from '@/lib/runtime/storage-mode';
 import { getRuntimeTimelineV2Mode } from '@/lib/runtime/timeline-mode';
@@ -23,9 +23,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const supervisor = getRuntimeSupervisor();
-    await supervisor.ensureStarted();
-    const health = await supervisor.health();
+    const runtime = getCoreRuntimeApi();
+    await runtime.ensureStarted();
+    const health = await runtime.health();
     return res.status(200).json({
       ...health,
       terminalV2Mode: getRuntimeTerminalV2Mode(),

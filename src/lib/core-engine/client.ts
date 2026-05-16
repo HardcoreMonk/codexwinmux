@@ -1,6 +1,8 @@
 import {
   createCoreCommand,
+  parseCoreEvent,
   parseCoreReply,
+  type ICoreEvent,
   type ICoreReply,
   type TCoreCommandPayload,
   type TCoreCommandType,
@@ -24,6 +26,7 @@ export interface ICoreEngineClient {
     type: T,
     payload: TCoreCommandPayload<T>,
   ): Promise<TCoreReplyPayload<T>>;
+  onEvent(handler: (event: ICoreEvent) => void): () => void;
   dispose(): void;
 }
 
@@ -45,6 +48,7 @@ export const createCoreEngineClient = ({
   requestTimeoutMs?: number;
 }): ICoreEngineClient => {
   const pending = new Map<string, IPendingCoreRequest>();
+  const eventHandlers = new Set<(event: ICoreEvent) => void>();
 
   const handleReply = (reply: ICoreReply): void => {
     const request = pending.get(reply.commandId);
@@ -65,8 +69,15 @@ export const createCoreEngineClient = ({
   const unsubscribe = transport.onMessage((message) => {
     try {
       handleReply(parseCoreReply(message));
+      return;
     } catch {
-      // Ignore non-reply messages until event subscription is introduced.
+      // Try event parsing below.
+    }
+    try {
+      const event = parseCoreEvent(message);
+      for (const handler of eventHandlers) handler(event);
+    } catch {
+      // Ignore messages outside the backend/core protocol.
     }
   });
 
@@ -95,8 +106,15 @@ export const createCoreEngineClient = ({
       transport.send(command);
       return result;
     },
+    onEvent: (handler): (() => void) => {
+      eventHandlers.add(handler);
+      return () => {
+        eventHandlers.delete(handler);
+      };
+    },
     dispose: (): void => {
       unsubscribe();
+      eventHandlers.clear();
       for (const request of pending.values()) {
         clearTimeout(request.timer);
         request.reject(createCoreError({

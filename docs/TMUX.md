@@ -1,6 +1,8 @@
 # tmux, 터미널, agent process 감지
 
-codexmux는 오래 살아야 하는 터미널 backend로 tmux를 사용한다. 브라우저는 xterm.js를 렌더링하고, 서버는 node-pty로 tmux session에 붙는다.
+codexwinmux는 runtime v2 Terminal Worker와 Windows adapter를 기본 터미널 경계로 사용한다.
+tmux는 legacy/POSIX 호환과 일부 adapter 경로에서 오래 살아야 하는 터미널 backend로 남아 있다.
+브라우저는 xterm.js를 렌더링하고, 서버는 필요 시 node-pty로 tmux session에 붙는다.
 
 ## 구조
 
@@ -209,7 +211,7 @@ DIFF 패널은 별도 git workspace를 저장하지 않고 현재 tab의 tmux se
 
 ## 서버 시작 순서
 
-1. `~/.codexmux/cmux.lock` 획득.
+1. `~/.codexwinmux/cmux.lock` 획득.
 2. config와 shell `PATH` 로드.
 3. auth credential 초기화.
 4. tmux session scan과 cleanup.
@@ -218,7 +220,7 @@ DIFF 패널은 별도 git workspace를 저장하지 않고 현재 tab의 tmux se
 7. 설정된 경우 agent session 자동 resume.
 8. `StatusManager` polling 시작.
 9. Next.js와 WebSocket route 준비.
-10. `~/.codexmux/port`, CLI token, bridge file 갱신.
+10. `~/.codexwinmux/port`, CLI token, bridge file 갱신.
 
 ## 관련 파일
 

@@ -3,7 +3,7 @@ import { hasSession } from '@/lib/tmux';
 import { listSessionPage } from '@/lib/session-list';
 import { isAgentPanelType, normalizePanelType } from '@/lib/panel-type';
 import { sendRuntimeApiError } from '@/lib/runtime/api-handler';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { shouldUseRuntimeTimelineV2Reads } from '@/lib/runtime/timeline-mode';
 import type { TPanelType } from '@/types/terminal';
 
@@ -39,7 +39,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (shouldUseRuntimeTimelineV2Reads()) {
     try {
-      const page = await getRuntimeSupervisor().listTimelineSessions({
+      const page = await getCoreRuntimeApi().listTimelineSessions({
         tmuxSession,
         cwd: cwdHint,
         panelType,

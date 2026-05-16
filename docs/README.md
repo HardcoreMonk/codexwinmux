@@ -13,7 +13,7 @@
 | `ARCHITECTURE-LOGIC.md` | 서버, WebSocket, workspace, terminal, timeline, status, sync 서비스 흐름 |
 | `STATUS.md` | Codex 작업 상태 감지, 상태 전이, 알림, timeline metadata |
 | `TMUX.md` | tmux session, terminal WebSocket, key input, Codex process 감지 |
-| `DATA-DIR.md` | `~/.codexmux/` 저장 구조와 삭제 기준 |
+| `DATA-DIR.md` | `~/.codexwinmux/` 저장 구조와 삭제 기준 |
 | `PERFORMANCE.md` | 성능 계측, 최적화 우선순위, 검증 기준 |
 | `TESTING.md` | unit/type/lint/build, Playwright/Chromium, platform smoke, live deploy 검증 기준 |
 | `RUNTIME-V2-CUTOVER.md` | Supervisor/Worker runtime v2 production 전환 단계, flag, rollback 기준 |
@@ -65,6 +65,10 @@
 - Windows Electron client, engine lifecycle, updater, installer 기준을 바꾸면
   `ELECTRON.md`, `TESTING.md`, `WINDOWS-ONLY-GAP-AUDIT.md`, 관련
   `operations/` handoff를 함께 갱신한다.
+- Core/Backend 논리 분리, Core protocol, `--codexwinmux-core` host, split service
+  계획을 바꾸면 `ADR.md`, `RUNTIME-V2-CUTOVER.md`, `ELECTRON.md`,
+  `WINDOWS-ONLY-GAP-AUDIT.md`, 관련 `operations/` handoff와
+  `superpowers/plans/`를 함께 갱신한다.
 - legacy Android client, 모바일 reconnect, 앱 정보/재시작 bridge, native build
   기준을 바꾸면 `ANDROID.md`를 갱신하되 현재 Windows 제품 기준과 혼동되지 않게
   legacy/deferred 상태를 명시한다.

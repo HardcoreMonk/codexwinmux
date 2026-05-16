@@ -26,9 +26,9 @@ packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core combined engine 
 - Start type: `Automatic`
 - Service account: `LocalSystem`
 - Current status: `Running`
-- Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`, `buildTime=2026-05-15T17:43:01.396Z`.
+- Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.17`, `commit=d632d9c5`, `buildTime=2026-05-15T18:25:47.113Z` on 2026-05-16 KST.
 - Process ownership: WinSW wrapper가 parent process이고, engine process가 child로 실행된다.
-- Physical boundary: 이 service는 아직 Backend API host와 Core Supervisor를 같은 combined engine process 안에서 실행한다. `codexwinmux-backend`/`codexwinmux-core` split service는 별도 physical separation milestone에서 default-off로 추가한다.
+- Physical boundary: 이 service는 아직 Backend API host와 Core Supervisor를 같은 combined engine process 안에서 실행한다. 소스 HEAD에는 `--codexwinmux-core` standalone Core host foundation이 추가됐지만, 현재 service runtime은 `--codexwinmux-engine` combined mode다. `codexwinmux-backend`/`codexwinmux-core` split service는 별도 physical separation milestone에서 default-off로 추가한다.
 
 ## 승인된 운영 결정
 
@@ -63,17 +63,17 @@ corepack pnpm windows:service:uninstall
 - `corepack pnpm test`: 174개 파일 통과, 1개 skipped; 821개 테스트 통과, 1개 skipped.
 - `corepack pnpm build:electron`: 통과.
 - `corepack pnpm pack:electron:dev`: 통과.
-- `corepack pnpm smoke:windows:engine-lifecycle`: 통과. Packaged health는 `commit=c1510c22`, `ui-quit-engine-survival` 확인.
+- `corepack pnpm smoke:windows:engine-lifecycle`: 통과. 당시 packaged health는 `commit=c1510c22`, `ui-quit-engine-survival` 확인.
 - `codexwinmux-service.exe install`: 통과.
 - `codexwinmux-service.exe start`: 통과.
 - `Get-Service -Name codexwinmux`: `Running`, `Automatic`, `Win32OwnProcess`.
 - `Invoke-RestMethod http://127.0.0.1:8121/api/health`: 통과.
 - `corepack pnpm windows:service:status`: `codexwinmux Running Automatic Win32OwnProcess`.
-- `corepack pnpm windows:service:health`: `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`.
+- `corepack pnpm windows:service:health`: 현재 설치 service health는 `app=codexwinmux`, `version=0.4.17`, `commit=d632d9c5`.
 
 ## 남은 후속 작업
 
 - service-owned engine stop/restart를 Electron UI에서 어떻게 표현할지 결정한다. 현재 UI는 자신이 시작한 owned engine만 stop한다.
 - 전용 Windows service account 전환 slice를 진행한다. 포함 범위는 account 생성/권한, service profile/data dir, folder ACL, credential rotation, migration smoke다.
 - NSIS optional service install slice를 진행한다. 포함 범위는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke다.
-- Backend process와 Core worker supervisor를 서로 다른 Windows service/process로 분리하는 physical separation milestone을 진행한다.
+- P2 Core host foundation은 source/build에 포함됐다. 다음 physical separation 작업은 Backend API/WebSocket Core client adapter 전환, `codexwinmux-backend`/`codexwinmux-core` split service default-off plan, 독립 restart lifecycle smoke 순서로 진행한다.

@@ -8,7 +8,9 @@ Core runtime v2가 terminal, storage, timeline, status, session projection의 so
 
 단, 이 문서의 "100%"는 runtime ownership과 source-of-truth 기준의 논리 완료를 뜻한다.
 Backend API host와 Core Supervisor를 별도 process/service로 나누는 **물리 process 분리**는
-완료 범위가 아니며 `Core/Backend 100% Physical Separation` milestone으로 별도 추적한다.
+이 handoff의 완료 범위가 아니며 `Core/Backend 100% Physical Separation` milestone으로
+별도 추적한다. 이후 P2에서 standalone Core host foundation은 추가됐지만, 기본 서비스와
+제품 실행은 아직 combined engine mode다.
 
 ## 변경 요약
 
@@ -46,11 +48,14 @@ release blocker로 승격한다.
 - 현재 runtime v2 worker boundary는 `storage-worker`, `terminal-worker`, `timeline-worker`, `status-worker` child process까지 닫혔다.
 - 현재 Windows service owner는 `codexwinmux.exe --codexwinmux-engine` combined engine process를 실행한다.
 - combined engine process 안에는 Backend API host와 Core Supervisor가 함께 있다.
+- 현재 소스 HEAD에는 `codexwinmux.exe --codexwinmux-core`와 `dist/workers/core-engine-host.js` Core host foundation이 있다. 이 host는 BrowserWindow와 UI single-instance lock 없이 runtime Supervisor/workers를 시작하고 Core protocol에 응답한다.
 - 엄격한 물리 분리 완료 기준은 `codexwinmux-backend`와 `codexwinmux-core` 또는 동등한 별도 lifecycle/process boundary가 split smoke와 release gate를 통과하는 것이다.
 
 ## 남은 후속 작업
 
-- Phase 2: Core/Backend 물리 process 분리 설계와 구현.
+- P3: Backend API/WebSocket을 Core client adapter로 전환.
+- P4: `codexwinmux-backend`/`codexwinmux-core` split service mode를 default-off로 추가.
+- P5-P6: Backend/Core 독립 restart lifecycle smoke와 packaged/release split-mode evidence 추가.
 - 외부 공개 배포 재개 시: public SmartScreen reputation 확보 후 public evidence smoke 재실행.
 - 외부 공개 배포 재개 시: published public Phase 6 target URL 지정 후 `smoke:runtime-v2:phase6-default-gate` 재실행.
 - 필요 시: non-terminal panel creation까지 runtime-owned storage command로 확장할지 별도 결정.

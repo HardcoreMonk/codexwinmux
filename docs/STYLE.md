@@ -1,6 +1,6 @@
 # 스타일 가이드
 
-codexmux의 시각 톤은 차분한 enterprise SaaS에 맞춘다. Tailwind의 고채도 기본색을 직접 쓰지 않고, 낮은 채도의 muted palette와 얇은 구분선으로 계층을 만든다.
+codexwinmux의 시각 톤은 차분한 enterprise SaaS에 맞춘다. Tailwind의 고채도 기본색을 직접 쓰지 않고, 낮은 채도의 muted palette와 얇은 구분선으로 계층을 만든다.
 
 ## 원칙
 

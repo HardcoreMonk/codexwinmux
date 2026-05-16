@@ -34,13 +34,23 @@ describe('core engine contracts', () => {
       'core.runtime.phase6',
       'core.workspace.list',
       'core.workspace.create',
+      'core.workspace.delete',
       'core.layout.get',
+      'core.terminal-tab.create',
+      'core.terminal-tab.delete',
       'core.terminal.attach',
       'core.terminal.write',
       'core.terminal.resize',
       'core.terminal.detach',
       'core.timeline.list-sessions',
+      'core.timeline.read-entries-before',
+      'core.timeline.message-counts',
       'core.status.live-start',
+      'core.status.live-hook-event',
+      'core.status.live-poll',
+      'core.status.live-register-tab',
+      'core.status.live-remove-tab',
+      'core.status.live-device-visibility',
     ]));
   });
 

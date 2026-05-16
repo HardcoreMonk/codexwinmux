@@ -10,7 +10,7 @@ import { normalizePanelType } from '@/lib/panel-type';
 import type { TPanelType } from '@/types/terminal';
 import { shouldCreateTerminalTabInRuntimeV2 } from '@/lib/runtime/terminal-mode';
 import { shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { broadcastSync } from '@/lib/sync-server';
 
 const log = createLogger('api:cli:tabs');
@@ -69,9 +69,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const defaultCwd = ws.directories[0] ?? os.homedir();
       const tab = shouldUseRuntimeV2
         ? await (async () => {
-            const supervisor = getRuntimeSupervisor();
-            await supervisor.ensureStarted();
-            const runtimeTab = await supervisor.createTerminalTab({
+            const runtime = getCoreRuntimeApi();
+            await runtime.ensureStarted();
+            const runtimeTab = await runtime.createTerminalTab({
               workspaceId,
               paneId,
               cwd: defaultCwd,
@@ -95,7 +95,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
               runtimeVersion: 2,
             });
             if (!added) {
-              await Promise.resolve(supervisor.deleteTerminalTab(runtimeTab.id)).catch((err) => {
+              await Promise.resolve(runtime.deleteTerminalTab(runtimeTab.id)).catch((err) => {
                 log.warn(`runtime v2 CLI tab rollback failed: ${err instanceof Error ? err.message : err}`);
               });
             }

@@ -8,7 +8,7 @@ import { sendKeys } from '@/lib/tmux';
 import { createLogger } from '@/lib/logger';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { shouldCreateTerminalTabInRuntimeV2 } from '@/lib/runtime/terminal-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 import { shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
 import { broadcastSync } from '@/lib/sync-server';
@@ -65,9 +65,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       : workspace?.directories[0] ?? os.homedir();
     const tab = shouldUseRuntimeV2
       ? await (async () => {
-          const supervisor = getRuntimeSupervisor();
-          await supervisor.ensureStarted();
-          const runtimeTab = await supervisor.createTerminalTab({
+          const runtime = getCoreRuntimeApi();
+          await runtime.ensureStarted();
+          const runtimeTab = await runtime.createTerminalTab({
             workspaceId: wsId,
             paneId,
             cwd: effectiveCwd,
@@ -91,7 +91,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             runtimeVersion: 2,
           });
           if (!added) {
-            await Promise.resolve(supervisor.deleteTerminalTab(runtimeTab.id)).catch((err) => {
+            await Promise.resolve(runtime.deleteTerminalTab(runtimeTab.id)).catch((err) => {
               log.warn(`runtime v2 tab rollback failed: ${err instanceof Error ? err.message : err}`);
             });
           }
@@ -111,7 +111,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         eventSeq: 0,
       } as const;
       if (shouldUseRuntimeStatusLive()) {
-        getRuntimeSupervisor().registerStatusLiveTab({ tabId: tab.id, entry: statusEntry }).catch((err) => {
+        getCoreRuntimeApi().registerStatusLiveTab({ tabId: tab.id, entry: statusEntry }).catch((err) => {
           log.warn(`runtime status register tab failed: ${err instanceof Error ? err.message : err}`);
         });
       } else {

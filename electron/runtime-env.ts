@@ -1,3 +1,4 @@
+import path from 'path';
 import { pathToFileURL } from 'url';
 
 export type TElectronEnv = NodeJS.ProcessEnv | Record<string, string | undefined>;
@@ -9,8 +10,16 @@ export interface IElectronBootstrapEnvInput {
 
 export interface IPackagedNodePathInput {
   platform?: NodeJS.Platform;
-  standaloneModules: string;
+  standaloneModules: string | string[];
   existingNodePath?: string;
+}
+
+export interface IPackagedServerEnvInput {
+  env?: TElectronEnv;
+  isDev: boolean;
+  cwd: string;
+  appPath: string;
+  platform?: NodeJS.Platform;
 }
 
 const posixLaunchPathAdditions = [
@@ -114,14 +123,52 @@ export const applyElectronBootstrapEnv = (
   }
 };
 
+export const buildPackagedServerEnv = ({
+  env = process.env,
+  isDev,
+  cwd,
+  appPath,
+  platform = process.platform,
+}: IPackagedServerEnvInput): Record<string, string | undefined> => {
+  const appDir = isDev ? cwd : appPath;
+  const appDirUnpacked = isDev ? cwd : appPath.replace('app.asar', 'app.asar.unpacked');
+  const standaloneModules = [
+    path.join(appDirUnpacked, '.next', 'standalone', 'node_modules'),
+    path.join(appDir, '.next', 'standalone', 'node_modules'),
+  ];
+  return {
+    ...env,
+    NODE_ENV: 'production',
+    NODE_PATH: buildPackagedNodePath({
+      platform,
+      standaloneModules,
+      existingNodePath: env.NODE_PATH,
+    }),
+    __CMUX_ELECTRON: '1',
+    __CMUX_APP_DIR: appDir,
+    __CMUX_APP_DIR_UNPACKED: appDirUnpacked,
+  };
+};
+
+export const applyPackagedServerEnv = (
+  input: IPackagedServerEnvInput & { env: NodeJS.ProcessEnv },
+): void => {
+  const nextEnv = buildPackagedServerEnv(input);
+  for (const [key, value] of Object.entries(nextEnv)) {
+    if (value !== undefined) input.env[key] = value;
+  }
+};
+
 export const buildPackagedNodePath = ({
   platform = process.platform,
   standaloneModules,
   existingNodePath,
-}: IPackagedNodePathInput): string =>
-  [standaloneModules, existingNodePath]
+}: IPackagedNodePathInput): string => {
+  const modules = Array.isArray(standaloneModules) ? standaloneModules : [standaloneModules];
+  return [...modules, existingNodePath]
     .filter((value): value is string => !!value)
     .join(pathDelimiterForPlatform(platform));
+};
 
 export const buildFileImportSpecifier = (filePath: string): string => {
   if (/^[A-Za-z]:[\\/]/.test(filePath)) {

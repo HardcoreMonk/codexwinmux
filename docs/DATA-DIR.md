@@ -93,11 +93,13 @@ workspace, sidebar 상태, workspace directory list, message history를 복원�
 terminal attach/cleanup은 `runtime_version=2`인 terminal tab만 대상으로 삼는다.
 
 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가 SQLite
-projection을 먼저 사용한다. projection이 없거나 DB open/read가 실패하면 legacy
-`workspaces.json`, `workspaces/{wsId}/layout.json`,
-`workspaces/{wsId}/message-history.json` read로 fallback한다. Message history write는 SQLite를
-우선 갱신하고 rollback용 JSON 파일도 함께 쓴다. Config, keybindings, sidebar items는 기존
-JSON 파일이 owner다.
+projection을 source of truth로 사용한다. projection이 없거나 DB open/read가 실패하면
+legacy `workspaces.json`, `workspaces/{wsId}/layout.json`,
+`workspaces/{wsId}/message-history.json` read로 조용히 내려가지 않고
+`RuntimeStorageUnavailableError` 계열 typed failure로 fail closed한다. Message history
+write는 SQLite를 우선 갱신하고 rollback용 JSON 파일도 함께 쓰지만, 그 JSON mirror는
+default read source가 아니라 explicit `off` rollback artifact다. Config, keybindings,
+sidebar items는 아직 기존 JSON 파일이 owner다.
 
 `CODEXWINMUX_RUNTIME_V2_RESET=1`을 함께 설정하면 runtime 시작 전에 기존
 `runtime-v2/state.db`, `runtime-v2/state.db-wal`, `runtime-v2/state.db-shm` 파일을 각각

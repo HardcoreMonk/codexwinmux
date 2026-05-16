@@ -35,6 +35,8 @@ describe('Windows zip smoke helpers', () => {
       { fullName: 'resources/app.asar.unpacked/.next/standalone/node_modules/node-pty/build/Release/conpty/conpty.dll', length: 100 },
       { fullName: 'resources/app.asar.unpacked/.next/standalone/node_modules/node-pty/build/Release/conpty/OpenConsole.exe', length: 100 },
       { fullName: 'resources/app.asar.unpacked/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node', length: 100 },
+      { fullName: 'resources/app.asar.unpacked/.next/standalone/node_modules/nanoid/package.json', length: 100 },
+      { fullName: 'resources/app.asar.unpacked/.next/standalone/node_modules/zod/package.json', length: 100 },
     ]);
 
     expect(result).toEqual({
@@ -46,9 +48,10 @@ describe('Windows zip smoke helpers', () => {
         'zip-entry-runtime-workers',
         'zip-entry-node-pty-conpty',
         'zip-entry-better-sqlite3',
+        'zip-entry-standalone-runtime-deps',
       ],
       missingEntryPatterns: [],
-      entryCount: 10,
+      entryCount: 12,
     });
   });
 

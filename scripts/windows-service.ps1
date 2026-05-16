@@ -4,6 +4,12 @@ param(
   [ValidateSet('install', 'start', 'stop', 'restart', 'status', 'health', 'uninstall', 'write-config')]
   [string]$Action = 'status',
 
+  [ValidateSet('combined', 'split')]
+  [string]$Mode = 'combined',
+
+  [ValidateSet('all', 'backend', 'core')]
+  [string]$Role = 'all',
+
   [string]$ServiceName = 'codexwinmux',
   [string]$RepoRoot,
   [string]$EngineExe,
@@ -11,7 +17,9 @@ param(
   [string]$WrapperConfigPath,
   [string]$WinSwSource,
   [string]$HostName = '127.0.0.1',
-  [int]$Port = 8121
+  [int]$Port = 8121,
+  [string]$CoreEngineHost = '127.0.0.1',
+  [int]$CoreEnginePort = 8122
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,10 +47,23 @@ if (-not $WrapperConfigPath) {
 
 $ServiceDir = Split-Path -Parent $WrapperPath
 $WorkingDirectory = Split-Path -Parent $EngineExe
+$AppAsarPath = Join-Path $WorkingDirectory 'resources\app.asar'
+$AppAsarUnpackedPath = Join-Path $WorkingDirectory 'resources\app.asar.unpacked'
+$PackagedNodePath = "$(Join-Path $AppAsarUnpackedPath '.next\standalone\node_modules');$(Join-Path $AppAsarPath '.next\standalone\node_modules')"
+$BackendServerScriptPath = Join-Path $AppAsarPath 'dist\server.js'
+$CoreHostScriptPath = Join-Path $AppAsarUnpackedPath 'dist\workers\core-engine-host.js'
 $UserProfilePath = $DefaultUserProfilePath
 $LocalAppDataPath = $DefaultLocalAppDataPath
 $AppDataPath = $DefaultAppDataPath
 $LogPath = Join-Path $LocalAppDataPath 'codexwinmux\logs'
+$ServiceArguments = "`"$BackendServerScriptPath`""
+$ServiceProcessEnvName = 'ELECTRON_RUN_AS_NODE'
+$CoreEngineTransport = 'in-process'
+
+$SplitActions = @('write-config', 'install', 'start', 'status', 'health', 'stop', 'uninstall')
+if ($Mode -eq 'split' -and $SplitActions -notcontains $Action) {
+  throw "Split mode supports only: $($SplitActions -join ', ')."
+}
 
 function Test-IsAdministrator {
   $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -96,17 +117,31 @@ function Ensure-WinSwWrapper {
 function Write-WinSwConfig {
   Ensure-ServiceDirectory
 
+  $coreTransportEnvXml = ''
+  if ($script:CoreEngineTransport -eq 'tcp') {
+    $coreTransportEnvXml = @"
+  <env name="CODEXWINMUX_CORE_ENGINE_TRANSPORT" value="tcp" />
+  <env name="CODEXWINMUX_CORE_ENGINE_HOST" value="$(Escape-XmlValue $CoreEngineHost)" />
+  <env name="CODEXWINMUX_CORE_ENGINE_PORT" value="$(Escape-XmlValue ([string]$CoreEnginePort))" />
+"@
+  }
+
   $xml = @"
 <service>
   <id>$(Escape-XmlValue $ServiceName)</id>
   <name>$(Escape-XmlValue $ServiceName)</name>
   <description>Runs the local codexwinmux Backend/Core Engine.</description>
   <executable>$(Escape-XmlValue $EngineExe)</executable>
-  <arguments>--codexwinmux-engine</arguments>
+  <arguments>$(Escape-XmlValue $ServiceArguments)</arguments>
   <workingdirectory>$(Escape-XmlValue $WorkingDirectory)</workingdirectory>
   <startmode>Automatic</startmode>
   <stoptimeout>30 sec</stoptimeout>
-  <env name="CODEXWINMUX_ELECTRON_ENGINE_PROCESS" value="1" />
+  <env name="$(Escape-XmlValue $ServiceProcessEnvName)" value="1" />
+$coreTransportEnvXml
+  <env name="NODE_ENV" value="production" />
+  <env name="NODE_PATH" value="$(Escape-XmlValue $PackagedNodePath)" />
+  <env name="__CMUX_APP_DIR" value="$(Escape-XmlValue $AppAsarPath)" />
+  <env name="__CMUX_APP_DIR_UNPACKED" value="$(Escape-XmlValue $AppAsarUnpackedPath)" />
   <env name="CODEXWINMUX_WINDOWS_HOST_OWNER" value="service" />
   <env name="CODEXWINMUX_RUNTIME_V2" value="1" />
   <env name="CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER" value="windows" />
@@ -161,6 +196,106 @@ function Show-ServiceStatus {
 function Show-Health {
   $uri = "http://${HostName}:${Port}/api/health"
   Invoke-RestMethod -Uri $uri | ConvertTo-Json -Depth 5
+}
+
+function New-SplitServiceSpec([string]$TargetRole) {
+  $name = if ($TargetRole -eq 'core') { 'codexwinmux-core' } else { 'codexwinmux-backend' }
+  $arguments = if ($TargetRole -eq 'core') { "`"$CoreHostScriptPath`"" } else { "`"$BackendServerScriptPath`"" }
+  $envName = 'ELECTRON_RUN_AS_NODE'
+  $baseDir = Split-Path -Parent $WrapperPath
+  [pscustomobject]@{
+    Role = $TargetRole
+    ServiceName = $name
+    WrapperPath = Join-Path $baseDir "$name-service.exe"
+    WrapperConfigPath = Join-Path $baseDir "$name-service.xml"
+    ServiceArguments = $arguments
+    ServiceProcessEnvName = $envName
+    CoreEngineTransport = 'tcp'
+  }
+}
+
+function Get-SplitServiceSpecs([string]$Order) {
+  $roles = if ($Role -eq 'all') {
+    if ($Order -eq 'stop') { @('backend', 'core') } else { @('core', 'backend') }
+  } else {
+    @($Role)
+  }
+  return @($roles | ForEach-Object { New-SplitServiceSpec $_ })
+}
+
+function Use-ServiceSpec($Spec, [scriptblock]$Block) {
+  $previousServiceName = $script:ServiceName
+  $previousWrapperPath = $script:WrapperPath
+  $previousWrapperConfigPath = $script:WrapperConfigPath
+  $previousServiceDir = $script:ServiceDir
+  $previousServiceArguments = $script:ServiceArguments
+  $previousServiceProcessEnvName = $script:ServiceProcessEnvName
+  $previousCoreEngineTransport = $script:CoreEngineTransport
+  try {
+    $script:ServiceName = $Spec.ServiceName
+    $script:WrapperPath = $Spec.WrapperPath
+    $script:WrapperConfigPath = $Spec.WrapperConfigPath
+    $script:ServiceDir = Split-Path -Parent $Spec.WrapperPath
+    $script:ServiceArguments = $Spec.ServiceArguments
+    $script:ServiceProcessEnvName = $Spec.ServiceProcessEnvName
+    $script:CoreEngineTransport = $Spec.CoreEngineTransport
+    & $Block
+  } finally {
+    $script:ServiceName = $previousServiceName
+    $script:WrapperPath = $previousWrapperPath
+    $script:WrapperConfigPath = $previousWrapperConfigPath
+    $script:ServiceDir = $previousServiceDir
+    $script:ServiceArguments = $previousServiceArguments
+    $script:ServiceProcessEnvName = $previousServiceProcessEnvName
+    $script:CoreEngineTransport = $previousCoreEngineTransport
+  }
+}
+
+if ($Mode -eq 'split') {
+  switch ($Action) {
+    'install' {
+      Assert-Administrator
+      foreach ($spec in Get-SplitServiceSpecs 'start') {
+        Use-ServiceSpec $spec { Invoke-WinSw 'install' }
+      }
+    }
+    'start' {
+      Assert-Administrator
+      foreach ($spec in Get-SplitServiceSpecs 'start') {
+        Use-ServiceSpec $spec { Invoke-WinSw 'start' }
+      }
+    }
+    'stop' {
+      Assert-Administrator
+      foreach ($spec in Get-SplitServiceSpecs 'stop') {
+        Use-ServiceSpec $spec { Invoke-WinSw 'stop' }
+      }
+    }
+    'uninstall' {
+      Assert-Administrator
+      foreach ($spec in Get-SplitServiceSpecs 'stop') {
+        Use-ServiceSpec $spec { Invoke-WinSw 'uninstall' }
+      }
+    }
+    'write-config' {
+      foreach ($spec in Get-SplitServiceSpecs 'start') {
+        Use-ServiceSpec $spec {
+          Ensure-WinSwWrapper
+          Write-WinSwConfig
+          Write-Output "Wrote $WrapperConfigPath"
+        }
+      }
+    }
+    'status' {
+      foreach ($spec in Get-SplitServiceSpecs 'start') {
+        Use-ServiceSpec $spec { Show-ServiceStatus }
+      }
+    }
+    'health' {
+      Show-Health
+    }
+  }
+  return
 }
 
 switch ($Action) {

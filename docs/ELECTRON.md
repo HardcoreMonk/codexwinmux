@@ -5,6 +5,11 @@ codexwinmux의 Electron 앱은 Windows 설치형 제품의 Shell Host입니다. 
 executable을 engine process로 시작합니다. 창 닫기는 UI를 tray로 숨기며 engine을
 중지하지 않습니다. Phase 2 service owner slice부터 packaged executable은
 `--codexwinmux-engine` 인자로 Backend/Core Engine 전용 bootstrap을 시작할 수 있습니다.
+Core/Backend physical separation P2부터 같은 executable은 `--codexwinmux-core` 인자로
+BrowserWindow 없이 Core Supervisor/workers만 시작하는 standalone Core host도 제공합니다.
+P3-P6부터 Backend adapter는 default-off `CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`에서
+독립 Core process에 loopback TCP로 attach할 수 있습니다. 다만 기본 UI와 combined Windows
+service 실행은 아직 in-process engine mode입니다.
 
 ## 명령
 
@@ -24,6 +29,7 @@ corepack pnpm smoke:windows:updater-local-feed
 corepack pnpm smoke:windows:updater-published-channel
 corepack pnpm smoke:windows:packaged-launch
 corepack pnpm smoke:windows:engine-lifecycle
+corepack pnpm smoke:windows:core-backend-external-transport
 corepack pnpm smoke:windows:packaged-runtime-v2
 corepack pnpm smoke:windows:installer-install
 corepack pnpm smoke:windows:installer-runtime-v2
@@ -41,7 +47,7 @@ corepack pnpm pack:electron:mac
 - `smoke:electron:runtime-v2`: temp HOME/DB runtime v2 서버와 Electron shell을 띄운 뒤 page context에서 existing session cookie로 `/api/v2/terminal` WebSocket attach, marker output, 기본 2회 page reload/reconnect를 확인합니다.
 - `smoke:windows:electron-env`: Windows Electron local server bootstrap이 POSIX PATH를 주입하지 않고 `NODE_PATH`를 Windows `;` 구분자로 만드는지 dry-run으로 확인합니다.
 - `smoke:windows:electron-packaging`: package script와 `electron-builder.yml`이 Windows NSIS/zip 패키징 계약, updater metadata와 맞는 NSIS artifact name을 만족하는지 dry-run으로 확인합니다.
-- `smoke:windows:zip-artifact`: `release/*-win.zip` archive 안에 exe, `app.asar`, runtime v2 workers, Windows native terminal/runtime modules가 있는지 확인합니다.
+- `smoke:windows:zip-artifact`: `release/*-win.zip` archive 안에 exe, `app.asar`, runtime v2 workers, Windows native terminal/runtime modules, standalone Next.js server가 직접 `require()`하는 JS runtime dependency가 있는지 확인합니다.
 - `smoke:windows:update-metadata`: `release/latest.yml`이 실제 NSIS installer, installer size, sha512, blockmap artifact와 일치하고, packaged `app-update.yml`이 GitHub publish provider와 같은 owner/repo를 가리키는지 확인합니다.
 - `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 `internal-not-required` 또는 `internal-trusted-root` 상태를 signed/timestamped artifact와 함께 기록할 수 있습니다. 비-runtime 기존 `CODEXMUX_*` env는 호환 fallback입니다. Runtime 입력은 `0.4.15`부터 `CODEXWINMUX_RUNTIME_*`만 사용합니다.
 - `smoke:windows:smartscreen-public-evidence`: GitHub Release 같은 HTTPS public download URL에서 Chromium download로 installer를 내려받고, Internet ZoneId=3과 `Start-Process` launch/exit 증거를 확인해 public SmartScreen `passed` evidence JSON을 생성합니다. 이 smoke는 외부 공개 배포 전용 gate이며, 내부 폐쇄망 전용 릴리스에서는 실행하지 않아도 됩니다. 실행 시 temp install/uninstall을 수행하므로 Windows 사용자 설치 상태를 임시로 변경합니다.
@@ -49,11 +55,14 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
 - `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
-- `smoke:windows:service-host`: 기본 tray owner plan과 Phase 2 Windows Service owner plan을 모두 확인합니다. Service owner plan은 `codexwinmux.exe --codexwinmux-engine`, WinSW wrapper의 `install`/`uninstall`/`start`/`stop` 명령 계획, `scripts/windows-service.ps1` runbook helper 존재 여부를 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
+- `smoke:windows:service-host`: 기본 tray owner plan, Phase 2 Windows Service owner plan, default-off split service plan을 확인합니다. Service owner plan은 `codexwinmux.exe --codexwinmux-engine`, split plan은 `codexwinmux-backend`/`codexwinmux-core`, WinSW wrapper의 `install`/`uninstall`/`start`/`stop` 명령 계획, split transport env, `scripts/windows-service.ps1` runbook helper 존재 여부를 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
+- `smoke:windows:core-engine-ipc`: build된 `dist/workers/core-engine-host.js`를 독립 child process로 실행하고 IPC `core.health` event/reply를 확인합니다.
+- `smoke:windows:core-backend-external-transport`: 독립 Core host를 TCP listener로 실행하고 Backend runtime adapter가 외부 Core process에 attach해 `core.health`를 받는지 확인합니다.
+- `smoke:windows:core-backend-split-lifecycle`: 기본값은 non-mutating dry-run으로 split service lifecycle 순서를 확인합니다. 실제 service mutation evidence는 `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_MUTATE=1`을 별도로 지정할 때만 수집합니다. `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_STABILITY_MS=<ms>`를 함께 지정하면 core/backend restart 뒤 cleanup 전에 backend health를 반복 확인하는 stability hold를 추가합니다.
 - `smoke:windows:packaged-runtime-v2`: packaged app을 runtime v2 `new-tabs` mode로 실행해 workspace/tab 생성, `/api/v2/terminal` WebSocket attach, Windows marker command output을 확인합니다.
 - `smoke:windows:installer-install`: `release/codexwinmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
 - `smoke:windows:installer-runtime-v2`: silent install한 앱에 `smoke:windows:packaged-runtime-v2`와 같은 runtime v2 terminal 검증을 적용한 뒤 silent uninstall합니다.
-- `smoke:windows:package-gate`: 이미 생성된 Windows `release/` 산출물에 대해 zip artifact, update metadata, updater local feed, packaged launch, packaged runtime v2, installer runtime v2 smoke를 순차 실행합니다.
+- `smoke:windows:package-gate`: 이미 생성된 Windows `release/` 산출물에 대해 zip artifact, update metadata, updater local feed, packaged launch, engine lifecycle, standalone Core IPC, Backend external Core attach, split lifecycle dry-run, packaged runtime v2, installer runtime v2 smoke를 순차 실행합니다.
 - `pack:electron:dev`: 로컬 Windows unpacked package 검증용입니다. Installer를 만들지 않습니다.
 - `pack:electron`: Windows 릴리스 패키징입니다.
 - `pack:electron:mac:dev`, `pack:electron:mac`: 기존 macOS 패키징 검증용 명령입니다. Windows-only 전환 중 legacy/manual path로만 유지합니다.
@@ -70,7 +79,10 @@ Windows NSIS installer는 `build-resources/installer.nsh`를 include해 설치�
 | --- | --- |
 | `electron/main.ts` | BrowserWindow, 메뉴, local/remote 서버 모드, updater |
 | `electron/engine-controller.ts` | 기존 engine health probe, owned engine 시작/재시작/중지, UI 수명과 engine 수명 분리 |
-| `electron/engine-process.ts` | `--codexwinmux-engine` CLI flag와 engine-only process launch args |
+| `electron/engine-process.ts` | `--codexwinmux-engine`, `--codexwinmux-core` CLI flag와 process launch args |
+| `electron/core-process.ts` | Electron packaged executable의 Core-only bootstrap |
+| `src/workers/core-engine-host.ts` | Node packaged worker entry로 실행 가능한 Core Engine host |
+| `src/lib/core-engine/*` | Backend/Core typed command, reply, event contract와 client/server/process host/TCP transport adapter |
 | `electron/preload.ts` | 안전한 renderer IPC bridge |
 | `electron/browser-bridge.ts` | Electron webview 기반 browser panel bridge |
 | `electron/runtime-env.ts` | local server bootstrap의 platform별 PATH와 `NODE_PATH` 구분자 처리 |
@@ -111,6 +123,7 @@ EOF(`0x04`)로 전달됩니다.
 - 기존 engine이 healthy codexwinmux이면 UI는 그대로 attach합니다.
 - healthy engine이 없으면 Shell Host가 같은 packaged executable을 engine process로 시작합니다.
 - engine process는 canonical `--codexwinmux-engine` CLI flag 또는 `CODEXWINMUX_ELECTRON_ENGINE_PROCESS=1`로 구분합니다. 기존 `CODEXMUX_ELECTRON_ENGINE_PROCESS=1`은 호환 입력입니다.
+- core process는 canonical `--codexwinmux-core` CLI flag 또는 `CODEXWINMUX_ELECTRON_CORE_PROCESS=1`로 구분합니다. Core process는 BrowserWindow를 만들거나 UI single-instance lock을 잡지 않고 runtime Supervisor/workers를 시작한 뒤 Core command/event protocol에 응답합니다.
 - engine host mode에서는 기본 포트 `8121`을 고정하고, 다른 process가 점유한 포트로 조용히 fallback하지 않습니다.
 - 창 닫기는 BrowserWindow를 tray로 숨기며 engine을 중지하지 않습니다.
 - UI 종료는 engine을 남겨 둡니다. `UI와 엔진 종료` 메뉴를 명시적으로 선택한 경우에만 이 UI가 시작한 owned engine을 중지합니다.
@@ -223,7 +236,8 @@ standalone app bundle에서 공급되므로 packaging 변경 시 생성된
 
 Windows wrapper는 electron-builder 실행 전에 packaged runtime dependency용
 Electron ABI native prebuild를 설치합니다. runtime v2 worker는 파일 시스템에서
-fork되므로 `dist/workers/**`는 unpacked 상태로 유지합니다. NSIS silent install
+fork되므로 `dist/workers/**`는 unpacked 상태로 유지합니다. P2부터
+`dist/workers/core-engine-host.js`도 같은 worker artifact set에 포함됩니다. NSIS silent install
 smoke가 installer에서 앱을 자동 실행하지 않고 끝날 수 있도록 `runAfterFinish`는
 비활성화 상태를 유지합니다.
 

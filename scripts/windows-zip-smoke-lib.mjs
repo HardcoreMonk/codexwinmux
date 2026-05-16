@@ -37,6 +37,13 @@ const requiredEntryGroups = [
       'resources/app.asar.unpacked/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node',
     ],
   },
+  {
+    check: 'zip-entry-standalone-runtime-deps',
+    patterns: [
+      'resources/app.asar.unpacked/.next/standalone/node_modules/nanoid/package.json',
+      'resources/app.asar.unpacked/.next/standalone/node_modules/zod/package.json',
+    ],
+  },
 ];
 
 const normalizeZipEntryName = (value) => String(value || '').replace(/\\/g, '/');

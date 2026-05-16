@@ -71,8 +71,8 @@ const main = async (): Promise<void> => {
   if (servicePlan.mutatesSystem) {
     throw new Error('Windows service owner plan must remain non-mutating in smoke.');
   }
-  if (!servicePlan.service.executableArgs.includes('--codexwinmux-engine')) {
-    throw new Error(`Windows service owner plan must launch engine-only mode: ${JSON.stringify(servicePlan.service)}`);
+  if (!servicePlan.service.executableArgs.some((arg) => arg.endsWith('resources\\app.asar\\dist\\server.js'))) {
+    throw new Error(`Windows service owner plan must launch packaged backend server host: ${JSON.stringify(servicePlan.service)}`);
   }
   if (servicePlan.service.commands.install.mutatesSystem || servicePlan.service.commands.start.mutatesSystem) {
     throw new Error(`Windows service commands must be planned, not executed: ${JSON.stringify(servicePlan.service.commands)}`);
@@ -84,9 +84,41 @@ const main = async (): Promise<void> => {
     throw new Error(`Windows service install command must use WinSW install: ${JSON.stringify(servicePlan.service.commands.install)}`);
   }
   checks.push('windows-service-owner-plan');
-  checks.push('windows-service-engine-flag');
+  checks.push('windows-service-backend-server-host');
   checks.push('windows-service-winsw-wrapper');
   checks.push('windows-service-non-mutating-commands');
+
+  const splitPlan = resolveWindowsServiceHostPlan({
+    platform: process.platform,
+    mode: 'split',
+    env: {
+      ...process.env,
+      CODEXWINMUX_WINDOWS_HOST_OWNER: 'service',
+      CODEXWINMUX_WINDOWS_SERVICE_EXE: servicePlan.service.executablePath,
+    },
+    appDir: process.cwd(),
+  });
+  if (!splitPlan.splitServices) {
+    throw new Error(`Windows split service plan was not created: ${JSON.stringify(splitPlan)}`);
+  }
+  if (splitPlan.splitServices.defaultEnabled !== false) {
+    throw new Error(`Windows split service mode must be default-off: ${JSON.stringify(splitPlan.splitServices)}`);
+  }
+  if (splitPlan.splitServices.backend.name !== 'codexwinmux-backend') {
+    throw new Error(`unexpected backend service name: ${JSON.stringify(splitPlan.splitServices.backend)}`);
+  }
+  if (splitPlan.splitServices.core.name !== 'codexwinmux-core') {
+    throw new Error(`unexpected core service name: ${JSON.stringify(splitPlan.splitServices.core)}`);
+  }
+  if (!splitPlan.splitServices.backend.executableArgs.some((arg) => arg.endsWith('resources\\app.asar\\dist\\server.js'))) {
+    throw new Error(`backend split service must launch packaged backend server host: ${JSON.stringify(splitPlan.splitServices.backend)}`);
+  }
+  if (!splitPlan.splitServices.core.executableArgs.some((arg) => arg.endsWith('resources\\app.asar.unpacked\\dist\\workers\\core-engine-host.js'))) {
+    throw new Error(`core split service must launch packaged core worker host: ${JSON.stringify(splitPlan.splitServices.core)}`);
+  }
+  checks.push('windows-service-split-plan');
+  checks.push('windows-service-split-default-off');
+  checks.push('windows-service-split-core-worker-host');
 
   const helperPath = path.join(process.cwd(), servicePlan.operationDecision.runbook.helperScript);
   const helper = readFileSync(helperPath, 'utf8');
@@ -95,10 +127,30 @@ const main = async (): Promise<void> => {
       throw new Error(`Windows service helper is missing action ${action}: ${helperPath}`);
     }
   }
-  if (!helper.includes('--codexwinmux-engine')) {
-    throw new Error(`Windows service helper must write the engine-only flag: ${helperPath}`);
+  if (!helper.includes('dist\\server.js')) {
+    throw new Error(`Windows service helper must write the packaged backend server host: ${helperPath}`);
+  }
+  if (!helper.includes('core-engine-host.js') || !helper.includes('ELECTRON_RUN_AS_NODE') || !helper.includes('[string]$Mode')) {
+    throw new Error(`Windows service helper must expose split mode and packaged core worker host: ${helperPath}`);
+  }
+  if (
+    !helper.includes('CODEXWINMUX_CORE_ENGINE_TRANSPORT')
+    || !helper.includes('CODEXWINMUX_CORE_ENGINE_HOST')
+    || !helper.includes('CODEXWINMUX_CORE_ENGINE_PORT')
+  ) {
+    throw new Error(`Windows service helper must configure split Backend/Core external transport: ${helperPath}`);
+  }
+  if (
+    !helper.includes('__CMUX_APP_DIR_UNPACKED')
+    || !helper.includes('NODE_PATH')
+    || !helper.includes('NODE_ENV')
+    || !helper.includes('production')
+  ) {
+    throw new Error(`Windows service helper must configure packaged runtime worker paths: ${helperPath}`);
   }
   checks.push('windows-service-runbook-helper');
+  checks.push('windows-service-split-external-transport-env');
+  checks.push('windows-service-packaged-worker-env');
 
   if (!plan.paths.dataDir.endsWith('.codexwinmux') || !plan.paths.codexDir.endsWith('.codex')) {
     throw new Error(`unexpected Windows data paths: ${JSON.stringify(plan.paths)}`);
@@ -115,6 +167,7 @@ const main = async (): Promise<void> => {
       hostModel: servicePlan.hostModel,
       requiresElevation: servicePlan.requiresElevation,
       service: servicePlan.service,
+      splitServices: splitPlan.splitServices,
     },
     requiresElevation: plan.requiresElevation,
     service: plan.service,

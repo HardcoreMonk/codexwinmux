@@ -49,7 +49,7 @@ Canonical terms:
 
 | Term | Meaning |
 | --- | --- |
-| Windows-only product | codexmux의 supported execution target을 Windows로 고정하는 제품 전환 |
+| Windows-only product | codexwinmux의 supported execution target을 Windows로 고정하는 제품 전환 |
 | Windows terminal runtime | `tmux` 대신 Windows에서 local Codex shell을 유지, attach, resize, stdin/stdout 처리하는 runtime |
 | Windows service host | long-running codexmux server를 Windows에서 시작, 재시작, 로그 확인, 종료하는 host boundary |
 | runtime adapter | Terminal/process/service 구현을 OS별 infrastructure에서 분리하는 adapter |
@@ -553,11 +553,17 @@ Resolved items:
   - `smoke:runtime-v2:terminal-windows`
   - `smoke:windows:preflight`
   - `smoke:windows:service-host`
+  - `smoke:windows:core-engine-ipc`
+  - `smoke:windows:core-backend-external-transport`
+  - `smoke:windows:core-backend-split-lifecycle`
   - `smoke:windows:host-diagnostics`
   - `smoke:windows:electron-env`
   - `smoke:windows:electron-packaging`
   - `smoke:windows:codex-session`
 - The gate validates that each required package script exists before execution.
+- The gate now includes standalone Core IPC attach, Backend external Core attach,
+  and default-off split lifecycle evidence before host diagnostics and packaging
+  checks.
 - The gate stops on the first failed step and reports `failedStepId`.
 - On non-Windows hosts the gate reports a skipped result instead of claiming
   Windows evidence.
@@ -656,9 +662,70 @@ Service에서 Backend/Core Engine 전용 process로 실행될 수 있는 계약�
   `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-service.exe`,
   `StartType=Automatic`, `Status=Running`, engine args
   `--codexwinmux-engine`, health `app=codexwinmux`, `version=0.4.17`,
-  `commit=c1510c22`.
+  `commit=d632d9c5`.
 
 검증:
 
 - `corepack pnpm test tests/unit/electron/engine-process.test.ts tests/unit/lib/windows-service-host.test.ts`: passed.
 - `corepack pnpm smoke:windows:service-host`: passed.
+
+## Core Process Host P2 Follow-up
+
+Core/Backend physical separation milestone의 P2 slice에서 standalone Core host
+foundation을 추가했다. 이 단계는 split service 완료가 아니라, combined engine과 별도로
+Core Supervisor/workers만 띄울 수 있는 process host 계약을 만든 것이다.
+
+해결된 항목:
+
+- `electron/engine-process.ts`는 `--codexwinmux-core`와
+  `CODEXWINMUX_ELECTRON_CORE_PROCESS=1`을 core-only bootstrap 입력으로 인식한다.
+- `electron/main.ts`는 `ui`, `engine`, `core` role을 분기하고, core role에서는
+  BrowserWindow와 UI single-instance lock을 만들지 않는다.
+- `electron/core-process.ts`는 packaged executable에서 Core-only bootstrap을 제공한다.
+- `src/lib/core-engine/process-host.ts`는 runtime Supervisor를 시작하고 Core
+  command/event protocol을 처리하며 shutdown 때 listener와 runtime workers를 정리한다.
+- `src/workers/core-engine-host.ts`는 Node packaged worker entry로 빌드되어
+  `dist/workers/core-engine-host.js` 산출물에 포함된다.
+- 운영 기본값과 현재 Windows service는 아직 `--codexwinmux-engine` combined mode를
+  유지한다. Backend API/WebSocket Core client 전환, split service plan, 독립 restart
+  lifecycle smoke는 후속 P3-P5 범위다.
+
+검증:
+
+- `corepack pnpm test tests/unit/lib/core-engine/contracts.test.ts tests/unit/electron/engine-process.test.ts tests/unit/lib/core-engine/process-host.test.ts`: passed.
+- `corepack pnpm tsc --noEmit`: passed.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm build:server`: passed and produced `dist/workers/core-engine-host.js`.
+- `corepack pnpm build:electron:main`: passed.
+
+## Core/Backend Split Gate Follow-up
+
+Core/Backend physical separation P3-P6에서 Backend API/WebSocket default path를 Core
+client adapter 뒤로 옮기고, package/release gate에 split-mode evidence를 추가했다.
+
+해결된 항목:
+
+- `src/lib/core-engine/runtime-api.ts`는 Backend route와 WebSocket handler가 사용하는
+  Core client adapter다.
+- `src/pages/api/**`와 `server.ts`는 runtime Supervisor를 직접 import하지 않고 Core
+  adapter를 통과한다.
+- Core command surface는 workspace/tab mutation, timeline read/message counts,
+  status live event/poll/register/remove/device visibility까지 확장됐다.
+- `smoke:windows:core-engine-ipc`는 `dist/workers/core-engine-host.js`를 독립 child
+  process로 실행하고 backend-to-core IPC `core.health` event/reply를 확인한다.
+- `CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`는 default-off external Core transport로,
+  Backend adapter가 독립 Core process에 loopback TCP로 attach한다.
+- `scripts/windows-service.ps1 -Mode split`은 `codexwinmux-core`와
+  `codexwinmux-backend` 양쪽에 split transport env를 기록한다.
+- `smoke:windows:core-backend-external-transport`는 Core host를 TCP listener로 띄우고
+  Backend `getCoreRuntimeApi()`가 외부 Core process에서 `core.health`를 받는지 확인한다.
+- `smoke:windows:release-gate`와 `smoke:windows:package-gate`는 standalone Core IPC,
+  Backend external Core attach, split lifecycle dry-run을 포함한다.
+
+검증:
+
+- `corepack pnpm test tests/unit/lib/core-engine/contracts.test.ts tests/unit/lib/core-engine/server.test.ts tests/unit/pages`: passed.
+- `corepack pnpm test tests/unit/lib/core-engine/transport-config.test.ts tests/unit/lib/core-engine/tcp-transport.test.ts tests/unit/scripts/core-engine-ipc-smoke-lib.test.ts tests/unit/scripts/windows-release-gate-lib.test.ts tests/unit/scripts/windows-package-gate-lib.test.ts`: passed.
+- `corepack pnpm build:server`: passed.
+- `corepack pnpm smoke:windows:core-engine-ipc`: passed.
+- `corepack pnpm smoke:windows:core-backend-external-transport`: passed.

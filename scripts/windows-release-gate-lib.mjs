@@ -19,6 +19,18 @@ export const getWindowsReleaseGateSteps = () => [
     script: 'smoke:windows:service-host',
   },
   {
+    id: 'windows-core-engine-ipc',
+    script: 'smoke:windows:core-engine-ipc',
+  },
+  {
+    id: 'windows-core-backend-external-transport',
+    script: 'smoke:windows:core-backend-external-transport',
+  },
+  {
+    id: 'windows-core-backend-split-lifecycle',
+    script: 'smoke:windows:core-backend-split-lifecycle',
+  },
+  {
     id: 'windows-host-diagnostics',
     script: 'smoke:windows:host-diagnostics',
   },

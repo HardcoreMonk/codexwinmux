@@ -7,9 +7,14 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 앱은 Electron Shell Host, 로컬 Backend/Core Engine, Next.js Frontend Engine을
 같은 Windows 제품 안에서 실행합니다. 기본 접속 포트는 `8121`이며, 창을 닫아도
 엔진이 바로 내려가지 않도록 UI 수명과 엔진 수명을 분리합니다.
-현재 완료 목표는 Backend/Core를 같은 local engine process 안에서 논리 분리하는
-Phase 1입니다. 별도 Windows Service owner 또는 Core/Backend 개별 서비스
-프로세스는 Phase 2 후속 범위입니다.
+
+현재 Core/Backend 상태는 세 단계로 나눠 봅니다. Runtime v2 기준 논리 분리는
+완료됐고, Windows Service owner는 combined engine mode로 등록/시작할 수 있습니다.
+P2에서는 `codexwinmux.exe --codexwinmux-core` standalone Core host와 packaged worker
+entry가 추가됐습니다. P3-P6에서는 Backend API/WebSocket이 Core runtime adapter를
+통과하고, default-off `CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`로 독립 Core process에
+attach하는 smoke evidence가 추가됐습니다. 운영 기본값은 아직 combined engine mode이며,
+개별 process/service 분리의 default-on 승격은 packaged gate 안정화 이후 범위입니다.
 
 ## 현재 상태
 
@@ -187,6 +192,12 @@ Backend/Core Engine
   - Windows process inspector
   - Codex session detection / JSONL mapping
 
+Standalone Core Host
+  - codexwinmux.exe --codexwinmux-core
+  - src/workers/core-engine-host.ts packaged worker entry
+  - Core command/event protocol endpoint foundation
+  - 현재 기본 서비스/제품 실행 경로는 아직 combined engine mode
+
 Frontend Engine
   - Next.js UI
   - terminal, Codex, diff, settings 화면
@@ -229,7 +240,10 @@ Codex CLI 원본 세션 JSONL은 다음 위치를 읽기 전용으로 참조합�
 - `codexwinmux` 로고와 타이틀
 - tray-first lifecycle
 - UI 종료와 Backend/Core Engine 수명 분리
-- Backend/Core Engine 논리 분리. Windows Service 물리 분리는 Phase 2 후속
+- Backend/Core 논리 분리 완료
+- Windows Service owner combined mode 지원
+- `--codexwinmux-core` standalone Core host foundation
+- Backend/Core 개별 service/process split은 P3 이후 후속
 - workspace, session, terminal, Codex, diff 화면
 - Runtime v2 Windows terminal integration
 - Windows process inspector 기반 Codex 실행 감지

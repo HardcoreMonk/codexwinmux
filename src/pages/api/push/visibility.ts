@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { markDeviceVisible, markDeviceHidden } from '@/lib/push-subscriptions';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 
 const shouldUseRuntimeStatusLive = (): boolean =>
   isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
@@ -24,7 +24,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     markDeviceHidden(deviceId);
   }
   if (shouldUseRuntimeStatusLive()) {
-    getRuntimeSupervisor().updateStatusLiveDeviceVisibility({ deviceId, visible }).catch(() => {});
+    getCoreRuntimeApi().updateStatusLiveDeviceVisibility({ deviceId, visible }).catch(() => {});
   }
 
   return res.status(200).json({ ok: true });

@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => {
     statusManager,
     getProviderByPanelType: vi.fn(),
     sendKeys: vi.fn(),
-    getRuntimeSupervisor: vi.fn(() => supervisor),
+    getCoreRuntimeApi: vi.fn(() => supervisor),
     broadcastSync: vi.fn(),
     supervisor,
   };
@@ -49,8 +49,8 @@ vi.mock('@/lib/tmux', () => ({
   sendKeys: mocks.sendKeys,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: mocks.getRuntimeSupervisor,
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: mocks.getCoreRuntimeApi,
 }));
 
 vi.mock('@/lib/sync-server', () => ({
@@ -165,7 +165,7 @@ describe('layout tab api runtime routing', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toMatchObject({ sessionName: 'pt-ws-a-pane-a-tab-legacy', runtimeVersion: 1 });
     expect(mocks.addTabToPane).toHaveBeenCalledWith('ws-a', 'pane-a', undefined, '/repo', 'terminal', undefined);
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 
   it('creates plain new terminal tabs through runtime v2 when new-tabs mode is enabled', async () => {
@@ -213,7 +213,7 @@ describe('layout tab api runtime routing', () => {
     await handler(createRequest({ cwd: '/repo', panelType: 'codex' }), createResponse().res);
 
     expect(mocks.addTabToPane).toHaveBeenCalledTimes(2);
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 
   it('deletes the created runtime v2 tab when legacy layout append fails', async () => {

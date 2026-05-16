@@ -3,7 +3,7 @@ import { isAllowedJsonlPath } from '@/lib/path-validation';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 
 const firstQueryValue = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value;
@@ -32,8 +32,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const supervisor = getRuntimeSupervisor();
-    const counts = await supervisor.getTimelineMessageCounts(jsonlPath);
+    const counts = await getCoreRuntimeApi().getTimelineMessageCounts(jsonlPath);
     return res.status(200).json(counts);
   } catch (err) {
     return sendRuntimeApiError(res, err);

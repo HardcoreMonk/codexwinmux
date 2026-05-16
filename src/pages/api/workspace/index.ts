@@ -8,7 +8,7 @@ import { getStatusManager } from '@/lib/status-manager';
 import { createLogger } from '@/lib/logger';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 
 const log = createLogger('workspace-api');
 
@@ -56,7 +56,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           eventSeq: 0,
         } as const;
         if (shouldUseRuntimeStatusLive()) {
-          getRuntimeSupervisor().registerStatusLiveTab({ tabId: defaultTab.id, entry: statusEntry }).catch((err) => {
+          getCoreRuntimeApi().registerStatusLiveTab({ tabId: defaultTab.id, entry: statusEntry }).catch((err) => {
             log.warn(`runtime status register tab failed: ${err instanceof Error ? err.message : err}`);
           });
         } else {

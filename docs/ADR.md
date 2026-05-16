@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-이 문서는 codexmux에서 이미 선택한 오래가는 설계 결정을 한 곳에 모은다. 세부 구현 흐름은 `ARCHITECTURE-LOGIC.md`에 두고, 영역별 구현 문서는 `STATUS.md`, `TMUX.md`, `DATA-DIR.md`, `SYSTEMD.md`, `STYLE.md`, `ELECTRON.md`, `ANDROID.md`에 둔다.
+이 문서는 codexwinmux에서 이미 선택한 오래가는 설계 결정을 한 곳에 모은다. 세부 구현 흐름은 `ARCHITECTURE-LOGIC.md`에 두고, 영역별 구현 문서는 `STATUS.md`, `TMUX.md`, `DATA-DIR.md`, `SYSTEMD.md`, `STYLE.md`, `ELECTRON.md`, `ANDROID.md`에 둔다.
 
 ## ADR 작성 기준
 
@@ -18,7 +18,7 @@
 ## Accepted: Bridge-Owned External Trace
 
 - Status: Accepted
-- Decision: codexmux는 Discord로 직접 전송하지 않고, `CODEXMUX_BRIDGE_TRACE_URL`과
+- Decision: codexwinmux는 Discord로 직접 전송하지 않고, `CODEXMUX_BRIDGE_TRACE_URL`과
   `CODEXMUX_BRIDGE_TRACE_TOKEN`이 설정된 경우에만 status update summary를
   codex-ai-bridge의 loopback external trace ingress로 best-effort POST한다.
 - Rationale: Discord token, channel routing, `/추적` preference, turn history ownership은
@@ -30,9 +30,9 @@
   state/action 조합은 forwarder가 dedupe하며, 전송 실패는 status update broadcast를 막지
   않는다.
 
-## Proposed: Supervisor And Worker Runtime
+## Accepted: Supervisor And Worker Runtime
 
-- Status: Proposed
+- Status: Accepted
 - Decision: Pages Router와 custom Node server는 유지하되, public routing과
   worker lifecycle, typed IPC command routing을 소유하는 Supervisor 역할을 도입한다.
   Supervisor singleton, in-flight start promise, 준비된 runtime DB path는
@@ -66,9 +66,9 @@
   terminal `new-tabs`, storage/timeline/status `default`로 해석한다. 명시적 `off`는 계속
   rollback이고, 잘못된 명시 값은 `off`로 fail closed한다.
 
-## Proposed: SQLite App State
+## Accepted: SQLite App State
 
-- Status: Proposed
+- Status: Accepted
 - Decision: workspace/layout/tab/status metadata의 runtime v2 source of truth는
   Storage Worker가 소유하는 `~/.codexwinmux/runtime-v2/state.db`다.
   `CODEXWINMUX_RUNTIME_V2_RESET=1`은 `state.db`, `state.db-wal`,
@@ -91,12 +91,12 @@
   Storage schema v3는 `workspace_directories`, `app_state`, `message_history`를 추가해
   workspace directory list, active workspace, sidebar collapsed/width, message history를
   SQLite projection에 보존한다.
-  `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write|default`는 production read source를 즉시
-  바꾸지 않고 legacy JSON write 직후 같은 import path로 SQLite를 mirror한다. `default`
-  mode에서는 workspace/layout/message-history read가 SQLite projection을 우선 사용하고
-  실패 시 legacy JSON으로 fail closed한다. Message history write는 default mode에서
-  SQLite를 우선 갱신하고 rollback용 JSON 파일을 함께 쓴다. Production live mode는 별도
-  rollout 전까지 `write`로 유지했고, Phase 6 이후 unset storage mode는
+  `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=write|default`는 legacy JSON write 직후 같은
+  import path로 SQLite를 mirror한다. `default` mode에서는 workspace/layout/message-history
+  read가 SQLite projection을 source of truth로 사용하고, projection/open/read failure는
+  legacy JSON으로 내려가지 않고 `RuntimeStorageUnavailableError` 계열 typed failure로
+  fail closed한다. Message history write는 default mode에서 SQLite를 우선 갱신하고
+  rollback용 JSON 파일을 함께 쓴다. Phase 6 이후 unset storage mode는
   `CODEXWINMUX_RUNTIME_V2=1`에서 `default`로 해석한다. 명시적 `off`는 legacy JSON rollback이다.
   `better-sqlite3`는 optional dependency이며 lazy load된다. runtime v2가 꺼진
   install/build는 native binding load에 의존하지 않고, runtime v2가 켜졌을 때 binding
@@ -210,7 +210,7 @@
 
 - Status: Accepted
 - Decision: 포커스된 xterm, Codex web input, 모바일 surface에서 `Ctrl+D`는 앱 단축키로 처리하지 않고 EOF/EOT(`0x04`)로 pty에 전달한다.
-- Rationale: codexmux는 Codex CLI를 웹에서 감싸는 제품이므로 shell/Codex CLI의 기본 제어 키가 유지되어야 한다. 특히 Codex CLI는 `Ctrl+D`로 프로세스 종료 흐름을 제공한다.
+- Rationale: codexwinmux는 Codex CLI를 웹에서 감싸는 제품이므로 shell/Codex CLI의 기본 제어 키가 유지되어야 한다. 특히 Codex CLI는 `Ctrl+D`로 프로세스 종료 흐름을 제공한다.
 - Consequences: Linux/Windows의 오른쪽 pane 분할 기본 단축키는 `Ctrl+D` 대신 `Ctrl+Alt+D`를 사용한다. macOS는 앱 분할을 `⌘D`로 유지한다. `keybindings.json`은 앱 단축키 override만 저장하며, terminal/Codex 입력 포커스의 `Ctrl+D` EOF 처리는 override보다 우선한다. 새 terminal key handling은 desktop xterm, web input bar, mobile surface를 함께 검증한다.
 
 ## ADR-013: 성능 계측은 인증된 Snapshot API로 노출한다
@@ -224,7 +224,7 @@
 
 - Status: Accepted
 - Decision: 이전 원격 기기 동기화, 원격 terminal sidecar, 원격 session filter, 전용 page/API route, helper script를 제품 surface에서 제거한다. Session list와 timeline은 로컬 `~/.codex/sessions/**/*.jsonl`만 인덱싱하고, terminal WebSocket은 tmux-backed `/api/terminal`과 runtime v2 `/api/v2/terminal`만 유지한다.
-- Rationale: codexmux의 핵심 안정성은 tmux-backed session, 로컬 Codex JSONL, 모바일/desktop reconnect에 있다. 별도 Windows sidecar 경로는 다른 lifecycle, 별도 auth/token 배포, 읽기 전용 timeline, 별도 terminal queue를 요구해 운영면과 테스트면을 넓혔지만 핵심 session 안정성에 직접 기여하지 않았다.
+- Rationale: codexwinmux의 핵심 안정성은 runtime-backed session, 로컬 Codex JSONL, 모바일/desktop reconnect에 있다. 별도 Windows sidecar 경로는 다른 lifecycle, 별도 auth/token 배포, 읽기 전용 timeline, 별도 terminal queue를 요구해 운영면과 테스트면을 넓혔지만 핵심 session 안정성에 직접 기여하지 않았다.
 - Consequences: 이전 빌드가 만든 `~/.codexwinmux/remote/codex/` 파일은 삭제하지 않지만 현재 앱은 읽지 않는다. 필요하면 운영자가 수동으로 지울 수 있다. 새 Windows 연동을 다시 도입하려면 별도 ADR, lifecycle spec, platform smoke 기준을 먼저 갱신해야 한다.
 
 ## ADR-015: Session list는 백그라운드 인덱스를 사용한다
@@ -244,8 +244,8 @@
 ## ADR-017: Bridge Trace Forwarding은 Env-gated Local Feed로 제한
 
 - Status: Accepted
-- Decision: `CODEXMUX_BRIDGE_TRACE_URL`과 `CODEXMUX_BRIDGE_TRACE_TOKEN`이 설정된 경우에만 `StatusManager.broadcastUpdate` 뒤 status summary를 codex-ai-bridge external trace ingress로 best-effort POST한다. codexmux는 Discord API나 bot token을 직접 다루지 않는다.
-- Rationale: Discord/bridge 추적은 codexmux status source와 분리된 운영 소비자다. status update를 bridge-owned ingress로만 전달하면 codexmux는 기존 status lifecycle을 유지하면서 외부 알림/추적 정책을 codex-ai-bridge에 맡길 수 있다.
+- Decision: `CODEXMUX_BRIDGE_TRACE_URL`과 `CODEXMUX_BRIDGE_TRACE_TOKEN`이 설정된 경우에만 `StatusManager.broadcastUpdate` 뒤 status summary를 codex-ai-bridge external trace ingress로 best-effort POST한다. codexwinmux는 Discord API나 bot token을 직접 다루지 않는다.
+- Rationale: Discord/bridge 추적은 codexwinmux status source와 분리된 운영 소비자다. status update를 bridge-owned ingress로만 전달하면 codexwinmux는 기존 status lifecycle을 유지하면서 외부 알림/추적 정책을 codex-ai-bridge에 맡길 수 있다.
 - Consequences: Forwarding 실패는 status broadcast, notification, session history를 막지 않는다. Payload는 workspace directory, tab id/name, Codex session id, `cliState`, `currentAction`, `lastAssistantMessage`, `lastUserMessage`의 summary-only shape로 제한하고 field length를 cap한다. Discord token, raw transcript, terminal stdout, full JSONL path, auth cookie는 전송하지 않는다. 같은 tab의 동일 state/action/session 조합은 forwarder가 dedupe한다.
 
 ## ADR-018: Approval Audit은 Sanitized Action Log로 제한한다
@@ -265,7 +265,7 @@
 ## ADR-020: Windows-only 제품 타깃
 
 - Status: Accepted
-- Decision: codexmux의 다음 제품 전환 타깃은 Windows-only service/product다. 현재 tmux 중심 macOS/Linux server, Linux `systemd` operation, macOS Electron packaging, Android Capacitor shell은 전환 대상 current-state surface로 본다. 이 결정은 ADR-014에서 제거한 Windows companion sync, remote terminal sidecar, remote source model을 되살리지 않는다.
+- Decision: codexwinmux의 제품 전환 타깃은 Windows-only service/product다. tmux 중심 macOS/Linux server, Linux `systemd` operation, macOS Electron packaging, Android Capacitor shell은 현재 legacy/deferred reference surface로 본다. 이 결정은 ADR-014에서 제거한 Windows companion sync, remote terminal sidecar, remote source model을 되살리지 않는다.
 - Rationale: 사용자 목표는 기존 codexmux 기반을 Windows 전용 제품으로 전환해 구축하고 제공하는 것이다. 이를 기존 Windows companion integration의 복구로 해석하면 제거된 remote data/source/terminal model과 충돌하고, 실제 필요한 terminal runtime, process inspection, service host, installer, smoke gate 전환을 흐리게 만든다.
 - Consequences: Windows-only gap audit과 transition plan을 먼저 유지한다. Terminal runtime은 `tmux` 자체가 아니라 adapter boundary 뒤의 구현으로 다뤄야 하며, process/session detection도 Linux `/proc`, `pgrep`, `ps`, `lsof`에 직접 묶이지 않게 분리해야 한다. Public terminal/timeline protocol은 가능한 유지하되, Windows runtime parity test가 생기기 전에는 tmux path를 제거하지 않는다. README, `TMUX.md`, `SYSTEMD.md`, `ELECTRON.md`, `ANDROID.md`, smoke command, release checklist는 Windows runtime implementation slice가 승인된 뒤 staged cutover한다.
 
@@ -299,7 +299,7 @@
 
 ## ADR-025: Core/Backend 물리 분리는 별도 lifecycle boundary로 진행한다
 
-- Status: Proposed
-- Decision: Core/Backend 논리 분리 완료와 물리 process 분리 완료를 별도 milestone으로 취급한다. 논리 분리는 runtime v2 source-of-truth, worker ownership, fail-closed fallback 기준으로 완료됐지만, 물리 분리는 Backend API host와 Core Supervisor가 서로 다른 lifecycle/process boundary를 가질 때 완료로 본다.
+- Status: Accepted, P0-P2 implemented; P3-P7 pending
+- Decision: Core/Backend 논리 분리 완료와 물리 process 분리 완료를 별도 milestone으로 취급한다. 논리 분리는 runtime v2 source-of-truth, worker ownership, fail-closed fallback 기준으로 완료됐지만, 물리 분리는 Backend API host와 Core Supervisor가 서로 다른 lifecycle/process boundary를 갖고 split smoke/release gate를 통과할 때 완료로 본다.
 - Rationale: 현재 Windows service owner는 `codexwinmux.exe --codexwinmux-engine` combined engine process를 실행한다. 이 안에서 Backend API host와 Core Supervisor가 함께 실행되고, runtime worker만 child process로 분리되어 있다. 장애 격리, 독립 restart, service upgrade, split release evidence를 요구하려면 Backend와 Core 사이에 typed command/event protocol과 별도 host process가 필요하다.
-- Consequences: 새 physical separation milestone은 `src/lib/core-engine/contracts.ts`, Core client/server adapter, `--codexwinmux-core` host, split-mode Windows service plan, split lifecycle smoke를 순서대로 추가한다. Split service는 default off로 시작하며, combined engine mode는 split-mode smoke와 release gate가 안정화될 때까지 유지한다. Backend process가 runtime Supervisor나 worker service를 직접 import하는 fallback은 split-mode evidence가 닫힌 뒤 제거한다.
+- Consequences: P1에서 `src/lib/core-engine/contracts.ts`, Core client/server adapter를 추가했고, P2에서 `codexwinmux.exe --codexwinmux-core`와 `dist/workers/core-engine-host.js` standalone Core host foundation을 추가했다. P3-P6에서 Backend API/WebSocket은 Core runtime adapter를 통과하고, default-off `CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`는 Backend가 독립 Core process에 loopback TCP로 attach하는 evidence path를 제공한다. Production default와 combined Windows service는 아직 in-process engine mode를 유지한다. 다음 단계는 packaged artifact에서 split-mode evidence를 반복 수집하고, 안정화 뒤 legacy rollback fallback을 제거하는 것이다.

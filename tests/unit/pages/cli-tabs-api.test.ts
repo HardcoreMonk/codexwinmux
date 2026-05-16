@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => {
     getWorkspaceById: vi.fn(),
     getWorkspaces: vi.fn(),
     resolveFirstPaneId: vi.fn(),
-    getRuntimeSupervisor: vi.fn(() => supervisor),
+    getCoreRuntimeApi: vi.fn(() => supervisor),
     broadcastSync: vi.fn(),
     supervisor,
   };
@@ -40,8 +40,8 @@ vi.mock('@/lib/cli-utils', () => ({
   resolveFirstPaneId: mocks.resolveFirstPaneId,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: mocks.getRuntimeSupervisor,
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: mocks.getCoreRuntimeApi,
 }));
 
 vi.mock('@/lib/sync-server', () => ({
@@ -150,7 +150,7 @@ describe('CLI tabs API runtime storage ownership', () => {
     });
   });
 
-  it('creates plain terminal tabs through the runtime supervisor in storage default mode', async () => {
+  it('creates plain terminal tabs through the core runtime adapter in storage default mode', async () => {
     const response = createResponse();
 
     await handler(createRequest({
@@ -213,6 +213,6 @@ describe('CLI tabs API runtime storage ownership', () => {
     expect(response.statusCode).toBe(201);
     expect(response.body).toMatchObject({ tabId: 'tab-legacy', sessionName: 'pt-ws-a-pane-a-tab-legacy' });
     expect(mocks.addTabToPane).toHaveBeenCalledWith('ws-a', 'pane-a', 'Browser', '/repo', 'web-browser');
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 });

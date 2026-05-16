@@ -19,7 +19,7 @@
 
 ## 현재 구조 요약
 
-codexmux의 핵심 런타임은 TypeScript/Node.js다.
+codexwinmux의 핵심 런타임은 TypeScript/Node.js다.
 
 | 영역 | 현재 구현 | Tauri 영향 |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ Electron은 Chromium/Node runtime을 포함한다. Tauri는 OS WebView를 사용
 
 Tauri의 capability model은 native command 노출 범위를 더 명시적으로 관리하게 만든다. remote-only shell로 쓰고 Tauri API를 거의 노출하지 않으면 desktop shell의 권한면은 단순해질 수 있다.
 
-하지만 codexmux는 이미 terminal byte stream, auth cookie, WebSocket, local server가 핵심 보안면이다. shell만 바꿔도 server-side 위험은 그대로 남는다.
+하지만 codexwinmux는 이미 terminal byte stream, auth cookie, WebSocket, local server가 핵심 보안면이다. shell만 바꿔도 server-side 위험은 그대로 남는다.
 
 ### 3. Rust 도입 학습 효과
 
@@ -76,7 +76,7 @@ Rust는 process supervision, small helper, packaging automation에는 강점이 
 
 ### 1. Node server가 사라지지 않는다
 
-codexmux의 server는 Next.js Pages Router, custom WebSocket upgrade, auth/session cookie, tmux scan, workspace store, timeline watcher를 하나로 묶고 있다. Rust + Tauri로 shell을 바꿔도 이 로직은 계속 Node에서 돈다.
+codexwinmux의 server는 Next.js Pages Router, custom WebSocket upgrade, auth/session cookie, runtime worker supervision, workspace store, timeline/status bridge를 하나로 묶고 있다. Rust + Tauri로 shell을 바꿔도 이 로직은 계속 Node에서 돈다.
 
 Rust로 재작성하려면 다음을 모두 다시 설계해야 한다.
 
@@ -84,26 +84,26 @@ Rust로 재작성하려면 다음을 모두 다시 설계해야 한다.
 - `/api/terminal`, `/api/timeline`, `/api/status`, `/api/sync`, `/api/install` WebSocket
 - tmux session lifecycle과 terminal resize/backpressure
 - Codex JSONL parser, stable id, near-duplicate 제거
-- `~/.codexmux/` 저장소와 `globalThis` shared singleton 대체
+- `~/.codexwinmux/` 저장소와 `globalThis` shared singleton 대체
 - auth/session cookie와 Web Push/notification 정책
 
 이 범위는 desktop shell 교체가 아니라 제품 core rewrite다.
 
 ### 2. WebView 일관성 리스크
 
-Electron은 Chromium을 같이 배포하므로 rendering/runtime 차이가 비교적 작다. Tauri는 OS WebView를 사용한다. codexmux는 xterm.js, WebSocket, IME/keyboard, mobile/desktop responsive UI, Korean typography, terminal font fallback에 민감하다. macOS WKWebView, Linux WebKitGTK, Windows WebView2에서 모두 같은 품질을 보장해야 한다.
+Electron은 Chromium을 같이 배포하므로 rendering/runtime 차이가 비교적 작다. Tauri는 OS WebView를 사용한다. codexwinmux는 xterm.js, WebSocket, IME/keyboard, mobile/desktop responsive UI, Korean typography, terminal font fallback에 민감하다. macOS WKWebView, Linux WebKitGTK, Windows WebView2에서 모두 같은 품질을 보장해야 한다.
 
 ### 3. Linux 배포 의존성 증가
 
-Tauri Linux 개발/배포에는 WebKitGTK, appindicator, xdo, OpenSSL 계열 system dependency가 필요하다. codexmux는 이미 tmux와 Node native module 의존성이 있으므로, Tauri가 Linux 운영 복잡도를 낮춘다고 보기 어렵다.
+Tauri Linux 개발/배포에는 WebKitGTK, appindicator, xdo, OpenSSL 계열 system dependency가 필요하다. codexwinmux는 이미 runtime workers, tmux adapter, Node native module 의존성이 있으므로, Tauri가 Linux 운영 복잡도를 낮춘다고 보기 어렵다.
 
 ### 4. Sidecar packaging 복잡도
 
-Tauri sidecar는 target triple별 binary 준비가 필요하다. codexmux는 단순 single binary가 아니라 Next standalone, custom server bundle, native `node-pty`, static assets가 결합된다. macOS signing/notarization, Linux package, Windows installer를 모두 운영하려면 현재 Electron packaging 문제와 다른 형태의 packaging 문제가 생긴다.
+Tauri sidecar는 target triple별 binary 준비가 필요하다. codexwinmux는 단순 single binary가 아니라 Next standalone, custom server bundle, runtime worker bundle, native `node-pty`, static assets가 결합된다. macOS signing/notarization, Linux package, Windows installer를 모두 운영하려면 현재 Electron packaging 문제와 다른 형태의 packaging 문제가 생긴다.
 
 ### 5. Remote URL 보안 설계
 
-Tauri capability는 local bundled frontend를 기본 전제로 설계되어 있다. codexmux의 Electron/Android는 remote server URL에 붙는 모드를 지원한다. Tauri remote window가 local command 권한을 갖게 되면 위험하므로, remote mode에서는 Tauri command/plugin 권한을 최소화하거나 아예 노출하지 않는 별도 capability가 필요하다.
+Tauri capability는 local bundled frontend를 기본 전제로 설계되어 있다. codexwinmux의 Electron/Android는 remote server URL에 붙는 모드를 지원한다. Tauri remote window가 local command 권한을 갖게 되면 위험하므로, remote mode에서는 Tauri command/plugin 권한을 최소화하거나 아예 노출하지 않는 별도 capability가 필요하다.
 
 ## 도입 시나리오 평가
 

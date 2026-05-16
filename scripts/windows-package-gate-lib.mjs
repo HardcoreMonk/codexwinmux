@@ -22,6 +22,18 @@ export const getWindowsPackageGateSteps = () => [
     script: 'smoke:windows:engine-lifecycle',
   },
   {
+    id: 'windows-core-engine-ipc',
+    script: 'smoke:windows:core-engine-ipc',
+  },
+  {
+    id: 'windows-core-backend-external-transport',
+    script: 'smoke:windows:core-backend-external-transport',
+  },
+  {
+    id: 'windows-core-backend-split-lifecycle',
+    script: 'smoke:windows:core-backend-split-lifecycle',
+  },
+  {
     id: 'windows-packaged-runtime-v2',
     script: 'smoke:windows:packaged-runtime-v2',
   },

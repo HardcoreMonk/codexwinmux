@@ -82,4 +82,4 @@ extraResources:
 afterPack: "./scripts/after-pack.js"
 
 extraMetadata:
-  main: dist-electron/main.js
+  main: dist-electron/bootstrap.js

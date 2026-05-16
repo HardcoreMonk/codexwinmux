@@ -4,7 +4,7 @@ import { getStatusManager } from '@/lib/status-manager';
 import { createLogger } from '@/lib/logger';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 
 const log = createLogger('hooks');
 
@@ -27,7 +27,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     log.debug({ event, session, notificationType: type }, `received ${event}${type ? `(${type})` : ''}`);
     if (shouldUseRuntimeStatusLive()) {
       try {
-        await getRuntimeSupervisor().sendStatusLiveHookEvent({ tmuxSession: session, event, ...(type ? { notificationType: type } : {}) });
+        await getCoreRuntimeApi().sendStatusLiveHookEvent({ tmuxSession: session, event, ...(type ? { notificationType: type } : {}) });
         return res.status(204).end();
       } catch (err) {
         log.warn('runtime status hook failed, falling back: %s', err instanceof Error ? err.message : String(err));
@@ -38,7 +38,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     log.debug({ body: req.body }, 'poll trigger');
     if (shouldUseRuntimeStatusLive()) {
       try {
-        await getRuntimeSupervisor().pollStatusLive();
+        await getCoreRuntimeApi().pollStatusLive();
         return res.status(204).end();
       } catch (err) {
         log.warn('runtime status poll failed, falling back: %s', err instanceof Error ? err.message : String(err));

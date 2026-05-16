@@ -66,14 +66,14 @@
 - `corepack pnpm test`: 174개 파일 통과, 1개 skipped; 821개 테스트 통과, 1개 skipped.
 - `corepack pnpm build:electron`: 통과.
 - `corepack pnpm pack:electron:dev`: 통과.
-- `corepack pnpm smoke:windows:engine-lifecycle`: packaged health commit `c1510c22`와 `ui-quit-engine-survival` 통과.
+- `corepack pnpm smoke:windows:engine-lifecycle`: 당시 packaged health commit `c1510c22`와 `ui-quit-engine-survival` 통과.
 - `codexwinmux-service.exe install`: 통과.
 - `codexwinmux-service.exe start`: 통과.
 - `Get-Service -Name codexwinmux`: `Running`, `Automatic`, `Win32OwnProcess`.
-- `Invoke-RestMethod http://127.0.0.1:8121/api/health`: `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`.
+- `Invoke-RestMethod http://127.0.0.1:8121/api/health`: 2026-05-16 KST 현재 service는 `app=codexwinmux`, `version=0.4.17`, `commit=d632d9c5`, `buildTime=2026-05-15T18:25:47.113Z`.
 - `corepack pnpm smoke:windows:service-host`: `windows-service-runbook-helper` check 포함 통과.
 - `corepack pnpm windows:service:status`: `codexwinmux Running Automatic Win32OwnProcess`.
-- `corepack pnpm windows:service:health`: `app=codexwinmux`, `version=0.4.17`, `commit=c1510c22`.
+- `corepack pnpm windows:service:health`: 2026-05-16 KST 현재 service는 `app=codexwinmux`, `version=0.4.17`, `commit=d632d9c5`.
 
 ## 검증 명령
 

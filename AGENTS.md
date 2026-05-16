@@ -8,16 +8,16 @@ Always respond in the same language the user wrote in. Project rules like
 
 ## Project Overview
 
-- Product: codexmux, a Codex-focused web session manager.
+- Product: codexwinmux, a Windows-first Codex workspace/session manager.
 - Product target: Windows-only service/product transition. Treat the existing
   tmux-centered macOS/Linux server and Electron/Android shell docs as
-  current-state surfaces until the transition plan replaces or retires them.
+  legacy/deferred surfaces unless a current transition plan keeps them in scope.
 - Framework: Next.js Pages Router with a custom Node server.
 - Package manager: pnpm. Prefer `corepack pnpm ...` when running commands.
 - Styling: Tailwind CSS v4 and shadcn/ui.
 - Language: TypeScript.
-- Runtime state: tmux-backed sessions plus `~/.codexmux/` persisted app state.
-- Platform shells: Electron desktop app and Capacitor Android app connect to a running codexmux server.
+- Runtime state: runtime v2 workers plus `~/.codexwinmux/` persisted app state; tmux remains a compatibility/runtime adapter surface.
+- Platform shells: Electron desktop app and Capacitor Android app connect to a running codexwinmux server.
 - Supported UI languages: Korean and English. Default locale is Korean.
 
 ## Core Rules
@@ -123,7 +123,7 @@ Complex topics live under `docs/`:
 | `docs/ARCHITECTURE-LOGIC.md` | Architecture flow and service logic |
 | `docs/STATUS.md` | Codex work-state detection and status flow |
 | `docs/TMUX.md` | tmux, terminal management, and WebSocket flow |
-| `docs/DATA-DIR.md` | `~/.codexmux/` directory structure |
+| `docs/DATA-DIR.md` | `~/.codexwinmux/` directory structure |
 | `docs/TESTING.md` | Test tiers, Playwright/Chromium, platform smoke, and live deploy checks |
 | `docs/WINDOWS-ONLY-GAP-AUDIT.md` | Windows-only product transition gaps and architecture candidates |
 | `docs/SYSTEMD.md` | Linux user service operation |

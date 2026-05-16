@@ -1,7 +1,12 @@
 import { capturePristineEnv } from './pristine-env';
 import { applyResolvedShellEnv } from './shell-env';
 import { buildEngineUrl, createEngineController, probeEngineHealth } from './engine-controller';
-import { applyElectronBootstrapEnv, buildFileImportSpecifier, buildPackagedNodePath } from './runtime-env';
+import {
+  applyElectronBootstrapEnv,
+  applyPackagedServerEnv,
+  buildFileImportSpecifier,
+  buildPackagedNodePath,
+} from './runtime-env';
 import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smoke';
 import { applyAutoUpdaterRuntimeDefaults } from './updater-config';
 import { resolveTrayIconPath } from './tray-icon';
@@ -23,6 +28,23 @@ const APP_PROCESS_NAME = 'codexwinmux';
 const electronProcessRole = resolveElectronProcessRole(process.argv, process.env);
 const isEngineProcess = electronProcessRole === 'engine';
 const isCoreProcess = electronProcessRole === 'core';
+
+const writeCoreBootstrapTrace = (stage: string, details?: Record<string, unknown>): void => {
+  if (process.env.CODEXWINMUX_CORE_BOOTSTRAP_TRACE !== '1') return;
+  try {
+    const target = process.env.CODEXWINMUX_CORE_BOOTSTRAP_TRACE_FILE
+      || path.join(os.tmpdir(), 'codexwinmux-core-bootstrap-trace.log');
+    fs.appendFileSync(target, `${new Date().toISOString()} ${stage} ${JSON.stringify(details ?? {})}\n`);
+  } catch {
+    // Diagnostic-only path.
+  }
+};
+
+writeCoreBootstrapTrace('main:role', {
+  argv: process.argv,
+  role: electronProcessRole,
+  envCore: process.env.CODEXWINMUX_ELECTRON_CORE_PROCESS,
+});
 
 const readCodexwinmuxAlias = (legacyKey: string): string | undefined =>
   process.env[legacyKey.replace(/^CODEXMUX_/, 'CODEXWINMUX_')] || process.env[legacyKey];
@@ -482,7 +504,10 @@ const startLocalServer = async ({ allowPortFallback = true }: { allowPortFallbac
   if (!cachedStart) {
     const appDir = process.env.__CMUX_APP_DIR!;
     const appDirUnpacked = process.env.__CMUX_APP_DIR_UNPACKED || appDir;
-    const standaloneMods = path.join(appDir, '.next', 'standalone', 'node_modules');
+    const standaloneMods = [
+      path.join(appDirUnpacked, '.next', 'standalone', 'node_modules'),
+      path.join(appDir, '.next', 'standalone', 'node_modules'),
+    ];
     process.env.NODE_PATH = buildPackagedNodePath({
       platform: process.platform,
       standaloneModules: standaloneMods,
@@ -990,11 +1015,12 @@ const loadSplash = (win: BrowserWindow) => {
 // --- Bootstrap ---
 
 const preparePackagedServerEnv = () => {
-  process.env.NODE_ENV = 'production';
-  process.env.__CMUX_ELECTRON = '1';
-  const appPath = app.getAppPath();
-  process.env.__CMUX_APP_DIR = isDev ? process.cwd() : appPath;
-  process.env.__CMUX_APP_DIR_UNPACKED = isDev ? process.cwd() : appPath.replace('app.asar', 'app.asar.unpacked');
+  applyPackagedServerEnv({
+    env: process.env,
+    isDev,
+    cwd: process.cwd(),
+    appPath: app.getAppPath(),
+  });
 };
 
 const bootstrapEngineOnly = async () => {
@@ -1007,6 +1033,35 @@ const bootstrapEngineOnly = async () => {
     await startLocalServer({ allowPortFallback: false });
   } catch (err) {
     console.error('[electron-engine] Failed to start engine:', err);
+    app.exit(1);
+  }
+};
+
+const bootstrapCoreProcessOnly = async () => {
+  writeCoreBootstrapTrace('core-bootstrap:start', {
+    argv: process.argv,
+    role: electronProcessRole,
+    transport: process.env.CODEXWINMUX_CORE_ENGINE_TRANSPORT,
+  });
+  fixEnv();
+  writeCoreBootstrapTrace('core-bootstrap:after-fix-env');
+  await applyResolvedShellEnv().then(capturePristineEnv);
+  writeCoreBootstrapTrace('core-bootstrap:after-shell-env');
+  preparePackagedServerEnv();
+  writeCoreBootstrapTrace('core-bootstrap:after-packaged-env', {
+    appDir: process.env.__CMUX_APP_DIR,
+    appDirUnpacked: process.env.__CMUX_APP_DIR_UNPACKED,
+    nodeEnv: process.env.NODE_ENV,
+  });
+  try {
+    await bootstrapCoreOnly();
+    writeCoreBootstrapTrace('core-bootstrap:ready');
+  } catch (err) {
+    writeCoreBootstrapTrace('core-bootstrap:error', {
+      error: err instanceof Error ? err.message : String(err),
+      code: err && typeof err === 'object' && 'code' in err ? (err as { code?: unknown }).code : undefined,
+    });
+    console.error('[electron-core] Failed to start core:', err);
     app.exit(1);
   }
 };
@@ -1142,7 +1197,11 @@ ipcMain.handle('get-system-resources', () => {
   };
 });
 
-app.on('ready', isCoreProcess ? bootstrapCoreOnly : isEngineProcess ? bootstrapEngineOnly : bootstrap);
+if (isCoreProcess) {
+  void bootstrapCoreProcessOnly();
+} else {
+  app.on('ready', isEngineProcess ? bootstrapEngineOnly : bootstrap);
+}
 
 const flushDefaultSessionStorage = async (): Promise<void> => {
   try {

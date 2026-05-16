@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
-  const supervisor = {
+  const runtime = {
     ensureStarted: vi.fn(),
     health: vi.fn(),
     listWorkspaces: vi.fn(),
@@ -19,8 +19,8 @@ const mocks = vi.hoisted(() => {
   return {
     auth: vi.fn(),
     broadcastSync: vi.fn(),
-    getRuntimeSupervisor: vi.fn(() => supervisor),
-    supervisor,
+    getCoreRuntimeApi: vi.fn(() => runtime),
+    runtime,
   };
 });
 
@@ -28,8 +28,8 @@ vi.mock('@/lib/runtime/api-auth', () => ({
   verifyRuntimeV2ApiAuth: mocks.auth,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: mocks.getRuntimeSupervisor,
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: mocks.getCoreRuntimeApi,
 }));
 
 vi.mock('@/lib/sync-server', () => ({
@@ -104,20 +104,20 @@ describe('runtime v2 api routes', () => {
     delete process.env.CODEXWINMUX_RUNTIME_STATUS_V2_MODE;
     mocks.auth.mockReset();
     mocks.broadcastSync.mockClear();
-    mocks.getRuntimeSupervisor.mockClear();
-    Object.values(mocks.supervisor).forEach((mock) => mock.mockReset());
+    mocks.getCoreRuntimeApi.mockClear();
+    Object.values(mocks.runtime).forEach((mock) => mock.mockReset());
     mocks.auth.mockResolvedValue(true);
-    mocks.supervisor.ensureStarted.mockResolvedValue(undefined);
-    mocks.supervisor.health.mockResolvedValue({ ok: true, storage: {}, terminal: {} });
-    mocks.supervisor.listWorkspaces.mockResolvedValue([{ id: 'ws-a', name: 'Runtime', defaultCwd: '/tmp', active: 1, orderIndex: 0, createdAt: 'now', updatedAt: 'now' }]);
-    mocks.supervisor.createWorkspace.mockResolvedValue({ id: 'ws-a', rootPaneId: 'pane-a' });
-    mocks.supervisor.deleteWorkspace.mockResolvedValue({ deleted: true, killedSessions: ['rtv2-ws-a-pane-a-tab-a'], failedKills: [] });
-    mocks.supervisor.deleteTerminalTab.mockResolvedValue({ deleted: true, workspaceId: 'ws-a', killedSession: 'rtv2-ws-a-pane-a-tab-a', failedKill: null });
-    mocks.supervisor.getLayout.mockResolvedValue({ root: { type: 'pane', id: 'pane-a', tabs: [] }, activePaneId: 'pane-a', updatedAt: 'now' });
-    mocks.supervisor.createTerminalTab.mockResolvedValue({ id: 'tab-a', sessionName: 'rtv2-ws-a-pane-a-tab-a', name: '', order: 0, cwd: '/tmp', panelType: 'terminal', lifecycleState: 'ready', runtimeVersion: 2 });
-    mocks.supervisor.listTimelineSessions.mockResolvedValue({ sessions: [], total: 0, hasMore: false });
-    mocks.supervisor.readTimelineEntriesBefore.mockResolvedValue({ entries: [], startByteOffset: 0, hasMore: false });
-    mocks.supervisor.getTimelineMessageCounts.mockResolvedValue({ userCount: 0, assistantCount: 0, toolCount: 0, toolBreakdown: {} });
+    mocks.runtime.ensureStarted.mockResolvedValue(undefined);
+    mocks.runtime.health.mockResolvedValue({ ok: true, storage: {}, terminal: {} });
+    mocks.runtime.listWorkspaces.mockResolvedValue([{ id: 'ws-a', name: 'Runtime', defaultCwd: '/tmp', active: 1, orderIndex: 0, createdAt: 'now', updatedAt: 'now' }]);
+    mocks.runtime.createWorkspace.mockResolvedValue({ id: 'ws-a', rootPaneId: 'pane-a' });
+    mocks.runtime.deleteWorkspace.mockResolvedValue({ deleted: true, killedSessions: ['rtv2-ws-a-pane-a-tab-a'], failedKills: [] });
+    mocks.runtime.deleteTerminalTab.mockResolvedValue({ deleted: true, workspaceId: 'ws-a', killedSession: 'rtv2-ws-a-pane-a-tab-a', failedKill: null });
+    mocks.runtime.getLayout.mockResolvedValue({ root: { type: 'pane', id: 'pane-a', tabs: [] }, activePaneId: 'pane-a', updatedAt: 'now' });
+    mocks.runtime.createTerminalTab.mockResolvedValue({ id: 'tab-a', sessionName: 'rtv2-ws-a-pane-a-tab-a', name: '', order: 0, cwd: '/tmp', panelType: 'terminal', lifecycleState: 'ready', runtimeVersion: 2 });
+    mocks.runtime.listTimelineSessions.mockResolvedValue({ sessions: [], total: 0, hasMore: false });
+    mocks.runtime.readTimelineEntriesBefore.mockResolvedValue({ entries: [], startByteOffset: 0, hasMore: false });
+    mocks.runtime.getTimelineMessageCounts.mockResolvedValue({ userCount: 0, assistantCount: 0, toolCount: 0, toolBreakdown: {} });
   });
 
   it('rejects unauthenticated v2 API calls', async () => {
@@ -125,7 +125,7 @@ describe('runtime v2 api routes', () => {
     const response = createResponse();
     await healthHandler(createRequest({ method: 'GET' }), response.res);
     expect(response.statusCode).toBe(401);
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 
   it('returns disabled before auth when runtime v2 flag is off', async () => {
@@ -152,7 +152,7 @@ describe('runtime v2 api routes', () => {
     }
 
     expect(mocks.auth).not.toHaveBeenCalled();
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 
   it('returns method errors before supervisor access', async () => {
@@ -176,7 +176,7 @@ describe('runtime v2 api routes', () => {
       expect(response.headers.Allow).toBe(allow);
     }
 
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 
   it('returns health and workspace lists', async () => {
@@ -194,7 +194,7 @@ describe('runtime v2 api routes', () => {
       timelineV2Mode: 'shadow',
       statusV2Mode: 'shadow',
     });
-    expect(mocks.supervisor.ensureStarted).toHaveBeenCalled();
+    expect(mocks.runtime.ensureStarted).toHaveBeenCalled();
 
     const workspaces = createResponse();
     await workspacesHandler(createRequest({ method: 'GET' }), workspaces.res);
@@ -224,7 +224,7 @@ describe('runtime v2 api routes', () => {
     }), sessions.res);
     expect(sessions.statusCode).toBe(200);
     expect(sessions.body).toMatchObject({ total: 0, hasMore: false });
-    expect(mocks.supervisor.listTimelineSessions).toHaveBeenCalledWith({
+    expect(mocks.runtime.listTimelineSessions).toHaveBeenCalledWith({
       tmuxSession: 'pt-ws-pane-tab',
       cwd: undefined,
       panelType: 'codex',
@@ -244,7 +244,7 @@ describe('runtime v2 api routes', () => {
       },
     }), entries.res);
     expect(entries.statusCode).toBe(200);
-    expect(mocks.supervisor.readTimelineEntriesBefore).toHaveBeenCalledWith({
+    expect(mocks.runtime.readTimelineEntriesBefore).toHaveBeenCalledWith({
       jsonlPath: allowedPath,
       beforeByte: 100,
       limit: 25,
@@ -258,7 +258,7 @@ describe('runtime v2 api routes', () => {
     }), counts.res);
     expect(counts.statusCode).toBe(200);
     expect(counts.body).toMatchObject({ userCount: 0, assistantCount: 0, toolCount: 0 });
-    expect(mocks.supervisor.getTimelineMessageCounts).toHaveBeenCalledWith(allowedPath);
+    expect(mocks.runtime.getTimelineMessageCounts).toHaveBeenCalledWith(allowedPath);
   });
 
   it('validates tab creation requests', async () => {
@@ -269,7 +269,7 @@ describe('runtime v2 api routes', () => {
   });
 
   it('creates terminal tabs and deletes tabs and workspaces', async () => {
-    mocks.supervisor.createWorkspace.mockResolvedValueOnce({ id: 'ws-created', rootPaneId: 'pane-created' });
+    mocks.runtime.createWorkspace.mockResolvedValueOnce({ id: 'ws-created', rootPaneId: 'pane-created' });
     const workspaceResponse = createResponse();
     await workspacesHandler(createRequest({
       method: 'POST',
@@ -294,7 +294,7 @@ describe('runtime v2 api routes', () => {
     }), tabDeleteResponse.res);
     expect(tabDeleteResponse.statusCode).toBe(200);
     expect(tabDeleteResponse.body).toMatchObject({ deleted: true, killedSession: 'rtv2-ws-a-pane-a-tab-a' });
-    expect(mocks.supervisor.deleteTerminalTab).toHaveBeenCalledWith('tab-a');
+    expect(mocks.runtime.deleteTerminalTab).toHaveBeenCalledWith('tab-a');
     expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'layout', workspaceId: 'ws-a' });
 
     const deleteResponse = createResponse();
@@ -304,12 +304,12 @@ describe('runtime v2 api routes', () => {
     }), deleteResponse.res);
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toMatchObject({ deleted: true });
-    expect(mocks.supervisor.deleteWorkspace).toHaveBeenCalledWith('ws-a');
+    expect(mocks.runtime.deleteWorkspace).toHaveBeenCalledWith('ws-a');
     expect(mocks.broadcastSync).toHaveBeenCalledWith({ type: 'workspace' });
   });
 
   it('maps worker and domain failures', async () => {
-    mocks.supervisor.createTerminalTab.mockRejectedValueOnce(Object.assign(new Error('terminal worker exited'), {
+    mocks.runtime.createTerminalTab.mockRejectedValueOnce(Object.assign(new Error('terminal worker exited'), {
       code: 'worker-exited',
       retryable: true,
     }));
@@ -321,7 +321,7 @@ describe('runtime v2 api routes', () => {
     expect(workerFailure.statusCode).toBe(503);
     expect(workerFailure.body).toMatchObject({ retryable: true });
 
-    mocks.supervisor.createTerminalTab.mockRejectedValueOnce(Object.assign(new Error('pane does not belong to workspace'), {
+    mocks.runtime.createTerminalTab.mockRejectedValueOnce(Object.assign(new Error('pane does not belong to workspace'), {
       code: 'runtime-v2-pane-workspace-mismatch',
       retryable: false,
     }));
@@ -335,7 +335,7 @@ describe('runtime v2 api routes', () => {
   });
 
   it('returns 404 for missing layouts', async () => {
-    mocks.supervisor.getLayout.mockResolvedValue(null);
+    mocks.runtime.getLayout.mockResolvedValue(null);
     const response = createResponse();
     await layoutHandler(createRequest({ method: 'GET', query: { workspaceId: 'ws-missing' } }), response.res);
     expect(response.statusCode).toBe(404);

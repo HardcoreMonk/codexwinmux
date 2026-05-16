@@ -5,7 +5,7 @@ import { getStatusManager } from '@/lib/status-manager';
 import { createLogger } from '@/lib/logger';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import type { ITab } from '@/types/terminal';
 
 const log = createLogger('layout');
@@ -28,7 +28,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(404).json({ error: 'Tab not found' });
     }
     if (shouldUseRuntimeStatusLive()) {
-      getRuntimeSupervisor().removeStatusLiveTab({ tabId }).catch((err) => {
+      getCoreRuntimeApi().removeStatusLiveTab({ tabId }).catch((err) => {
         log.warn(`runtime status remove tab failed: ${err instanceof Error ? err.message : err}`);
       });
     } else {

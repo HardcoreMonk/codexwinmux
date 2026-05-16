@@ -1,6 +1,10 @@
 # systemd user service
 
-codexmux는 Linux에서 `systemd --user` 서비스로 상시 실행하는 방식을 권장한다. system-wide 서비스로 실행하면 `~/.codexmux/`, `~/.codex/sessions/`, 사용자 tmux socket, NVM Node 경로가 root 또는 다른 사용자 기준으로 바뀔 수 있다.
+이 문서는 legacy Linux reference다. 현재 codexwinmux 제품 운영 기준은 Windows Electron
+Shell Host와 Windows Service owner이며, Linux `systemd --user`는 과거 self-hosted
+server 운영 경로로만 유지한다. system-wide 서비스로 실행하면 `~/.codexwinmux/`,
+`~/.codex/sessions/`, 사용자 tmux socket, NVM Node 경로가 root 또는 다른 사용자 기준으로
+바뀔 수 있다.
 
 ## 현재 워크스테이션
 
@@ -162,7 +166,7 @@ curl -fsS http://127.0.0.1:8121/api/health
 | `deploy-local` | `corepack pnpm deploy:local` | `deploy local` |
 | `rollback-runtime-flags` | `corepack pnpm lifecycle:rollback-apply` | `rollback runtime v2` |
 
-한 번에 하나의 action만 실행된다. `restart-service`와 `deploy-local`은 요청 중인 서버 process를 재시작할 수 있으므로 브라우저 요청이 중간에 끊길 수 있다. 이 경우 `/api/health` 새로고침 또는 페이지 reload로 배포 commit과 service 상태를 다시 확인한다. 실행 기록은 `~/.codexmux/lifecycle-actions.jsonl`에 action id, status, timestamp, duration, exit code, sanitized failure label만 남기며 stdout/stderr, env, cwd, token, session name, prompt, terminal output은 저장하지 않는다.
+한 번에 하나의 action만 실행된다. `restart-service`와 `deploy-local`은 요청 중인 서버 process를 재시작할 수 있으므로 브라우저 요청이 중간에 끊길 수 있다. 이 경우 `/api/health` 새로고침 또는 페이지 reload로 배포 commit과 service 상태를 다시 확인한다. 실행 기록은 `~/.codexwinmux/lifecycle-actions.jsonl`에 action id, status, timestamp, duration, exit code, sanitized failure label만 남기며 stdout/stderr, env, cwd, token, session name, prompt, terminal output은 저장하지 않는다.
 
 `corepack pnpm lifecycle:rollback-dry-run`은 현재 runtime v2 drop-in의 `CODEXWINMUX_RUNTIME_*`
 환경값, 적용할 rollback target flag, daemon reload/restart 계획을 JSON으로 출력한다.

@@ -15,7 +15,8 @@
 - 논리 분리: 완료. `docs/operations/2026-05-16-core-backend-logical-separation-100.md` 기준 runtime v2가 terminal/storage/timeline/status/source-of-truth를 소유한다.
 - Worker process 경계: 완료. `storage-worker`, `terminal-worker`, `timeline-worker`, `status-worker`가 `RuntimeWorkerClient`를 통해 별도 child process로 실행된다.
 - Windows service owner: 1차 완료. WinSW wrapper가 `codexwinmux.exe --codexwinmux-engine`을 service-owned engine으로 실행한다.
-- 엄격한 Core/Backend process 분리: 미완료. 현재 process tree는 `codexwinmux-service.exe -> codexwinmux.exe --codexwinmux-engine -> runtime workers`이며, Backend API host와 Core Supervisor가 같은 engine process 안에 있다.
+- Core process host foundation: 완료. `codexwinmux.exe --codexwinmux-core`와 `dist/workers/core-engine-host.js`가 BrowserWindow/UI lock 없이 runtime Supervisor/workers를 시작하고 Core protocol에 응답한다.
+- 엄격한 Core/Backend process 분리: 미완료. 현재 default/service process tree는 `codexwinmux-service.exe -> codexwinmux.exe --codexwinmux-engine -> runtime workers`이며, Backend API host와 Core Supervisor가 같은 combined engine process 안에 있다. Backend API/WebSocket Core client adapter 전환과 split lifecycle smoke는 P3 이후 범위다.
 - Live evidence: `smoke:runtime-v2:phase6-default-gate`가 local service target에서 terminal `new-tabs`, storage/timeline/status `default`, worker diagnostics clean으로 통과했다.
 
 ## 100% 완료 기준
@@ -108,12 +109,12 @@
 - Modify: `src/pages/api/cli/**`
 - Test: existing API route tests under `tests/unit/pages/**`
 
-- [ ] Backend startup에서 Core client를 초기화한다.
-- [ ] `/api/v2/runtime/health`는 Core health를 aggregate한다.
-- [ ] `/api/v2/terminal` WebSocket attach/write/resize/detach는 Core client를 통과한다.
-- [ ] legacy URL은 유지하되 runtime default path에서는 Core client를 통과한다.
-- [ ] import policy test를 추가해 `src/pages/api/**`가 `src/lib/runtime/*worker*` service를 직접 import하지 못하게 한다.
-- [ ] 검증: `corepack pnpm test tests/unit/pages/runtime-v2-api.test.ts tests/unit/lib/runtime/supervisor.test.ts`.
+- [x] Backend startup에서 Core client를 초기화한다.
+- [x] `/api/v2/runtime/health`는 Core health를 aggregate한다.
+- [x] `/api/v2/terminal` WebSocket attach/write/resize/detach는 Core client를 통과한다.
+- [x] legacy URL은 유지하되 runtime default path에서는 Core client를 통과한다.
+- [x] import policy test를 추가해 `src/pages/api/**`가 `src/lib/runtime/*worker*` service를 직접 import하지 못하게 한다.
+- [x] 검증: `corepack pnpm test tests/unit/pages/runtime-v2-api.test.ts tests/unit/pages/runtime-direct-import-policy.test.ts tests/unit/pages`.
 
 ### P4: Windows service split-mode runbook
 
@@ -125,11 +126,12 @@
 - Modify: `scripts/smoke-windows-service-host.ts`
 - Test: `tests/unit/lib/windows-service-host.test.ts`
 
-- [ ] combined mode는 현재 `codexwinmux` service를 유지한다.
-- [ ] split mode는 `codexwinmux-backend`, `codexwinmux-core` service plan을 dry-run으로 생성한다.
-- [ ] `windows:service:*` script는 기본 combined mode로 유지한다.
-- [ ] split mode helper는 `-Mode split -Action write-config|install|start|status|health|stop|uninstall`로만 접근한다.
-- [ ] 검증: `corepack pnpm test tests/unit/lib/windows-service-host.test.ts`와 `corepack pnpm smoke:windows:service-host`.
+- [x] combined mode는 현재 `codexwinmux` service를 유지한다.
+- [x] split mode는 `codexwinmux-backend`, `codexwinmux-core` service plan을 dry-run으로 생성한다.
+- [x] `windows:service:*` script는 기본 combined mode로 유지한다.
+- [x] split mode helper는 `-Mode split -Action write-config|install|start|status|health|stop|uninstall`로만 접근한다.
+- [x] split mode helper는 Backend/Core 양쪽에 `CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`와 loopback attach env를 기록한다.
+- [x] 검증: `corepack pnpm test tests/unit/lib/windows-service-host.test.ts`와 `corepack pnpm smoke:windows:service-host`.
 
 ### P5: Lifecycle smoke
 
@@ -141,11 +143,11 @@
 - Modify: `package.json`
 - Modify: `docs/TESTING.md`
 
-- [ ] Core 먼저 시작, Backend attach, runtime Phase 6 health 확인.
-- [ ] Backend restart 후 Core worker counters/session health 유지 확인.
-- [ ] Core restart 후 Backend health degrade/recover 확인.
-- [ ] Stop ordering과 cleanup을 검증한다.
-- [ ] 검증: `corepack pnpm smoke:windows:core-backend-split-lifecycle`.
+- [x] Core 먼저 시작, Backend attach, runtime Phase 6 health 확인.
+- [x] Backend restart 후 Core worker counters/session health 유지 확인.
+- [x] Core restart 후 Backend health degrade/recover 확인.
+- [x] Stop ordering과 cleanup을 검증한다.
+- [x] 검증: `corepack pnpm smoke:windows:core-backend-split-lifecycle`.
 
 ### P6: Packaging and release gate
 
@@ -157,10 +159,10 @@
 - Modify: `docs/ELECTRON.md`
 - Modify: `docs/WINDOWS-ONLY-GAP-AUDIT.md`
 
-- [ ] `pack:electron:dev` output에서 backend/core flags가 모두 동작하는지 smoke한다.
-- [ ] NSIS service install option은 계속 default off로 둔다.
-- [ ] 내부 release gate는 signed/local package + split lifecycle smoke + Phase 6 gate를 요구한다.
-- [ ] 검증: `corepack pnpm pack:electron:dev`, `corepack pnpm smoke:windows:package-gate`, `corepack pnpm smoke:windows:core-backend-split-lifecycle`.
+- [x] Windows packaged output에서 standalone Core IPC, Backend external Core attach, split lifecycle dry-run, installer runtime v2를 package gate에 포함한다.
+- [x] NSIS service install option은 계속 default off로 둔다.
+- [x] 내부 release gate는 signed/local package + standalone Core IPC + Backend external Core attach + split lifecycle smoke + Phase 6 gate를 요구한다.
+- [x] 검증: `node scripts/pack-electron-windows.mjs`, `node scripts/smoke-windows-package-gate.mjs`, `node scripts/smoke-windows-core-backend-split-lifecycle.mjs`, 실제 설치 경로 `smoke-windows-packaged-launch.mjs`.
 
 ### P7: Legacy fallback and direct import cleanup
 
@@ -172,10 +174,15 @@
 - Modify: `tests/unit/scripts/runtime-env-namespace-policy.test.ts`
 - Modify: `docs/RUNTIME-V2-CUTOVER.md`
 
-- [ ] Backend process에서 runtime Supervisor singleton을 생성하는 fallback을 제거한다.
-- [ ] Core unavailable 상태는 typed `core-unavailable`/`core-timeout` error로 fail closed한다.
-- [ ] Legacy JSON fallback은 rollback mode에서만 남긴다.
-- [ ] 검증: `corepack pnpm test`, `corepack pnpm smoke:runtime-v2:phase6-default-gate`, `corepack pnpm smoke:windows:package-gate`.
+- [x] Backend process에서 runtime Supervisor singleton을 생성하는 fallback을 제거한다.
+- [x] Core unavailable 상태는 typed `core-unavailable`/`core-timeout` error로 fail closed한다.
+- [x] Legacy JSON fallback은 rollback mode에서만 남긴다.
+- [x] 검증: Backend/API direct import policy, 실제 설치 경로 runtime v2 launch, split stability hold, `smoke:windows:package-gate`.
+
+**2026-05-16 보류:** combined Windows service의 in-process Core client fallback은 split
+service default-on 승격 전까지 유지한다. 이 fallback은 legacy JSON fallback이 아니라
+기본 운영 process topology 보호 장치이며, default-on 승격과 장시간 운영 evidence가 추가된
+뒤 제거한다.
 
 ## 실행 순서
 

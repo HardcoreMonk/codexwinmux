@@ -1,6 +1,6 @@
 # Testing And Smoke Guide
 
-이 문서는 codexmux의 자동 검증, platform smoke, 운영 smoke를 한곳에 묶는다. 개별
+이 문서는 codexwinmux의 자동 검증, platform smoke, 운영 smoke를 한곳에 묶는다. 개별
 platform 세부는 `ANDROID.md`, `ELECTRON.md`, `SYSTEMD.md`, `RUNTIME-V2-CUTOVER.md`를
 따르며, 이 문서는 어떤 검증을 언제 실행할지에 집중한다.
 
@@ -30,7 +30,10 @@ corepack pnpm smoke:windows:release-gate
 - `audit:windows-platform`
 - `smoke:runtime-v2:terminal-windows`
 - `smoke:windows:preflight`
-- `smoke:windows:service-host` — 기본 tray owner plan과 Phase 2 Windows Service owner plan을 모두 검증한다. WinSW wrapper의 service `install`/`uninstall`/`start`/`stop` 명령과 `scripts/windows-service.ps1` helper는 계획만 확인하고 실제 등록/시작/중지는 하지 않는다.
+- `smoke:windows:service-host` — 기본 tray owner plan, Phase 2 Windows Service owner plan, default-off split service plan(`codexwinmux-backend`, `codexwinmux-core`)을 검증한다. WinSW wrapper의 service `install`/`uninstall`/`start`/`stop` 명령과 `scripts/windows-service.ps1` helper는 계획만 확인하고 실제 등록/시작/중지는 하지 않는다.
+- `smoke:windows:core-engine-ipc` — `dist/workers/core-engine-host.js`를 독립 child process로 실행하고 backend-to-core IPC로 `core.health` event/reply를 확인한다.
+- `smoke:windows:core-backend-external-transport` — 독립 Core host를 loopback TCP transport로 실행한 뒤 Backend `core-engine/runtime-api` adapter가 외부 Core에 attach해 `core.health`를 받는지 확인한다.
+- `smoke:windows:core-backend-split-lifecycle` — 기본값은 non-mutating dry-run으로 Core start -> Backend attach -> Backend restart -> Core restart -> Backend/Core stop 순서를 검증한다. 실제 서비스 stop/start evidence가 필요할 때만 `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_MUTATE=1`을 명시한다.
 - `smoke:windows:host-diagnostics`
 - `smoke:windows:electron-env`
 - `smoke:windows:electron-packaging`
@@ -306,6 +309,27 @@ Mode helper unit tests는 raw parser가 unset/invalid를 계속 `off`로 fail-cl
 `CODEXWINMUX_RUNTIME_V2=1`에서 per-surface mode env가 unset일 때 resolved code fallback이
 terminal `new-tabs`, storage/timeline/status `default`가 되는 것을 함께 검증한다.
 
+Core/Backend physical separation:
+
+```bash
+corepack pnpm test tests/unit/lib/core-engine/contracts.test.ts tests/unit/lib/core-engine/server.test.ts tests/unit/lib/core-engine/process-host.test.ts tests/unit/lib/core-engine/transport-config.test.ts tests/unit/lib/core-engine/tcp-transport.test.ts tests/unit/electron/engine-process.test.ts tests/unit/pages/runtime-v2-api.test.ts tests/unit/pages/runtime-direct-import-policy.test.ts tests/unit/lib/windows-service-host.test.ts tests/unit/scripts/core-engine-ipc-smoke-lib.test.ts tests/unit/scripts/windows-core-backend-split-lifecycle-lib.test.ts
+corepack pnpm smoke:windows:service-host
+corepack pnpm smoke:windows:core-engine-ipc
+corepack pnpm smoke:windows:core-backend-external-transport
+corepack pnpm smoke:windows:core-backend-split-lifecycle
+corepack pnpm build:server
+corepack pnpm build:electron:main
+```
+
+이 검증은 Backend/Core typed command/reply/event contract, `--codexwinmux-engine`과
+`--codexwinmux-core` launch role 분기, Core process host의 supervisor start,
+`core.health` reply, terminal stdout/close event bridge, timeline/status/workspace/tab command,
+API route의 direct runtime supervisor import 금지, 독립 Core host IPC attach, Backend adapter의
+external TCP Core attach, split service plan, lifecycle dry-run 순서를 확인한다.
+`build:server`는 `dist/workers/core-engine-host.js`가 생성되는지, `build:electron:main`은
+Electron main bundle이 Core-only bootstrap을 포함하는지 확인한다. 현재 Backend API/WebSocket
+default path는 `core-engine/runtime-api`와 Core client adapter를 통과한다.
+
 `smoke:runtime-v2:phase2`, `smoke:android:runtime-v2`, `smoke:electron:runtime-v2`는 각각
 임시 서버와 Next.js dev runtime을 띄운다. 같은 checkout에서 병렬 실행하면 Next dev lock
 때문에 `Another next dev server is already running`으로 실패할 수 있으므로 순차 실행한다.
@@ -370,6 +394,9 @@ Windows packaging smoke:
 corepack pnpm pack:electron:dev
 corepack pnpm smoke:windows:packaged-launch
 corepack pnpm smoke:windows:packaged-runtime-v2
+corepack pnpm smoke:windows:core-engine-ipc
+corepack pnpm smoke:windows:core-backend-external-transport
+corepack pnpm smoke:windows:core-backend-split-lifecycle
 corepack pnpm pack:electron
 corepack pnpm smoke:windows:zip-artifact
 corepack pnpm smoke:windows:update-metadata
@@ -442,6 +469,13 @@ diagnostics, blocking console count를 확인한다.
 `smoke:windows:packaged-runtime-v2`는 packaged app 안에서 workspace와 runtime v2
 terminal tab을 추가로 만들고 `/api/v2/terminal` WebSocket attach와 Windows shell
 marker command를 확인한다.
+`smoke:windows:core-engine-ipc`는 build된 standalone Core host worker를 실제 child process로
+띄운 뒤 IPC `core.health` event/reply와 worker health summary를 확인한다.
+`smoke:windows:core-backend-external-transport`는 독립 Core host를 TCP listener로 띄운 뒤
+Backend `getCoreRuntimeApi()`가 외부 Core process에 attach해 health를 받는지 확인한다.
+`smoke:windows:core-backend-split-lifecycle`은 package/release gate에서 기본 dry-run으로
+split service lifecycle 순서를 고정한다. 실제 service mutation 증거는
+`CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_MUTATE=1`을 명시한 별도 운영 smoke에서 수집한다.
 `smoke:windows:installer-install`은 현재 Windows 사용자 설치 상태를 임시로 변경한다.
 temp directory에 silent install하고, 설치된 앱을 packaged launch smoke로 실행한 뒤
 생성된 uninstaller를 실행한다.
@@ -449,7 +483,9 @@ temp directory에 silent install하고, 설치된 앱을 packaged launch smoke�
 terminal check를 적용한다.
 `smoke:windows:package-gate`는 package를 새로 만들지 않는다. 기존 `release/` artifact를
 대상으로 zip artifact, update metadata, updater local feed, packaged launch,
-packaged runtime v2, installer runtime v2 smoke를 순차 실행하고 첫 실패에서 중단한다.
+engine lifecycle, standalone Core IPC, Backend external Core attach, split lifecycle
+dry-run, packaged runtime v2, installer runtime v2 smoke를 순차 실행하고 첫 실패에서
+중단한다.
 Windows packaging과 updater smoke는 현재 upstream package의 Node deprecation warning
 `DEP0176`, `DEP0190`를 제품 blocker로 보지 않는다. child Node process에는
 `NODE_OPTIONS`로 해당 warning suppression을 중복 없이 병합해 package gate output이

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildPackagedServerEnv,
   buildElectronBootstrapEnv,
   buildFileImportSpecifier,
   buildPackagedNodePath,
@@ -110,8 +111,59 @@ describe('Electron runtime environment helpers', () => {
     })).toBe('/Applications/codexmux.app/Contents/Resources/app.asar/.next/standalone/node_modules:/opt/cmux/node_modules');
   });
 
+  it('keeps unpacked packaged modules first for native worker dependencies', () => {
+    expect(buildPackagedNodePath({
+      platform: 'win32',
+      standaloneModules: [
+        'D:\\apps\\codexwinmux\\resources\\app.asar.unpacked\\.next\\standalone\\node_modules',
+        'D:\\apps\\codexwinmux\\resources\\app.asar\\.next\\standalone\\node_modules',
+      ],
+      existingNodePath: 'D:\\extra\\node_modules',
+    })).toBe([
+      'D:\\apps\\codexwinmux\\resources\\app.asar.unpacked\\.next\\standalone\\node_modules',
+      'D:\\apps\\codexwinmux\\resources\\app.asar\\.next\\standalone\\node_modules',
+      'D:\\extra\\node_modules',
+    ].join(';'));
+  });
+
   it('converts packaged server paths to file import specifiers', () => {
     expect(buildFileImportSpecifier('D:\\codexmux\\resources\\app.asar\\dist\\server.js'))
       .toBe('file:///D:/codexmux/resources/app.asar/dist/server.js');
+  });
+
+  it('builds packaged env for engine and core service bootstrap', () => {
+    expect(buildPackagedServerEnv({
+      isDev: false,
+      cwd: 'D:\\repo',
+      appPath: 'D:\\apps\\codexwinmux\\resources\\app.asar',
+      env: {},
+    })).toMatchObject({
+      NODE_ENV: 'production',
+      NODE_PATH: [
+        'D:\\apps\\codexwinmux\\resources\\app.asar.unpacked\\.next\\standalone\\node_modules',
+        'D:\\apps\\codexwinmux\\resources\\app.asar\\.next\\standalone\\node_modules',
+      ].join(';'),
+      __CMUX_ELECTRON: '1',
+      __CMUX_APP_DIR: 'D:\\apps\\codexwinmux\\resources\\app.asar',
+      __CMUX_APP_DIR_UNPACKED: 'D:\\apps\\codexwinmux\\resources\\app.asar.unpacked',
+    });
+  });
+
+  it('keeps development packaged env pointed at the checkout', () => {
+    expect(buildPackagedServerEnv({
+      isDev: true,
+      cwd: 'D:\\repo\\codexwinmux',
+      appPath: 'D:\\apps\\codexwinmux\\resources\\app.asar',
+      env: {},
+    })).toMatchObject({
+      NODE_ENV: 'production',
+      NODE_PATH: [
+        'D:\\repo\\codexwinmux\\.next\\standalone\\node_modules',
+        'D:\\repo\\codexwinmux\\.next\\standalone\\node_modules',
+      ].join(';'),
+      __CMUX_ELECTRON: '1',
+      __CMUX_APP_DIR: 'D:\\repo\\codexwinmux',
+      __CMUX_APP_DIR_UNPACKED: 'D:\\repo\\codexwinmux',
+    });
   });
 });

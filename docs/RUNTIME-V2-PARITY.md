@@ -131,7 +131,7 @@ SmartScreen과 published/public target evidence는 외부 공개 배포 전용 g
 ## 2026-05-04 Storage Backup Evidence
 
 - `corepack pnpm smoke:runtime-v2:storage-backup`와 `corepack pnpm runtime-v2:storage-backup`를 추가했다.
-- backup command는 `workspaces.json`, `workspaces/**.json`, `runtime-v2/state.db`, `runtime-v2/state.db-wal`, `runtime-v2/state.db-shm`를 `~/.codexmux/backups/runtime-v2-storage-{timestamp}/`로 복사한다.
+- backup command는 `workspaces.json`, `workspaces/**.json`, `runtime-v2/state.db`, `runtime-v2/state.db-wal`, `runtime-v2/state.db-shm`를 `~/.codexwinmux/backups/runtime-v2-storage-{timestamp}/`로 복사한다.
 - live backup snapshot은 `runtime-v2-storage-20260504T052000Z`에 29개 파일을 복사했다.
 - command result는 destination path, relative path, byte count만 출력하고 file content, cwd, workspace/tab name, session name, prompt text는 출력하지 않는다.
 - 이 backup은 rollback material을 보존하는 단계이며 JSON-to-SQLite import나 source-of-truth switch를 수행하지 않는다.
@@ -156,9 +156,9 @@ SmartScreen과 published/public target evidence는 외부 공개 배포 전용 g
 ## 2026-05-04 Storage Default Read Evidence
 
 - schema v3는 `workspace_directories`, `app_state`, `message_history`를 추가해 active workspace, sidebar collapsed/width, workspace directory list, message history를 SQLite projection에 포함한다.
-- `src/lib/runtime/storage-read-owner.ts`는 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서 workspace/layout/message-history read를 SQLite 우선으로 처리하고, DB open/projection 실패 시 JSON read로 fail closed한다.
+- `src/lib/runtime/storage-read-owner.ts`는 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서 workspace/layout/message-history read를 SQLite projection source of truth로 처리하고, DB open/projection 실패 시 JSON read로 내려가지 않는 typed failure로 fail closed한다.
 - `corepack pnpm smoke:runtime-v2:storage-default-read`는 temp HOME/DB에서 SQLite workspace/layout/message-history cold read, workspace directory/sidebar/status metadata hydration, legacy `layout.json` write mirror 후 default read, `updateActive()` runtime write 후 default read, message-history rollback JSON mirror를 검증한다. Runtime default read failure는 JSON fallback 없이 typed error로 fail closed한다.
-- live service는 아직 `storageV2Mode=write`로 운영하며 production default rollout은 별도 gate로 남긴다.
+- live/default gate는 이후 Windows local Phase 6, status/timeline stale UI, Android LAN smoke와 함께 통과했다. 현재 내부 폐쇄망 기준에서는 JSON fallback removal이 완료됐고, public SmartScreen/published public target evidence는 외부 공개 배포 전용 gate로 남긴다.
 
 ## 2026-05-04 Timeline Shadow Evidence
 

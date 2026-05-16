@@ -87,7 +87,9 @@ describe('Windows service host baseline', () => {
     expect(plan.mutatesSystem).toBe(false);
     expect(plan.hostModel).toBe('windows-service-owner-capable');
     expect(plan.service.executablePath).toBe('D:\\apps\\codexwinmux\\codexwinmux.exe');
-    expect(plan.service.executableArgs).toEqual(['--codexwinmux-engine']);
+    expect(plan.service.executableArgs).toEqual([
+      'D:\\apps\\codexwinmux\\resources\\app.asar\\dist\\server.js',
+    ]);
     expect(plan.service.wrapper).toMatchObject({
       kind: 'winsw',
       executablePath: 'C:\\Users\\cmux\\AppData\\Local\\codexwinmux\\service\\codexwinmux-service.exe',
@@ -104,6 +106,56 @@ describe('Windows service host baseline', () => {
     expect(plan.service.commands.stop.args).toEqual(['stop']);
     expect(plan.operationDecision.serviceAccount.current).toBe('LocalSystem');
     expect(plan.operationDecision.installer.mode).toBe('runbook-first');
+  });
+
+  it('plans split backend/core services only when split mode is requested', () => {
+    const plan = resolveWindowsServiceHostPlan({
+      platform: 'win32',
+      mode: 'split',
+      env: {
+        ...env,
+        CODEXWINMUX_WINDOWS_HOST_OWNER: 'service',
+        CODEXWINMUX_WINDOWS_SERVICE_EXE: 'D:\\apps\\codexwinmux\\codexwinmux.exe',
+      },
+      appDir: 'D:\\apps\\codexmux',
+    });
+
+    expect(plan.mode).toBe('split');
+    expect(plan.service.name).toBe('codexwinmux');
+    expect(plan.service.executableArgs).toEqual([
+      'D:\\apps\\codexwinmux\\resources\\app.asar\\dist\\server.js',
+    ]);
+    expect(plan.splitServices).toMatchObject({
+      defaultEnabled: false,
+      backend: {
+        name: 'codexwinmux-backend',
+        role: 'backend',
+        executableArgs: [
+          'D:\\apps\\codexwinmux\\resources\\app.asar\\dist\\server.js',
+        ],
+      },
+      core: {
+        name: 'codexwinmux-core',
+        role: 'core',
+        executableArgs: [
+          'D:\\apps\\codexwinmux\\resources\\app.asar.unpacked\\dist\\workers\\core-engine-host.js',
+        ],
+      },
+    });
+    expect(plan.splitServices?.backend.commands.start).toMatchObject({
+      mutatesSystem: false,
+      requiresElevation: true,
+    });
+    expect(plan.splitServices?.core.commands.install.args).toEqual(['install']);
+    expect(plan.operationDecision.runbook.splitActions).toEqual([
+      'write-config',
+      'install',
+      'start',
+      'status',
+      'health',
+      'stop',
+      'uninstall',
+    ]);
   });
 
   it('prefers canonical Windows host owner env over legacy env', () => {

@@ -3,7 +3,7 @@ import { stat } from 'fs/promises';
 import { isAllowedJsonlPath } from '@/lib/path-validation';
 import { getPerfNow, recordPerfCounter, recordPerfDuration } from '@/lib/perf-metrics';
 import { sendRuntimeApiError } from '@/lib/runtime/api-handler';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { shouldUseRuntimeTimelineV2Reads } from '@/lib/runtime/timeline-mode';
 import { countTimelineMessages, emptyMessageCounts, type IMessageCountResult } from '@/lib/timeline-message-counts';
 
@@ -58,7 +58,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (shouldUseRuntimeTimelineV2Reads()) {
     try {
-      const counts = await getRuntimeSupervisor().getTimelineMessageCounts(jsonlPath);
+      const counts = await getCoreRuntimeApi().getTimelineMessageCounts(jsonlPath);
       return res.status(200).json(counts);
     } catch (err) {
       return sendRuntimeApiError(res, err);

@@ -1,6 +1,6 @@
 # Agent 상태 감지
 
-codexmux는 tab마다 세 가지 상태를 분리해 추적한다.
+codexwinmux는 tab마다 세 가지 상태를 분리해 추적한다.
 
 1. terminal WebSocket 연결 여부.
 2. tmux pane 아래 agent process 실행 여부.
@@ -28,10 +28,12 @@ StatusManager
   └─ review/input 상태에서 toast/native/Web Push 알림 전송
 ```
 
-## Experimental Runtime v2 Status
+## Runtime v2 Status
 
 `CODEXWINMUX_RUNTIME_V2=1`의 SQLite schema에는 `tab_status`가 포함된다. runtime v2에는
-Status Worker foundation도 있으며, 현재 범위는 `status-state-machine`과
+Status Worker live bridge가 있으며, default mode에서는 worker process 안의 `StatusManager`가
+polling, JSONL watch, hook application, ack/dismiss, session history, Web Push, rate-limit update를
+소유한다. 정책 계산은 `status-state-machine`과
 `status-notification-policy`, `status-side-effect-policy`, `status-client-event-policy` 같은
 순수 정책을 typed IPC 뒤에서 평가하는 것이다. `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=shadow`에서는
 `StatusManager.applyCliState()`가 legacy side-effect intent와 Status Worker
@@ -40,22 +42,22 @@ mismatch, error만 기록한다. `dismissTab()`과 `ackNotificationInput()`도
 `status.evaluate-client-event`로 ready-for-review dismiss와 needs-input ack acceptance를
 shadow 비교한다. 이 shadow 비교는 Web Push payload, prompt, cwd, JSONL path, terminal
 output을 기록하지 않는다.
-production status source of truth는 계속 `StatusManager`와 layout metadata다.
+`default` mode의 production status source of truth는 Status Worker 안에서 실행되는
+`StatusManager`와 runtime storage metadata다. `off`와 `shadow`에서는 기존 main-process
+`StatusManager`가 rollback/compare owner로 남는다.
 
 Status Worker에는 session history write command foundation도 있다.
 `status.add-session-history-entry`와 `status.update-session-history-dismissed-at`는
 `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서만 `StatusManager`의 write adapter가 사용한다.
-`off`와 `shadow`에서는 기존 `session-history.json` write path를 유지한다. Broadcast는 아직
-`StatusManager`가 담당하므로 이 foundation은 `/api/status` WebSocket ownership 전환이 아니다.
+`off`와 `shadow`에서는 기존 `session-history.json` write path를 유지한다. `/api/status`
+WebSocket은 default mode에서 worker realtime event를 기존 client message로 bridge한다.
 
 Web Push send command foundation도 있다. `status.send-web-push`는 `StatusManager`가 만든
 기존 safe payload와 main process에서 계산한 foreground visibility boolean을 받아 worker에서
 background Web Push 전송과 expired subscription 제거를 수행한다. 이 path 역시
-`CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서만 사용하며, 실패 시 legacy send path로 fallback한다.
-main-process production path에서도 session history write와 Web Push 전송은
-`status-session-history-adapter`, `status-web-push-adapter` 뒤에서 실행한다. `StatusManager`는
-상태 전이, dedupe, workspace/config 조회까지만 소유하고, runtime default/legacy fallback 선택과
-전송 세부 구현은 adapter가 맡는다.
+`CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서 사용한다. main-process rollback path에서도
+session history write와 Web Push 전송은 `status-session-history-adapter`,
+`status-web-push-adapter` 뒤에서 실행한다.
 
 2026-05-05 live bridge 이후 `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
 별도 process 안에서 `StatusManager` state machine을 실행한다. custom server는 startup 때
@@ -158,7 +160,7 @@ terminal pane에서 shell이 아닌 process가 실행 중이면 실패가 아니
 - Electron/native notification은 `use-native-notification`이 처리한다.
 - background Web Push는 `StatusManager`가 `status-web-push-adapter`를 통해 전송한다.
 - `soundOnCompleteEnabled=false`이면 작업 완료 toast sound를 재생하지 않고, native/background system notification도 silent로 요청한다.
-- 현재 Codex CLI permission/input prompt는 hook event로 직접 전달되지 않는 경우가 있으므로, codexmux는 live Codex pane capture에서 prompt 선택지를 감지해 내부 `notification(permission_prompt)` 이벤트처럼 `needs-input`으로 전환한다. 여기에는 permission approval, resume working directory 선택, 기타 option list prompt가 포함된다. 일반 작업 완료 notification은 review flow를 따른다.
+- 현재 Codex CLI permission/input prompt는 hook event로 직접 전달되지 않는 경우가 있으므로, codexwinmux는 live Codex pane capture에서 prompt 선택지를 감지해 내부 `notification(permission_prompt)` 이벤트처럼 `needs-input`으로 전환한다. 여기에는 permission approval, resume working directory 선택, 기타 option list prompt가 포함된다. 일반 작업 완료 notification은 review flow를 따른다.
 - 전역 approval queue는 pane capture에서 파싱한 option list와 sanitized metadata를 표시한다.
   metadata는 `command`, `file`, `permission`, `resume-directory`, `conversation`, `unknown`
   prompt type, `allow|deny|trust|directory|input|unknown` approval kind,
@@ -173,7 +175,7 @@ terminal pane에서 shell이 아닌 process가 실행 중이면 실패가 아니
   copy는 이 metadata의 command/file/permission type, risk, concise detail을 사용하며,
   metadata가 없으면 기존 last user message 또는 tab name fallback을 유지한다.
 - approval queue는 선택지가 표시된 시점, fallback, 선택 전송 성공/실패를
-  `~/.codexmux/approval-audit.jsonl`에 append한다. 이 audit record는 workspace id, tab id,
+  `~/.codexwinmux/approval-audit.jsonl`에 append한다. 이 audit record는 workspace id, tab id,
   prompt/risk/approval enum, option count, selected option index, fallback reason만 저장하고
   option label, command preview, cwd, session name, JSONL path, prompt body, terminal output은
   저장하지 않는다.
@@ -210,8 +212,8 @@ helper가 담당한다. `StatusManager`는 tmux/process/JSONL 신호 수집, 상
 history 저장, notification 같은 부수효과를 처리한다.
 
 현재 Codex hook bridge는 `SessionStart`, `UserPromptSubmit`, `Stop`을
-생성된 `~/.codexmux/hooks.json`에 등록한다. Codex tab 실행 명령은
-`-c 'hooks={path="~/.codexmux/hooks.json"}'`를 포함해 앱 소유 hook 설정을 명시적으로
+생성된 `~/.codexwinmux/hooks.json`에 등록한다. Codex tab 실행 명령은
+`-c 'hooks={path="~/.codexwinmux/hooks.json"}'`를 포함해 앱 소유 hook 설정을 명시적으로
 로드한다. Codex CLI `0.128.0` 기준 permission request 전용 hook은 제공되지 않으므로,
 permission/input prompt는 pane capture 기반 `recoverPendingInputFromPane` 경로에서 합성
 `notification(permission_prompt)`로 복구한다. CLI 자체 prompt와 사용자의 선택 경로는

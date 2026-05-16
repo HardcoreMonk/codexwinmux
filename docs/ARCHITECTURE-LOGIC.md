@@ -1,55 +1,56 @@
 # 아키텍처와 서비스 로직
 
-이 문서는 codexmux의 아키텍처 흐름과 서비스 로직을 구현 기준으로 정리한다. 장기 설계 결정은 `ADR.md`, tmux와 WebSocket 세부는 `TMUX.md`, 상태 전이는 `STATUS.md`, 운영 서비스는 `SYSTEMD.md`를 기준 문서로 둔다.
+이 문서는 codexwinmux의 아키텍처 흐름과 서비스 로직을 구현 기준으로 정리한다. 장기 설계 결정은 `ADR.md`, tmux와 WebSocket 세부는 `TMUX.md`, 상태 전이는 `STATUS.md`, Windows Shell/Service 운영은 `ELECTRON.md`와 `WINDOWS-ONLY-GAP-AUDIT.md`를 기준 문서로 둔다. `SYSTEMD.md`는 legacy Linux reference다.
 
 ## 핵심 구조
 
-codexmux는 Next.js Pages Router UI, custom Node server, tmux session, Codex CLI JSONL을 하나의 운영 흐름으로 묶는다.
+codexwinmux는 Next.js Pages Router UI, custom Node server, runtime v2 workers, Windows Shell Host, Codex CLI JSONL을 하나의 운영 흐름으로 묶는다.
 
 ```text
 Browser / Electron / Android WebView
   ├─ HTTP pages + API        -> Next.js Pages Router
-  ├─ /api/terminal WebSocket -> terminal-server -> node-pty -> tmux -L codexmux
-  ├─ /api/timeline WebSocket -> timeline-server -> Codex JSONL tail
-  ├─ /api/status WebSocket   -> status-server -> StatusManager
+  ├─ /api/terminal WebSocket -> terminal-server or runtime terminal bridge
+  ├─ /api/timeline WebSocket -> runtime Timeline Worker bridge
+  ├─ /api/status WebSocket   -> runtime Status Worker bridge
   └─ /api/sync WebSocket     -> sync-server -> workspace/layout/config broadcast
 
 Runtime state
-  ├─ ~/.codexmux/            -> codexmux-owned app state
-  ├─ tmux -L codexmux        -> live shell/Codex processes
+  ├─ ~/.codexwinmux/         -> codexwinmux-owned app state
+  ├─ runtime-v2/state.db     -> workspace/layout/message/status projection
+  ├─ runtime workers         -> terminal/storage/timeline/status ownership
+  ├─ tmux adapter            -> live shell/Codex processes where required
   └─ ~/.codex/sessions/      -> Codex-owned JSONL, read-only
 ```
 
-## Experimental Runtime v2
+## Runtime v2와 Core 경계
 
-`CODEXWINMUX_RUNTIME_V2=1`이면 현재 runtime 옆에 실험용 Supervisor + Worker runtime이
-함께 시작된다. Supervisor는 public routing과 worker lifecycle을 소유하고, Storage
-Worker는 `~/.codexmux/runtime-v2/state.db` SQLite app state를 소유한다. Terminal
-Worker는 별도 `codexmux-runtime-v2` tmux socket의 `rtv2-` session lifecycle과
-`/api/v2/terminal` attach/stdin/stdout/resize 경로를 소유한다.
-Timeline Worker는 Codex JSONL session list, older entry read, message count 같은
-읽기 전용 timeline command를 typed IPC 뒤에 둔다. 아직 production `/api/timeline`
-WebSocket의 file watch/live append/resume 경로를 대체하지 않는다.
+`CODEXWINMUX_RUNTIME_V2=1`이면 Supervisor + Worker runtime이 현재 기본 runtime 경로다.
+Supervisor는 public routing과 worker lifecycle을 소유하고, Storage Worker는
+`~/.codexwinmux/runtime-v2/state.db` SQLite app state를 소유한다. Terminal Worker는
+runtime terminal session lifecycle과 `/api/v2/terminal` attach/stdin/stdout/resize 경로를
+소유한다.
+
+`CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가
+SQLite projection을 source of truth로 사용한다. projection이나 DB read가 실패하면 legacy
+JSON으로 내려가지 않고 typed failure로 fail closed한다. JSON mirror는 explicit `off`
+rollback artifact로만 유지한다.
+
 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`에서는 기존 `/api/timeline/sessions`,
-`/api/timeline/entries`, `/api/timeline/message-counts` HTTP route가 URL을 유지한 채
-Supervisor의 Timeline Worker read command로 처리된다.
-Status Worker는 상태 전이와 notification gating 같은 순수 정책 평가 command를 typed
-IPC 뒤에 둔다. `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가
-별도 process 안에서 `StatusManager` live state machine을 실행하고 기존 `/api/status`
-WebSocket은 worker realtime event를 client message로 bridge한다. `off`/`shadow`에서는
-기존 main-process `StatusManager`가 production owner다.
-runtime v2의 workspace delete와 terminal tab delete는 Storage Worker SQLite
-transaction이 cleanup 대상 session을 반환하고, Supervisor가 subscriber close와
-Terminal Worker `kill-session` cleanup을 수행한다.
-runtime v2 terminal tab restart는 legacy layout에 남은 같은 tab id/session name을
-Supervisor가 Storage Worker에 다시 `pending_terminal`로 등록하고 Terminal Worker가 같은
-`rtv2-` tmux session을 재생성한 뒤 `ready`로 finalize한다. Terminal Worker가 crash 또는
-service restart 중 종료되면 Supervisor는 붙어 있던 terminal WebSocket을 retryable `1001
-Terminal worker exited`로 닫아 client가 `/api/v2/terminal`을 새로 열게 한다. 실제 session이
-없으면 reconnect는 `session-not-found` 복구 overlay로 넘어간다.
+`/api/timeline/entries`, `/api/timeline/message-counts` HTTP route와 `/api/timeline`
+WebSocket URL을 유지하되, Timeline Worker read/live/session-watch command가 delivery를
+소유한다. `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가 별도 process
+안에서 `StatusManager` live state machine을 실행하고 기존 `/api/status` WebSocket은 worker
+realtime event를 client message로 bridge한다.
 
-이 runtime은 구현 첫 단계의 process-level smoke와 platform smoke를 통과하기 전까지
-기본 production terminal/timeline/status 경로를 대체하지 않는다.
+Core/Backend 논리 분리는 완료됐다. P2부터 `codexwinmux.exe --codexwinmux-core`와
+`src/workers/core-engine-host.ts`가 Core process host foundation을 제공한다. 이 host는
+BrowserWindow와 UI single-instance lock 없이 runtime Supervisor/workers를 시작하고 Core
+command/event protocol에 응답한다. P3-P6부터 Backend API/WebSocket은
+`core-engine/runtime-api` client adapter를 통과하며, default-off
+`CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`에서는 Backend가 독립 Core process에 loopback TCP로
+attach한다. 다만 기본 Windows service와 UI local mode는 아직
+`codexwinmux.exe --codexwinmux-engine` combined engine process를 사용한다. 엄격한 운영 기본값
+물리 분리는 split service를 default-on으로 승격하고 packaged gate가 통과할 때 완료로 본다.
 
 ## 모듈 경계
 
@@ -72,7 +73,7 @@ Terminal worker exited`로 닫아 client가 `/api/v2/terminal`을 새로 열게 
 `server.ts`의 `start()`가 프로세스 전체 lifecycle을 소유한다.
 
 1. `PORT`와 app directory를 결정한다.
-2. `~/.codexmux/cmux.lock`을 획득해 단일 인스턴스를 보장한다.
+2. `~/.codexwinmux/cmux.lock`을 획득해 단일 인스턴스를 보장한다.
 3. `config.json`과 shell `PATH`를 초기화한다.
 4. auth credential을 로드하고 `AUTH_PASSWORD`, `NEXTAUTH_SECRET` 환경값을 채운다.
 5. tmux session을 scan하고 `src/config/tmux.conf`를 적용한다.
@@ -111,7 +112,7 @@ summary로 제한한다.
 
 ## 상태 저장 로직
 
-codexmux가 쓰는 영속 상태는 `~/.codexmux/` 아래에 둔다.
+codexwinmux가 쓰는 영속 상태는 `~/.codexwinmux/` 아래에 둔다.
 
 | 데이터 | Source of truth | 변경 방송 |
 | --- | --- | --- |
@@ -126,11 +127,12 @@ codexmux가 쓰는 영속 상태는 `~/.codexmux/` 아래에 둔다.
 | Codex transcript | `~/.codex/sessions/**/*.jsonl` | timeline/status |
 
 `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=default`에서는 workspace/layout/message-history read가
-`~/.codexmux/runtime-v2/state.db`의 SQLite projection을 우선 사용한다. 기존 JSON write
+`~/.codexwinmux/runtime-v2/state.db`의 SQLite projection을 우선 사용한다. 기존 JSON write
 path와 sync broadcast는 유지하며, write 직후 runtime v2 import mirror가 SQLite projection을
 갱신한다. Message history는 default mode에서 SQLite read/write를 우선 사용하고 rollback용
 JSON 파일을 함께 갱신한다. SQLite read가 실패하거나 projection이 비어 있으면 legacy JSON
-read로 fail closed한다. Config, keybindings, sidebar items는 아직 기존 JSON store가 owner다.
+read로 복구하지 않고 typed failure로 fail closed한다. Config, keybindings, sidebar items는
+아직 기존 JSON store가 owner다.
 
 custom server와 Next.js API route는 같은 Node process 안에서도 module graph가 분리될 수 있다. 공유 singleton은 `globalThis`에 저장하고 재초기화를 guard한다.
 
@@ -215,7 +217,9 @@ legacy file watcher가 같은 순수 helper를 쓰도록 만든 경계다.
 
 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`일 때 7번의 HTTP read path와 session list,
 message counts는 legacy URL을 유지하면서 Timeline Worker command로 처리된다. WebSocket
-init/append/session-changed/resume은 아직 legacy `timeline-server`가 소유한다.
+init/append/session-changed delivery도 같은 URL에서 runtime Timeline Worker bridge가 소유한다.
+Resume command execution은 기존 process-safety helper를 재사용하지만 legacy file watcher에는
+붙지 않는다.
 
 같은 tmux session에서 `agentSessionId`만 바뀐 경우에도 client는 timeline WebSocket을 새로 연다. Android WebView처럼 기존 connection이 살아 보이지만 stale JSONL을 보고 있는 상태를 피하기 위함이다.
 
@@ -231,7 +235,7 @@ init/append/session-changed/resume은 아직 legacy `timeline-server`가 소유�
 
 `SessionIndexService`는 session list API에서 JSONL 전체를 직접 스캔하지 않도록 로컬 Codex JSONL을 snapshot으로 정규화한다.
 
-1. startup에서 `~/.codexmux/session-index.json`을 읽어 즉시 사용 가능한 snapshot을 만든다.
+1. startup에서 `~/.codexwinmux/session-index.json`을 읽어 즉시 사용 가능한 snapshot을 만든다.
 2. 백그라운드 refresh가 `~/.codex/sessions/**/*.jsonl`의 `mtime`/size를 비교한다.
 3. 변경된 JSONL만 본문을 파싱해 첫 user message, turn count, cwd, activity time을 갱신한다.
 4. `/api/timeline/sessions`는 `codex` panel 요청에서 live tmux session 존재 여부와 무관하게 index snapshot의 요청 page만 public session shape로 변환해 반환한다.
@@ -277,7 +281,7 @@ inactive
 - Codex가 `Conversation interrupted` 입력 프롬프트에 멈췄지만 JSONL interrupt marker를 남기지 않으면 pane capture recovery가 stale `busy`를 `idle`로 되돌린다.
 - poll duration, tab/pane count, broadcast count는 perf snapshot에 남겨 polling 비용을 확인한다.
 - `/login` 같은 인증 전 public route는 status/native notification/Web Push/service worker runtime service를 마운트하지 않는다. fresh install 또는 app data clear 후 auth WebSocket 실패와 service worker registration console noise가 없어야 한다. `/sw.js` 자체는 PWA/Web Push 설치를 위한 static service worker script이므로 auth redirect 없이 public asset으로 제공한다.
-- PWA manifest는 `/api/manifest`에서 제공하고 iOS startup image는 `public/splash/*.png` 정적 파일로 제공한다. Startup image는 `scripts/generate-splash.js`에서 `codexmux` branding으로 생성하며, 기존 Home Screen 앱이 이전 이미지를 계속 보이면 iOS cache 문제로 보고 재설치를 안내한다.
+- PWA manifest는 `/api/manifest`에서 제공하고 iOS startup image는 `public/splash/*.png` 정적 파일로 제공한다. Manifest name은 `codexwinmux`이며, startup image/icon branding도 codexwinmux 제품 identity를 따라야 한다. 기존 Home Screen 앱이 이전 이미지를 계속 보이면 iOS cache 문제로 보고 재설치를 안내한다.
 - `smoke:permission`은 임시 HOME/server/tmux tab에서 permission prompt 모양의 pane output을 만들고 `/api/status` WebSocket, `/api/tmux/permission-options`, `/api/tmux/send-input`, `status:ack-notification` 전환을 함께 검증한다. Resume directory prompt와 interrupted prompt는 `permission-prompt`/`codex-pane-state` unit test가 parser 회귀를 잡는다.
 
 ## Sync 서비스 로직
@@ -344,11 +348,24 @@ Android WebView DevTools 기반 smoke는 `smoke:android:foreground`, `smoke:andr
 
 `soundOnCompleteEnabled=false`이면 toast sound뿐 아니라 native/background notification도 silent로 요청한다.
 
-전역 approval queue는 `needs-input` tab을 notification panel에 모아 `/api/tmux/permission-options`의 option list와 sanitized metadata를 표시한다. 사용자가 선택하면 기존 `/api/tmux/send-input`에 option index를 보내고 `status:ack-notification`으로 `needs-input -> busy` 전이를 요청한다. 선택지 조회나 전송이 실패하면 terminal tab 이동 fallback을 유지한다. 선택지가 표시된 시점, fallback, 선택 전송 성공/실패는 `~/.codexmux/approval-audit.jsonl`에 원문 없이 append한다. Needs-input Web Push는 기존 tab navigation payload를 유지하고, 새 창 fallback에서는 workspace/tab/session id만 담은 root deep link query로 복구한다. Push payload와 deep link에는 prompt 본문이나 raw command/file path를 싣지 않는다.
+전역 approval queue는 `needs-input` tab을 notification panel에 모아 `/api/tmux/permission-options`의 option list와 sanitized metadata를 표시한다. 사용자가 선택하면 기존 `/api/tmux/send-input`에 option index를 보내고 `status:ack-notification`으로 `needs-input -> busy` 전이를 요청한다. 선택지 조회나 전송이 실패하면 terminal tab 이동 fallback을 유지한다. 선택지가 표시된 시점, fallback, 선택 전송 성공/실패는 `~/.codexwinmux/approval-audit.jsonl`에 원문 없이 append한다. Needs-input Web Push는 기존 tab navigation payload를 유지하고, 새 창 fallback에서는 workspace/tab/session id만 담은 root deep link query로 복구한다. Push payload와 deep link에는 prompt 본문이나 raw command/file path를 싣지 않는다.
 
 ## 운영 서비스 로직
 
-Linux 상시 실행은 `systemd --user`를 기준으로 한다.
+현재 Windows 제품 운영은 Electron Shell Host와 Windows Service owner를 기준으로 한다.
+`codexwinmux.exe --codexwinmux-engine`은 Backend/Core combined engine process로 실행되며,
+WinSW wrapper와 `scripts/windows-service.ps1` helper가 service install/start/status/health
+runbook을 제공한다. P2의 `--codexwinmux-core` host는 source/build에 포함됐지만, split
+service mode는 아직 default off 후속 범위다.
+
+```text
+codexwinmux-service.exe
+  -> codexwinmux.exe --codexwinmux-engine
+  -> dist/server.js
+  -> runtime workers
+```
+
+Legacy Linux 상시 실행은 `systemd --user` reference로 남긴다.
 
 ```text
 systemd --user codexmux.service
@@ -360,7 +377,7 @@ systemd --user codexmux.service
 운영 원칙:
 
 - root/system-wide service로 실행하지 않는다.
-- `~/.codexmux/`, `~/.codex/`, tmux socket, NVM Node path가 모두 동일 user 기준이어야 한다.
+- `~/.codexwinmux/`, `~/.codex/`, tmux socket, NVM Node path가 모두 동일 user 기준이어야 한다.
 - source 변경 후 production 반영은 `corepack pnpm deploy:local`로 build, service restart, health check를 함께 수행한다.
 - live checkout에서 `.next/standalone`을 다시 만드는 packaging/build smoke를 실행한 뒤에는 service process cwd가 삭제된 standalone directory를 가리킬 수 있으므로 service를 재시작해 cwd를 정상화한다.
 - native Android 파일을 바꾸지 않은 React/server 변경은 APK 재배포 없이 `corepack pnpm deploy:local`로 반영된다.

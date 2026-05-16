@@ -31,10 +31,14 @@ import {
   shouldPrewarmSessionIndexOnStartup,
   shutdownSessionIndexService,
 } from './src/lib/session-index';
-import { getRuntimeSupervisor } from './src/lib/runtime/supervisor';
 import { getRuntimeStatusV2Mode } from './src/lib/runtime/status-mode';
 import { runRuntimeStartupDiagnostic } from './src/lib/runtime/startup-diagnostic';
 import { handleRuntimeTerminalConnection } from './src/lib/runtime/terminal-ws';
+import {
+  getCoreRuntimeApi,
+  getCoreRuntimeTerminalSupervisor,
+  shutdownCoreEngineClient,
+} from './src/lib/core-engine/runtime-api';
 import {
   createWebSocketUpgradeHandler,
   type IRuntimeTerminalUpgradeContext,
@@ -75,7 +79,7 @@ const createWsServers = () => {
     void handleRuntimeTerminalConnection(
       ws,
       context as IRuntimeTerminalUpgradeContext,
-      getRuntimeSupervisor(),
+      getCoreRuntimeTerminalSupervisor(),
     );
   });
 
@@ -292,7 +296,7 @@ const startDev = async (port: number, appDir: string, bindHost: string): Promise
     await removePortFile();
     server.close();
     if (isRuntimeV2Enabled()) {
-      getRuntimeSupervisor().shutdown();
+      shutdownCoreEngineClient();
     }
     await shutdownWs();
   };
@@ -359,7 +363,7 @@ const startProd = async (port: number, appDir: string, bindHost: string): Promis
     await removePortFile();
     server.close();
     if (isRuntimeV2Enabled()) {
-      getRuntimeSupervisor().shutdown();
+      shutdownCoreEngineClient();
     }
     await shutdownWs();
   };
@@ -402,11 +406,11 @@ export const start = async (opts?: IStartOptions): Promise<IStartResult> => {
     await initSessionIndexService();
   }
   if (isRuntimeV2Enabled()) {
-    runRuntimeStartupDiagnostic(getRuntimeSupervisor(), log);
+    runRuntimeStartupDiagnostic({ health: () => getCoreRuntimeApi().health() }, log);
   }
   if (isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default') {
     try {
-      await getRuntimeSupervisor().startStatusLive();
+      await getCoreRuntimeApi().startStatusLive();
     } catch (err) {
       log.warn(`Runtime status live startup failed, falling back: ${err instanceof Error ? err.message : err}`);
       await getStatusManager().init();

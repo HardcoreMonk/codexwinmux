@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { verifyRuntimeV2ApiAuth } from '@/lib/runtime/api-auth';
 import { parseRuntimeApiBody, sendRuntimeApiError, sendRuntimeDisabled } from '@/lib/runtime/api-handler';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 
 const querySchema = z.object({
   workspaceId: z.string().min(1),
@@ -25,9 +25,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const { workspaceId } = parseRuntimeApiBody(querySchema, req.query);
-    const supervisor = getRuntimeSupervisor();
-    await supervisor.ensureStarted();
-    const layout = await supervisor.getLayout(workspaceId);
+    const runtime = getCoreRuntimeApi();
+    await runtime.ensureStarted();
+    const layout = await runtime.getLayout(workspaceId);
     if (!layout) return res.status(404).json({ error: 'runtime-v2-layout-not-found' });
     return res.status(200).json(layout);
   } catch (err) {
