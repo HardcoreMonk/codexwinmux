@@ -50,7 +50,7 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 
 예: `0.3.0`은 `versionName=0.3`, `versionCode=300`입니다. `0.3.1`은 `versionName=0.3.1`, `versionCode=301`입니다. CI나 수동 배포에서 `ANDROID_VERSION_CODE` 환경변수를 주면 `versionCode`만 override할 수 있습니다.
 
-현재 repo/release version은 `0.4.17`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.17`, `versionCode=417`입니다.
+현재 repo/release version은 `0.4.18`이며 다음 debug install smoke 기준 설치 상태는 `versionName=0.4.18`, `versionCode=418`입니다.
 
 버전 증가 규칙:
 
@@ -138,6 +138,19 @@ browser pane에도 적용된다.
 로그인 화면처럼 인증 전 public route에서는 status/native notification/Web Push/service worker runtime service를 마운트하지 않는다. fresh install 또는 app data clear 후 `/login`에 도착했을 때 `/api/status` WebSocket auth 실패나 service worker registration console error가 생기지 않아야 한다. `/sw.js` 자체는 PWA/Web Push 설치용 static script라 인증 redirect 없이 내려온다.
 
 서버가 내려주는 React 코드만 바뀌는 경우에는 APK 재배포가 필요 없습니다. Linux user service 운영에서는 `corepack pnpm deploy:local`로 build, service restart, health check를 수행하면 기존 Android 앱 WebView가 새 reconnect 로직을 받습니다. native bridge를 바꾸는 앱 정보/재시작 기능 변경은 debug/release APK를 다시 빌드해 기기에 설치해야 합니다.
+
+## 2026-05-17 Android 0.4.18 Device/Release Smoke Result
+
+2026-05-17 Windows host와 SM-S928N(Android 16) 실기기 기준:
+
+| 항목 | 결과 |
+| --- | --- |
+| source version | `package.json` `0.4.18` |
+| debug APK build | `corepack pnpm android:build:debug` 통과 |
+| device install smoke | SM-S928N `R3CX10RTWFH` 인식 후 `corepack pnpm android:install` 통과. `corepack pnpm smoke:android:install`은 `versionName=0.4.18`, `versionCode=418`, `lastUpdateTime=2026-05-17 02:39:45`, `com.hardcoremonk.codexwinmux/.MainActivity` resolve 확인 |
+| release AAB signing | `corepack pnpm android:keystore`, `corepack pnpm android:bundle:release`, `corepack pnpm smoke:android:release-aab` 통과. release AAB size `3004070` bytes, `expectedVersionName=0.4.18`, `expectedVersionCode=418`, `jarsigner-verify` 확인 |
+| runtime v2 foreground smoke | `corepack pnpm smoke:android:runtime-v2` 통과. host-accessible temp runtime v2 target에서 runtime v2 tab `runtimeVersion=2`, initial/foreground-1/foreground-2 marker output, blocking console/logcat 0 |
+| LAN launcher recovery full matrix | `PORT=8132 HOST=0.0.0.0 corepack pnpm dev:lan`으로 Windows LAN dev server를 띄우고 `CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-lan-ip>:8132 corepack pnpm smoke:android:recovery` 통과. network, HTTP 404, SSL failure 모두 launcher 복귀 후 target 재연결, blocking console/logcat 0 |
 
 ## 2026-05-15 Android 0.4.17 Version Bump Result
 
@@ -323,7 +336,7 @@ CODEXMUX_ANDROID_SMOKE_URL=http://<windows-host-ip>:8121 CODEXMUX_ANDROID_RESTAR
 
 정상 설치 시 `pm path`는 `/data/app/.../base.apk`를 반환하고, launcher activity는 `com.hardcoremonk.codexwinmux/.MainActivity`로 resolve됩니다.
 
-현재 `0.4.17` debug install은 `dumpsys package`에서 `versionName=0.4.17`, `versionCode=417`로 보여야 합니다.
+현재 `0.4.18` debug install은 `dumpsys package`에서 `versionName=0.4.18`, `versionCode=418`로 보여야 합니다.
 
 Signed release APK:
 
@@ -354,4 +367,4 @@ corepack pnpm smoke:android:release-aab
 - AAB에 `BundleConfig.pb`, base manifest, dex, launcher asset, native bridge, JAR manifest가 포함됨.
 - `jarsigner -verify`가 release AAB signature를 검증함.
 
-2026-05-15 Windows 로컬 release signing/AAB smoke 기준 `corepack pnpm android:build:release`, `corepack pnpm android:bundle:release`는 `BUILD SUCCESSFUL`, `corepack pnpm smoke:android:release-aab`는 `expectedVersionName=0.4.17`, `expectedVersionCode=417`, AAB size `3004070` bytes로 통과했습니다. APK `apksigner verify --print-certs` 기준 signer DN은 `CN=codexwinmux, OU=codexwinmux, O=HardcoreMonk, L=Seoul, ST=Seoul, C=KR`입니다.
+2026-05-17 Windows 로컬 release signing/AAB smoke 기준 `corepack pnpm android:bundle:release`는 `BUILD SUCCESSFUL`, `corepack pnpm smoke:android:release-aab`는 `expectedVersionName=0.4.18`, `expectedVersionCode=418`, AAB size `3004070` bytes와 `jarsigner-verify`로 통과했습니다. 2026-05-15 APK `apksigner verify --print-certs` 기준 signer DN은 `CN=codexwinmux, OU=codexwinmux, O=HardcoreMonk, L=Seoul, ST=Seoul, C=KR`입니다.

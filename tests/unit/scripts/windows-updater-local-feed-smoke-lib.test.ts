@@ -134,4 +134,16 @@ describe('Windows updater local feed smoke helpers', () => {
       'updater-quit-and-install-started-missing',
     ]);
   });
+
+  it('builds a Windows smoke-root process cleanup script', async () => {
+    const { buildWindowsSmokeRootProcessCleanupScript } = await loadLib();
+
+    const script = buildWindowsSmokeRootProcessCleanupScript();
+
+    expect(script).toContain('CODEXWINMUX_WINDOWS_UPDATER_LOCAL_FEED_SMOKE_ROOT');
+    expect(script).toContain('Win32_Process');
+    expect(script).toContain('[Regex]::Escape');
+    expect(script).toContain('Stop-Process');
+    expect(script).toContain('$PID');
+  });
 });

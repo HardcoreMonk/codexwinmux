@@ -21,6 +21,7 @@ import {
 import {
   buildWindowsUpdaterLocalFeedArtifactPayload,
   buildWindowsUpdaterLocalFeedLatestMetadata,
+  buildWindowsSmokeRootProcessCleanupScript,
   buildWindowsUpdaterSmokeEnv,
   bumpPatchVersion,
   parseWindowsUpdaterStatusEvents,
@@ -129,6 +130,21 @@ const stopProcessTree = async (child) => {
       if (child.exitCode === null) child.kill('SIGKILL');
     }),
   ]);
+};
+
+const stopSmokeRootProcesses = async (smokeRoot) => {
+  if (process.platform !== 'win32' || !smokeRoot) return null;
+  return runCommand(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', buildWindowsSmokeRootProcessCleanupScript()],
+    {
+      env: {
+        ...process.env,
+        CODEXWINMUX_WINDOWS_UPDATER_LOCAL_FEED_SMOKE_ROOT: smokeRoot,
+      },
+      timeoutMs: 30_000,
+    },
+  );
 };
 
 const assertExists = async (filePath, checkName, checks) => {
@@ -489,13 +505,19 @@ const main = async () => {
     };
   } finally {
     if (localFeedServer) await localFeedServer.close().catch(() => null);
+    await stopSmokeRootProcesses(smokeRoot).catch(() => null);
     try {
       await fs.access(paths.uninstaller);
       uninstallResult = await runCommand(paths.uninstaller, ['/S'], { timeoutMs: 90_000 });
     } catch {
       // Nothing to uninstall.
     }
-    await fs.rm(smokeRoot, { recursive: true, force: true }).catch(() => null);
+    await fs.rm(smokeRoot, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 1_000,
+    }).catch(() => null);
   }
 
   if (failurePayload) {

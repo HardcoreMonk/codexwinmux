@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
@@ -53,6 +53,40 @@ describe('Android WebView smoke helpers', () => {
     expect(source).toContain("localStorage.setItem('codexwinmux:recent-server-urls'");
     expect(source).toContain("localStorage.removeItem('codexmux:server-url'");
     expect(source).toContain("localStorage.removeItem('codexmux:recent-server-urls'");
+  });
+
+  it('navigates directly after rewriting launcher storage so stale saved-server buttons are not clicked', async () => {
+    const { reconnectLauncherToServer } = await loadLib();
+    const source = reconnectLauncherToServer.toString();
+
+    expect(source).toContain('window.location.href = normalized');
+    expect(source).not.toContain('button.click');
+  });
+
+  it('settles a launcher page on the target by using launcher reconnect instead of CDP navigate', async () => {
+    const { settleAndroidWebViewOnTarget } = await loadLib();
+    const cdp = {};
+    const reconnect = vi.fn(async () => undefined);
+    const navigate = vi.fn(async () => undefined);
+    const targetUrl = 'http://192.0.2.10:8132';
+    const waitForRemote = vi.fn(async () => ({ href: `${targetUrl}/login`, readyState: 'complete' }));
+
+    const state = await settleAndroidWebViewOnTarget({
+      cdp,
+      targetUrl,
+      readState: async () => ({
+        href: 'https://localhost/?connection=failed&reason=network',
+        hasLauncher: true,
+        readyState: 'complete',
+      }),
+      reconnect,
+      navigate,
+      waitForRemote,
+    });
+
+    expect(state.href).toBe(`${targetUrl}/login`);
+    expect(reconnect).toHaveBeenCalledWith(cdp, targetUrl);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('collects Android bridge and reconnect console failures', async () => {

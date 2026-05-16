@@ -54,6 +54,7 @@ const main = (): void => {
     'apply-acl',
     'configure-service-logon',
     'rotate-password',
+    'stop-services',
     'restart-services',
     'health',
     'verify-reboot-readiness',
@@ -73,6 +74,7 @@ const main = (): void => {
   const serviceHelperPath = path.join(process.cwd(), 'scripts', 'windows-service.ps1');
   const serviceHelper = readFileSync(serviceHelperPath, 'utf8');
   for (const parameter of [
+    'ServiceAccountName',
     'ServiceUserProfilePath',
     'ServiceLocalAppDataPath',
     'ServiceAppDataPath',
@@ -80,6 +82,8 @@ const main = (): void => {
   ]) {
     assertIncludes(serviceHelper, parameter, serviceHelperPath);
   }
+  assertIncludes(serviceHelper, 'Test-DedicatedServiceAccountConfigured', serviceHelperPath);
+  assertIncludes(serviceHelper, 'codexwinmux\\service-profile', serviceHelperPath);
   checks.push('service-account-profile-env-service-config');
 
   const packageJson = JSON.parse(readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')) as {
@@ -92,6 +96,7 @@ const main = (): void => {
     'windows:service-account:apply-acl',
     'windows:service-account:configure-service-logon',
     'windows:service-account:rotate-password',
+    'windows:service-account:stop-services',
     'windows:service-account:restart-services',
     'windows:service-account:health',
     'windows:service-account:verify',

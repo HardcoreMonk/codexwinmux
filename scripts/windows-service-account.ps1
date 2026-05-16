@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Position = 0)]
-  [ValidateSet('plan', 'prepare-profile', 'migrate-data', 'apply-acl', 'configure-service-logon', 'rotate-password', 'restart-services', 'health', 'verify', 'verify-reboot-readiness')]
+  [ValidateSet('plan', 'prepare-profile', 'migrate-data', 'apply-acl', 'configure-service-logon', 'rotate-password', 'stop-services', 'restart-services', 'health', 'verify', 'verify-reboot-readiness')]
   [string]$Action = 'plan',
 
   [string]$AccountName = 'codexwinmux-svc',
@@ -330,6 +330,11 @@ switch ($Action) {
     Ensure-LocalServiceAccount $secret
     Grant-ServiceLogonRight
     Set-ServiceLogon $secret
+    Get-ServiceAccountStatus | ConvertTo-Json -Depth 8
+  }
+  'stop-services' {
+    Assert-Administrator
+    Invoke-ServiceProfileCommand 'stop'
     Get-ServiceAccountStatus | ConvertTo-Json -Depth 8
   }
   'restart-services' {

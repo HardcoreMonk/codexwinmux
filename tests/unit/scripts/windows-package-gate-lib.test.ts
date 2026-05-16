@@ -21,14 +21,17 @@ describe('Windows package gate helpers', () => {
       {
         id: 'windows-updater-local-feed',
         script: 'smoke:windows:updater-local-feed',
+        isolateInstalledServices: true,
       },
       {
         id: 'windows-packaged-launch',
         script: 'smoke:windows:packaged-launch',
+        isolateInstalledServices: true,
       },
       {
         id: 'windows-engine-lifecycle',
         script: 'smoke:windows:engine-lifecycle',
+        isolateInstalledServices: true,
       },
       {
         id: 'windows-core-engine-ipc',
@@ -45,10 +48,12 @@ describe('Windows package gate helpers', () => {
       {
         id: 'windows-packaged-runtime-v2',
         script: 'smoke:windows:packaged-runtime-v2',
+        isolateInstalledServices: true,
       },
       {
         id: 'windows-installer-runtime-v2',
         script: 'smoke:windows:installer-runtime-v2',
+        isolateInstalledServices: true,
       },
     ]);
   });
@@ -105,6 +110,40 @@ describe('Windows package gate helpers', () => {
       failedStepId: 'installer',
     });
     expect(result.results).toHaveLength(2);
+  });
+
+  it('stops dedicated split services around isolated local-engine package steps and restores them after failure', async () => {
+    const { runWindowsPackageGate } = await loadLib();
+    const calls: string[] = [];
+
+    const result = await runWindowsPackageGate({
+      steps: [
+        { id: 'metadata', script: 'smoke:metadata' },
+        { id: 'runtime', script: 'smoke:runtime', isolateInstalledServices: true },
+        { id: 'after', script: 'smoke:after', isolateInstalledServices: true },
+      ],
+      runStep: async (step: { id: string }) => {
+        calls.push(step.id);
+        return {
+          ok: step.id !== 'runtime',
+          durationMs: 10,
+          exitCode: step.id === 'runtime' ? 1 : 0,
+          signal: null,
+        };
+      },
+    });
+
+    expect(calls).toEqual([
+      'metadata',
+      'windows-service-account-stop-services',
+      'runtime',
+      'windows-service-account-restart-services',
+    ]);
+    expect(result).toMatchObject({
+      ok: false,
+      failedStepId: 'runtime',
+    });
+    expect(result.results.map((entry: { id: string }) => entry.id)).toEqual(calls);
   });
 
   it('builds package gate artifact payload without child raw output fields', async () => {

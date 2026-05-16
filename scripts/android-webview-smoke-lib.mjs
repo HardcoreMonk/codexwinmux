@@ -422,18 +422,33 @@ export const navigateCdp = async (cdp, url) => {
 export const reconnectLauncherToServer = async (cdp, targetUrl) => {
   const normalized = normalizeSmokeUrl(targetUrl);
   await evaluate(cdp, `(() => {
+    const normalized = ${JSON.stringify(normalized)};
     localStorage.removeItem('codexmux:server-url');
     localStorage.removeItem('codexmux:recent-server-urls');
-    localStorage.setItem('codexwinmux:server-url', ${JSON.stringify(normalized)});
-    localStorage.setItem('codexwinmux:recent-server-urls', JSON.stringify([${JSON.stringify(normalized)}]));
-    const button = document.getElementById('connect-current');
-    if (button && !button.disabled) {
-      button.click();
-      return true;
-    }
-    window.location.href = ${JSON.stringify(normalized)};
-    return false;
+    localStorage.setItem('codexwinmux:server-url', normalized);
+    localStorage.setItem('codexwinmux:recent-server-urls', JSON.stringify([normalized]));
+    window.location.href = normalized;
+    return true;
   })()`);
+};
+
+export const settleAndroidWebViewOnTarget = async ({
+  cdp,
+  targetUrl,
+  readState = readWebViewState,
+  reconnect = reconnectLauncherToServer,
+  navigate = navigateCdp,
+  waitForRemote = waitForExpectedRemoteState,
+  timeoutMs = 35_000,
+}) => {
+  const state = await readState(cdp);
+  if (isExpectedRemoteState(state, targetUrl)) return state;
+  if (isLauncherState(state)) {
+    await reconnect(cdp, targetUrl);
+  } else {
+    await navigate(cdp, targetUrl);
+  }
+  return await waitForRemote(cdp, targetUrl, timeoutMs);
 };
 
 export const startAndroidApp = ({ adb, adbArgs, activity = DEFAULT_ANDROID_ACTIVITY }) =>

@@ -3,10 +3,12 @@ import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildAndroidGradleInvocation } from './android-gradle-lib.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.dirname(__dirname);
 const androidDir = path.join(rootDir, 'android');
+const androidToolEnv = buildAndroidGradleInvocation({ rootDir }).env;
 const packageJsonPath = path.join(rootDir, 'package.json');
 const propertiesPath = path.join(androidDir, 'keystore.properties');
 const defaultAabPath = path.join(androidDir, 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
@@ -22,6 +24,7 @@ const run = (cmd, args, options = {}) => {
   const result = spawnSync(cmd, args, {
     cwd: rootDir,
     encoding: 'utf8',
+    env: androidToolEnv,
     ...options,
   });
   return {

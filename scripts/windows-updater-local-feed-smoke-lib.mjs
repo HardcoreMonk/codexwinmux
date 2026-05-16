@@ -137,6 +137,33 @@ export const summarizeWindowsUpdaterStatusEvents = (events) => {
   };
 };
 
+export const buildWindowsSmokeRootProcessCleanupScript = () => String.raw`
+$ErrorActionPreference = 'SilentlyContinue'
+$smokeRoot = $env:CODEXWINMUX_WINDOWS_UPDATER_LOCAL_FEED_SMOKE_ROOT
+if ([string]::IsNullOrWhiteSpace($smokeRoot)) {
+  exit 0
+}
+
+try {
+  $resolvedSmokeRoot = [System.IO.Path]::GetFullPath($smokeRoot)
+} catch {
+  $resolvedSmokeRoot = $smokeRoot
+}
+
+$escapedSmokeRoot = [Regex]::Escape($resolvedSmokeRoot)
+$currentPid = $PID
+
+Get-CimInstance Win32_Process |
+  Where-Object {
+    $_.ProcessId -ne $currentPid -and
+    $_.CommandLine -and
+    $_.CommandLine -match $escapedSmokeRoot
+  } |
+  ForEach-Object {
+    Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+  }
+`;
+
 const summarizeCommandResult = (result) => {
   if (!result) return null;
   return {

@@ -20,6 +20,7 @@ param(
   [int]$Port = 8121,
   [string]$CoreEngineHost = '127.0.0.1',
   [int]$CoreEnginePort = 8122,
+  [string]$ServiceAccountName = 'codexwinmux-svc',
   [string]$ServiceUserProfilePath,
   [string]$ServiceLocalAppDataPath,
   [string]$ServiceAppDataPath,
@@ -56,6 +57,35 @@ $AppAsarUnpackedPath = Join-Path $WorkingDirectory 'resources\app.asar.unpacked'
 $PackagedNodePath = "$(Join-Path $AppAsarUnpackedPath '.next\standalone\node_modules');$(Join-Path $AppAsarPath '.next\standalone\node_modules')"
 $BackendServerScriptPath = Join-Path $AppAsarPath 'dist\server.js'
 $CoreHostScriptPath = Join-Path $AppAsarUnpackedPath 'dist\workers\core-engine-host.js'
+
+function Test-DedicatedServiceAccountConfigured {
+  $targetNames = if ($Mode -eq 'split') {
+    if ($Role -eq 'all') {
+      @('codexwinmux-core', 'codexwinmux-backend')
+    } elseif ($Role -eq 'core') {
+      @('codexwinmux-core')
+    } else {
+      @('codexwinmux-backend')
+    }
+  } else {
+    @($ServiceName)
+  }
+
+  foreach ($targetName in $targetNames) {
+    $service = Get-CimInstance Win32_Service -Filter "Name='$targetName'" -ErrorAction SilentlyContinue
+    if ($service -and $service.StartName -eq ".\$ServiceAccountName") {
+      return $true
+    }
+  }
+
+  return $false
+}
+
+if (-not $ServiceUserProfilePath -and (Test-DedicatedServiceAccountConfigured)) {
+  $programData = if ($env:ProgramData) { $env:ProgramData } else { 'C:\ProgramData' }
+  $ServiceUserProfilePath = Join-Path $programData 'codexwinmux\service-profile'
+}
+
 $UserProfilePath = if ($ServiceUserProfilePath) { $ServiceUserProfilePath } else { $DefaultUserProfilePath }
 $LocalAppDataPath = if ($ServiceLocalAppDataPath) {
   $ServiceLocalAppDataPath

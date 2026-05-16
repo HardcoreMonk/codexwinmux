@@ -53,7 +53,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:update-metadata`: `release/latest.yml`이 실제 NSIS installer, installer size, sha512, blockmap artifact와 일치하고, packaged `app-update.yml`이 GitHub publish provider와 같은 owner/repo를 가리키는지 확인합니다.
 - `smoke:windows:signing-evidence`: NSIS installer와 `win-unpacked` 실행 파일의 Authenticode 서명, timestamp, SmartScreen 수동 증거를 확인합니다. preferred env는 `CODEXWINMUX_SMARTSCREEN_EVIDENCE_PATH`와 `CODEXWINMUX_SMARTSCREEN_STATUS`이며, 내부 전용 배포는 `internal-not-required` 또는 `internal-trusted-root` 상태를 signed/timestamped artifact와 함께 기록할 수 있습니다. 비-runtime 기존 `CODEXMUX_*` env는 호환 fallback입니다. Runtime 입력은 `0.4.15`부터 `CODEXWINMUX_RUNTIME_*`만 사용합니다.
 - `smoke:windows:smartscreen-public-evidence`: GitHub Release 같은 HTTPS public download URL에서 Chromium download로 installer를 내려받고, Internet ZoneId=3과 `Start-Process` launch/exit 증거를 확인해 public SmartScreen `passed` evidence JSON을 생성합니다. 이 smoke는 외부 공개 배포 전용 gate이며, 내부 폐쇄망 전용 릴리스에서는 실행하지 않아도 됩니다. 실행 시 temp install/uninstall을 수행하므로 Windows 사용자 설치 상태를 임시로 변경합니다.
-- `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다.
+- `smoke:windows:updater-local-feed`: NSIS installer를 temp 경로에 설치하고 synthetic local `latest.yml` feed로 update download, `quitAndInstall`, 설치 후 launch smoke, silent uninstall을 확인합니다. Smoke 종료 시 temp root 아래 pending update installer process를 정리하고 retry delete로 설치 폴더를 제거합니다.
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
 - `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
@@ -64,7 +64,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:packaged-runtime-v2`: packaged app을 runtime v2 `new-tabs` mode로 실행해 workspace/tab 생성, `/api/v2/terminal` WebSocket attach, Windows marker command output을 확인합니다.
 - `smoke:windows:installer-install`: `release/codexwinmux-Setup-<version>.exe`를 임시 경로에 silent install하고, 설치된 app을 `smoke:windows:packaged-launch`로 확인한 뒤 silent uninstall합니다.
 - `smoke:windows:installer-runtime-v2`: silent install한 앱에 `smoke:windows:packaged-runtime-v2`와 같은 runtime v2 terminal 검증을 적용한 뒤 silent uninstall합니다.
-- `smoke:windows:package-gate`: 이미 생성된 Windows `release/` 산출물에 대해 zip artifact, update metadata, updater local feed, packaged launch, engine lifecycle, standalone Core IPC, Backend external Core attach, split lifecycle dry-run, packaged runtime v2, installer runtime v2 smoke를 순차 실행합니다.
+- `smoke:windows:package-gate`: 이미 생성된 Windows `release/` 산출물에 대해 zip artifact, update metadata, updater local feed, packaged launch, engine lifecycle, standalone Core IPC, Backend external Core attach, split lifecycle dry-run, packaged runtime v2, installer runtime v2 smoke를 순차 실행합니다. 설치된 split service가 실행 중이면 local-engine package smoke 구간 전후로 `windows:service-account:stop-services`와 `restart-services`를 실행해 포트/프로필 충돌을 격리합니다.
 - `pack:electron:dev`: 로컬 Windows unpacked package 검증용입니다. Installer를 만들지 않습니다.
 - `pack:electron`: Windows 릴리스 패키징입니다.
 - `pack:electron:mac:dev`, `pack:electron:mac`: 기존 macOS 패키징 검증용 명령입니다. Windows-only 전환 중 legacy/manual path로만 유지합니다.
@@ -267,6 +267,8 @@ temp local feed에서 patch version만 올린 뒤, 기존 NSIS installer를 loca
 post-install launch, uninstall까지 Electron updater event를 확인합니다. smoke 전용
 updater env hook은 path-light JSONL status를 쓰고 differential download를 꺼서
 synthetic feed가 현재 installer artifact를 재사용할 수 있게 합니다.
+Windows에서 update installer가 temp smoke root 아래 pending process로 남을 수 있으므로,
+cleanup은 해당 root를 command line에 포함한 process만 종료한 뒤 retry delete를 수행합니다.
 
 `smoke:windows:updater-published-channel`은 앱을 설치하거나 업데이트하지 않습니다.
 설정된 GitHub Releases channel을 read-only로 조회하고, 최신 published release가

@@ -21,6 +21,7 @@ import {
   removeForward,
   resolveAndroidSmokeUrl,
   selectAndroidSerial,
+  settleAndroidWebViewOnTarget,
   sleep,
   startAndroidApp,
   waitFor,
@@ -95,11 +96,11 @@ const main = async () => {
     }, 35_000);
 
   const settleOnTarget = async () => {
-    const state = await readWebViewState(cdp);
-    if (!isExpectedRemoteState(state, targetUrl)) {
-      await navigateWithReconnect(targetUrl);
-    }
-    return await waitForExpectedRemoteState(cdp, targetUrl, 35_000);
+    await settleAndroidWebViewOnTarget({
+      cdp,
+      targetUrl,
+      navigate: navigateWithReconnect,
+    });
   };
 
   try {
