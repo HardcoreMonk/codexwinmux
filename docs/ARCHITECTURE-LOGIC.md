@@ -46,11 +46,13 @@ Core/Backend 논리 분리는 완료됐다. P2부터 `codexwinmux.exe --codexwin
 `src/workers/core-engine-host.ts`가 Core process host foundation을 제공한다. 이 host는
 BrowserWindow와 UI single-instance lock 없이 runtime Supervisor/workers를 시작하고 Core
 command/event protocol에 응답한다. P3-P6부터 Backend API/WebSocket은
-`core-engine/runtime-api` client adapter를 통과하며, default-off
-`CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`에서는 Backend가 독립 Core process에 loopback TCP로
-attach한다. 다만 기본 Windows service와 UI local mode는 아직
-`codexwinmux.exe --codexwinmux-engine` combined engine process를 사용한다. 엄격한 운영 기본값
-물리 분리는 split service를 default-on으로 승격하고 packaged gate가 통과할 때 완료로 본다.
+`core-engine/runtime-api` client adapter를 통과하며, 기본 Core transport는 loopback TCP다.
+UI-owned local engine은 `--codexwinmux-core` Core process와 `--codexwinmux-engine` Backend
+process를 paired launch로 함께 관리한다. Windows service runbook 기본값도
+`codexwinmux-core`/`codexwinmux-backend` split service다. combined service는 기존 설치 cleanup
+용도에만 남고, Backend가 runtime Supervisor를 직접 생성하던 in-process Core fallback은 제거됐다.
+엄격한 운영 기본값 물리 분리는 `0.4.18` package gate와 실제 split service
+install/start/health evidence 기준으로 통과했다.
 
 ## 모듈 경계
 
@@ -353,14 +355,19 @@ Android WebView DevTools 기반 smoke는 `smoke:android:foreground`, `smoke:andr
 ## 운영 서비스 로직
 
 현재 Windows 제품 운영은 Electron Shell Host와 Windows Service owner를 기준으로 한다.
-`codexwinmux.exe --codexwinmux-engine`은 Backend/Core combined engine process로 실행되며,
-WinSW wrapper와 `scripts/windows-service.ps1` helper가 service install/start/status/health
-runbook을 제공한다. P2의 `--codexwinmux-core` host는 source/build에 포함됐지만, split
-service mode는 아직 default off 후속 범위다.
+UI-owned local engine은 `codexwinmux.exe --codexwinmux-core` Core process와
+`codexwinmux.exe --codexwinmux-engine` Backend process를 paired launch로 실행한다.
+WinSW wrapper와 `scripts/windows-service.ps1` helper의 기본 service topology도
+`codexwinmux-core`/`codexwinmux-backend` split mode다. 기존 combined
+`codexwinmux` service는 stop/uninstall migration cleanup에만 사용한다.
 
 ```text
-codexwinmux-service.exe
-  -> codexwinmux.exe --codexwinmux-engine
+codexwinmux-core-service.exe
+  -> codexwinmux.exe (ELECTRON_RUN_AS_NODE=1)
+  -> dist/workers/core-engine-host.js
+
+codexwinmux-backend-service.exe
+  -> codexwinmux.exe (ELECTRON_RUN_AS_NODE=1)
   -> dist/server.js
   -> runtime workers
 ```

@@ -378,12 +378,12 @@ export const attachConsoleCollectors = (cdp, events) => {
   });
 };
 
-export const evaluate = async (cdp, expression) => {
+export const evaluate = async (cdp, expression, timeoutMs) => {
   const result = await cdp.send('Runtime.evaluate', {
     expression,
     awaitPromise: true,
     returnByValue: true,
-  });
+  }, timeoutMs);
   if (result?.exceptionDetails) {
     throw new Error(result.exceptionDetails.text || result.exceptionDetails.exception?.description || 'Runtime.evaluate failed');
   }

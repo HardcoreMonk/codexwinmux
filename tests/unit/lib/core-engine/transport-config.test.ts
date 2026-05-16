@@ -5,16 +5,16 @@ import {
 } from '@/lib/core-engine/transport-config';
 
 describe('core engine transport config', () => {
-  it('keeps backend in-process by default', () => {
+  it('defaults backend transport to TCP for split Core ownership', () => {
     expect(resolveCoreEngineBackendTransportConfig({ env: {} })).toMatchObject({
-      mode: 'in-process',
+      mode: 'tcp',
       host: '127.0.0.1',
       port: 8122,
       requestTimeoutMs: 10_000,
     });
   });
 
-  it('enables backend TCP transport only when explicitly requested', () => {
+  it('keeps backend TCP transport when explicitly requested', () => {
     expect(resolveCoreEngineBackendTransportConfig({
       env: {
         CODEXWINMUX_CORE_ENGINE_TRANSPORT: 'tcp',
@@ -27,6 +27,23 @@ describe('core engine transport config', () => {
       host: '127.0.0.2',
       port: 9191,
       requestTimeoutMs: 1500,
+    });
+  });
+
+  it('treats invalid backend transport requests as TCP instead of falling back in-process', () => {
+    expect(resolveCoreEngineBackendTransportConfig({
+      env: {
+        CODEXWINMUX_CORE_ENGINE_TRANSPORT: 'in-process',
+      },
+    })).toMatchObject({
+      mode: 'tcp',
+    });
+    expect(resolveCoreEngineBackendTransportConfig({
+      env: {
+        CODEXWINMUX_CORE_ENGINE_TRANSPORT: 'garbage',
+      },
+    })).toMatchObject({
+      mode: 'tcp',
     });
   });
 

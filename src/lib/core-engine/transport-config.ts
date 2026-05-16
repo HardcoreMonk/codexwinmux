@@ -1,4 +1,4 @@
-export type TCoreEngineBackendTransportMode = 'in-process' | 'tcp';
+export type TCoreEngineBackendTransportMode = 'tcp';
 export type TCoreEngineHostTransportMode = 'process-ipc' | 'tcp';
 
 export interface ICoreEngineTcpTransportConfig {
@@ -50,12 +50,9 @@ export const resolveCoreEngineBackendTransportConfig = ({
 }: {
   env?: TCoreEngineTransportEnv;
 } = {}): ICoreEngineBackendTransportConfig => {
-  const mode = normalizeTransportMode(readEnv(env, 'CODEXWINMUX_CORE_ENGINE_TRANSPORT')) === 'tcp'
-    ? 'tcp'
-    : 'in-process';
   return {
     ...resolveCoreEngineTcpConfig(env),
-    mode,
+    mode: 'tcp',
     requestTimeoutMs: parsePositiveInt(
       readEnv(env, 'CODEXWINMUX_CORE_ENGINE_REQUEST_TIMEOUT_MS'),
       defaultRequestTimeoutMs,

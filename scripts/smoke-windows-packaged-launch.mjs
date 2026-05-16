@@ -206,7 +206,7 @@ const verifyRuntimeV2Terminal = async ({ cdp, baseUrl, cookie, checks }) => {
       cols: 100,
       rows: 30,
       timeoutMs: 30_000,
-    }));
+    }), 35_000);
     if (!terminalResult?.output?.includes(marker) || !String(terminalResult.url).includes('/api/v2/terminal')) {
       throw new Error(`Windows packaged runtime v2 marker missing: ${JSON.stringify(terminalResult)}`);
     }

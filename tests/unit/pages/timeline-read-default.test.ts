@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
     readEntriesBefore: vi.fn(),
   },
   getProviderByPanelType: vi.fn(),
-  supervisor: {
+  coreRuntimeApi: {
     readTimelineEntriesBefore: vi.fn(),
     getTimelineMessageCounts: vi.fn(),
   },
@@ -21,8 +21,8 @@ vi.mock('@/lib/providers', () => ({
   getProviderByPanelType: mocks.getProviderByPanelType,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: vi.fn(() => mocks.supervisor),
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: vi.fn(() => mocks.coreRuntimeApi),
 }));
 
 import entriesHandler from '@/pages/api/timeline/entries';
@@ -101,16 +101,16 @@ describe('timeline legacy read routes in runtime v2 default mode', () => {
     mocks.isAllowedJsonlPath.mockReset();
     mocks.provider.readEntriesBefore.mockReset();
     mocks.getProviderByPanelType.mockReset();
-    mocks.supervisor.readTimelineEntriesBefore.mockReset();
-    mocks.supervisor.getTimelineMessageCounts.mockReset();
+    mocks.coreRuntimeApi.readTimelineEntriesBefore.mockReset();
+    mocks.coreRuntimeApi.getTimelineMessageCounts.mockReset();
     mocks.isAllowedJsonlPath.mockReturnValue(true);
     mocks.getProviderByPanelType.mockReturnValue(mocks.provider);
-    mocks.supervisor.readTimelineEntriesBefore.mockResolvedValue({
+    mocks.coreRuntimeApi.readTimelineEntriesBefore.mockResolvedValue({
       entries: [],
       startByteOffset: 0,
       hasMore: false,
     });
-    mocks.supervisor.getTimelineMessageCounts.mockResolvedValue({
+    mocks.coreRuntimeApi.getTimelineMessageCounts.mockResolvedValue({
       userCount: 1,
       assistantCount: 2,
       toolCount: 3,
@@ -138,7 +138,7 @@ describe('timeline legacy read routes in runtime v2 default mode', () => {
 
     expect(response.statusCode).toBe(200);
     expect(mocks.provider.readEntriesBefore).not.toHaveBeenCalled();
-    expect(mocks.supervisor.readTimelineEntriesBefore).toHaveBeenCalledWith({
+    expect(mocks.coreRuntimeApi.readTimelineEntriesBefore).toHaveBeenCalledWith({
       jsonlPath: '/tmp/session.jsonl',
       beforeByte: 100,
       limit: 200,
@@ -159,6 +159,6 @@ describe('timeline legacy read routes in runtime v2 default mode', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toMatchObject({ userCount: 1, assistantCount: 2, toolCount: 3 });
-    expect(mocks.supervisor.getTimelineMessageCounts).toHaveBeenCalledWith('/tmp/session.jsonl');
+    expect(mocks.coreRuntimeApi.getTimelineMessageCounts).toHaveBeenCalledWith('/tmp/session.jsonl');
   });
 });

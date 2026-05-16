@@ -30,7 +30,10 @@ export const createCoreProcessHost = ({
   transport: ICoreProcessHostTransport;
   onError?: (err: unknown) => void;
 }): ICoreProcessHost => {
-  const server = createCoreEngineServer({ supervisor });
+  const server = createCoreEngineServer({
+    supervisor,
+    emit: (event) => transport.send(event),
+  });
   let unsubscribe: (() => void) | null = null;
   let startPromise: Promise<void> | null = null;
   let shuttingDown = false;

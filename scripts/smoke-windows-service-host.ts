@@ -101,8 +101,8 @@ const main = async (): Promise<void> => {
   if (!splitPlan.splitServices) {
     throw new Error(`Windows split service plan was not created: ${JSON.stringify(splitPlan)}`);
   }
-  if (splitPlan.splitServices.defaultEnabled !== false) {
-    throw new Error(`Windows split service mode must be default-off: ${JSON.stringify(splitPlan.splitServices)}`);
+  if (splitPlan.splitServices.defaultEnabled !== true) {
+    throw new Error(`Windows split service mode must be default-on: ${JSON.stringify(splitPlan.splitServices)}`);
   }
   if (splitPlan.splitServices.backend.name !== 'codexwinmux-backend') {
     throw new Error(`unexpected backend service name: ${JSON.stringify(splitPlan.splitServices.backend)}`);
@@ -117,7 +117,7 @@ const main = async (): Promise<void> => {
     throw new Error(`core split service must launch packaged core worker host: ${JSON.stringify(splitPlan.splitServices.core)}`);
   }
   checks.push('windows-service-split-plan');
-  checks.push('windows-service-split-default-off');
+  checks.push('windows-service-split-default-on');
   checks.push('windows-service-split-core-worker-host');
 
   const helperPath = path.join(process.cwd(), servicePlan.operationDecision.runbook.helperScript);

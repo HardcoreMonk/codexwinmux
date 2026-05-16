@@ -33,7 +33,7 @@ describe('Windows service host baseline', () => {
         installer: {
           mode: 'runbook-first',
           nsisServiceOption: 'deferred',
-          defaultEnabled: false,
+          defaultEnabled: true,
         },
         runbook: {
           helperScript: 'scripts/windows-service.ps1',
@@ -43,6 +43,17 @@ describe('Windows service host baseline', () => {
       service: {
         name: 'codexwinmux',
         displayName: 'codexwinmux',
+      },
+      splitServices: {
+        defaultEnabled: true,
+        backend: {
+          name: 'codexwinmux-backend',
+          role: 'backend',
+        },
+        core: {
+          name: 'codexwinmux-core',
+          role: 'core',
+        },
       },
       process: {
         command: 'corepack',
@@ -106,12 +117,12 @@ describe('Windows service host baseline', () => {
     expect(plan.service.commands.stop.args).toEqual(['stop']);
     expect(plan.operationDecision.serviceAccount.current).toBe('LocalSystem');
     expect(plan.operationDecision.installer.mode).toBe('runbook-first');
+    expect(plan.operationDecision.installer.defaultEnabled).toBe(true);
   });
 
-  it('plans split backend/core services only when split mode is requested', () => {
+  it('plans split backend/core services by default', () => {
     const plan = resolveWindowsServiceHostPlan({
       platform: 'win32',
-      mode: 'split',
       env: {
         ...env,
         CODEXWINMUX_WINDOWS_HOST_OWNER: 'service',
@@ -126,7 +137,7 @@ describe('Windows service host baseline', () => {
       'D:\\apps\\codexwinmux\\resources\\app.asar\\dist\\server.js',
     ]);
     expect(plan.splitServices).toMatchObject({
-      defaultEnabled: false,
+      defaultEnabled: true,
       backend: {
         name: 'codexwinmux-backend',
         role: 'backend',
@@ -151,11 +162,25 @@ describe('Windows service host baseline', () => {
       'write-config',
       'install',
       'start',
+      'restart',
       'status',
       'health',
       'stop',
       'uninstall',
     ]);
+  });
+
+  it('keeps combined service metadata only for explicit migration cleanup', () => {
+    const plan = resolveWindowsServiceHostPlan({
+      platform: 'win32',
+      mode: 'combined',
+      env,
+      appDir: 'D:\\apps\\codexmux',
+    });
+
+    expect(plan.mode).toBe('combined');
+    expect(plan.splitServices).toBeNull();
+    expect(plan.service.name).toBe('codexwinmux');
   });
 
   it('prefers canonical Windows host owner env over legacy env', () => {

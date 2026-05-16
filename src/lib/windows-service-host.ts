@@ -68,17 +68,17 @@ export interface IWindowsServiceHostPlan {
     installer: {
       mode: 'runbook-first';
       nsisServiceOption: 'deferred';
-      defaultEnabled: false;
+      defaultEnabled: true;
     };
     runbook: {
       helperScript: 'scripts/windows-service.ps1';
       actions: ['write-config', 'install', 'start', 'stop', 'restart', 'status', 'health', 'uninstall'];
-      splitActions: ['write-config', 'install', 'start', 'status', 'health', 'stop', 'uninstall'];
+      splitActions: ['write-config', 'install', 'start', 'restart', 'status', 'health', 'stop', 'uninstall'];
     };
   };
   service: IWindowsServiceDefinition;
   splitServices: {
-    defaultEnabled: false;
+    defaultEnabled: true;
     backend: IWindowsServiceDefinition;
     core: IWindowsServiceDefinition;
   } | null;
@@ -113,12 +113,12 @@ const operationDecision: IWindowsServiceHostPlan['operationDecision'] = {
   installer: {
     mode: 'runbook-first',
     nsisServiceOption: 'deferred',
-    defaultEnabled: false,
+    defaultEnabled: true,
   },
   runbook: {
     helperScript: 'scripts/windows-service.ps1',
     actions: ['write-config', 'install', 'start', 'stop', 'restart', 'status', 'health', 'uninstall'],
-    splitActions: ['write-config', 'install', 'start', 'status', 'health', 'stop', 'uninstall'],
+    splitActions: ['write-config', 'install', 'start', 'restart', 'status', 'health', 'stop', 'uninstall'],
   },
 };
 
@@ -255,7 +255,7 @@ export const resolveWindowsServiceHostPlan = ({
   platform = process.platform,
   env = process.env,
   appDir = process.cwd(),
-  mode = 'combined',
+  mode = 'split',
 }: IWindowsServiceHostPlanInput = {}): IWindowsServiceHostPlan => {
   const ownerResult = resolveWindowsServiceHostOwner(env);
   const owner = ownerResult.ok ? ownerResult.owner! : 'tray';
@@ -283,7 +283,7 @@ export const resolveWindowsServiceHostPlan = ({
   const coreName = readEnv(env, 'CODEXWINMUX_WINDOWS_CORE_SERVICE_NAME') || defaultCoreServiceName;
   const splitServices = mode === 'split'
     ? {
-        defaultEnabled: false as const,
+        defaultEnabled: true as const,
         backend: buildServiceDefinition({
           role: 'backend',
           name: backendName,

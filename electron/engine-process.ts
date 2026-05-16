@@ -50,3 +50,60 @@ export const buildCoreProcessArgs = ({
   appPath: string;
 }): string[] =>
   isPackaged ? [coreProcessFlag] : [appPath, coreProcessFlag];
+
+export interface ICoreBackendProcessLaunchPlanInput {
+  isPackaged: boolean;
+  appPath: string;
+  backendHost: string;
+  backendPort: number;
+  coreHost: string;
+  corePort: number;
+  reservedPorts: string;
+}
+
+export interface ICoreBackendProcessLaunchPlan {
+  core: {
+    args: string[];
+    env: Record<string, string>;
+  };
+  backend: {
+    args: string[];
+    env: Record<string, string>;
+  };
+}
+
+export const buildCoreBackendProcessLaunchPlan = ({
+  isPackaged,
+  appPath,
+  backendHost,
+  backendPort,
+  coreHost,
+  corePort,
+  reservedPorts,
+}: ICoreBackendProcessLaunchPlanInput): ICoreBackendProcessLaunchPlan => {
+  const coreTransportEnv = {
+    CODEXWINMUX_CORE_ENGINE_TRANSPORT: 'tcp',
+    CODEXWINMUX_CORE_ENGINE_HOST: coreHost,
+    CODEXWINMUX_CORE_ENGINE_PORT: String(corePort),
+  };
+  return {
+    core: {
+      args: buildCoreProcessArgs({ isPackaged, appPath }),
+      env: {
+        CODEXWINMUX_ELECTRON_CORE_PROCESS: '1',
+        ...coreTransportEnv,
+      },
+    },
+    backend: {
+      args: buildEngineProcessArgs({ isPackaged, appPath }),
+      env: {
+        CODEXWINMUX_ELECTRON_ENGINE_PROCESS: '1',
+        CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
+        ...coreTransportEnv,
+        CODEXMUX_RESERVED_PORTS: reservedPorts,
+        HOST: backendHost,
+        PORT: String(backendPort),
+      },
+    },
+  };
+};

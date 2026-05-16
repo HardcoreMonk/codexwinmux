@@ -75,6 +75,49 @@ describe('core process host', () => {
     ]));
   });
 
+  it('forwards terminal stdout events from the core server transport', async () => {
+    const transport = new MemoryTransport();
+    const host = createCoreProcessHost({
+      supervisor: {
+        ensureStarted: vi.fn(async () => undefined),
+        shutdown: vi.fn(),
+        health: vi.fn(async () => ({ ok: true })),
+        listWorkspaces: vi.fn(async () => []),
+        attachTerminal: vi.fn(async (input: { send: (data: string) => void }) => {
+          input.send('hello-from-core');
+          return { subscriberId: 'core-sub-1' };
+        }),
+      },
+      transport,
+    });
+
+    await host.start();
+    transport.emit(createCoreCommand({
+      id: 'cmd-attach',
+      type: 'core.terminal.attach',
+      payload: {
+        connectionId: 'backend-connection-1',
+        sessionName: 'rtv2-test',
+        cols: 100,
+        rows: 30,
+      },
+    }));
+
+    await vi.waitFor(() => expect(transport.sent).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'event',
+        source: 'core',
+        target: 'backend',
+        type: 'core.terminal.stdout',
+        payload: {
+          connectionId: 'backend-connection-1',
+          sessionName: 'rtv2-test',
+          data: 'hello-from-core',
+        },
+      }),
+    ])));
+  });
+
   it('detaches message listeners and shuts down runtime workers on host shutdown', async () => {
     const transport = new MemoryTransport();
     const supervisor = {

@@ -30,7 +30,7 @@ corepack pnpm smoke:windows:release-gate
 - `audit:windows-platform`
 - `smoke:runtime-v2:terminal-windows`
 - `smoke:windows:preflight`
-- `smoke:windows:service-host` — 기본 tray owner plan, Phase 2 Windows Service owner plan, default-off split service plan(`codexwinmux-backend`, `codexwinmux-core`)을 검증한다. WinSW wrapper의 service `install`/`uninstall`/`start`/`stop` 명령과 `scripts/windows-service.ps1` helper는 계획만 확인하고 실제 등록/시작/중지는 하지 않는다.
+- `smoke:windows:service-host` — 기본 tray owner plan, Windows Service owner plan, default-on split service plan(`codexwinmux-backend`, `codexwinmux-core`)을 검증한다. WinSW wrapper의 service `install`/`uninstall`/`start`/`stop`/`restart` 명령과 `scripts/windows-service.ps1` helper는 계획만 확인하고 실제 등록/시작/중지는 하지 않는다.
 - `smoke:windows:core-engine-ipc` — `dist/workers/core-engine-host.js`를 독립 child process로 실행하고 backend-to-core IPC로 `core.health` event/reply를 확인한다.
 - `smoke:windows:core-backend-external-transport` — 독립 Core host를 loopback TCP transport로 실행한 뒤 Backend `core-engine/runtime-api` adapter가 외부 Core에 attach해 `core.health`를 받는지 확인한다.
 - `smoke:windows:core-backend-split-lifecycle` — 기본값은 non-mutating dry-run으로 Core start -> Backend attach -> Backend restart -> Core restart -> Backend/Core stop 순서를 검증한다. 실제 서비스 stop/start evidence가 필요할 때만 `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_MUTATE=1`을 명시한다.

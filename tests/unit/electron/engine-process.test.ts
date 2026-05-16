@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCoreBackendProcessLaunchPlan,
   buildCoreProcessArgs,
   buildEngineProcessArgs,
   coreProcessFlag,
@@ -66,5 +67,40 @@ describe('Electron engine process launch contract', () => {
       isPackaged: false,
       appPath: 'D:\\projects\\codexwinmux',
     })).toEqual(['D:\\projects\\codexwinmux', coreProcessFlag]);
+  });
+
+  it('builds a paired Core and Backend launch plan for owned local engines', () => {
+    expect(buildCoreBackendProcessLaunchPlan({
+      isPackaged: true,
+      appPath: 'D:\\apps\\codexwinmux\\resources\\app.asar',
+      backendHost: '127.0.0.1',
+      backendPort: 8121,
+      coreHost: '127.0.0.1',
+      corePort: 8122,
+      reservedPorts: '9222',
+    })).toEqual({
+      core: {
+        args: [coreProcessFlag],
+        env: {
+          CODEXWINMUX_ELECTRON_CORE_PROCESS: '1',
+          CODEXWINMUX_CORE_ENGINE_TRANSPORT: 'tcp',
+          CODEXWINMUX_CORE_ENGINE_HOST: '127.0.0.1',
+          CODEXWINMUX_CORE_ENGINE_PORT: '8122',
+        },
+      },
+      backend: {
+        args: [engineProcessFlag],
+        env: {
+          CODEXWINMUX_ELECTRON_ENGINE_PROCESS: '1',
+          CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
+          CODEXWINMUX_CORE_ENGINE_TRANSPORT: 'tcp',
+          CODEXWINMUX_CORE_ENGINE_HOST: '127.0.0.1',
+          CODEXWINMUX_CORE_ENGINE_PORT: '8122',
+          CODEXMUX_RESERVED_PORTS: '9222',
+          HOST: '127.0.0.1',
+          PORT: '8121',
+        },
+      },
+    });
   });
 });

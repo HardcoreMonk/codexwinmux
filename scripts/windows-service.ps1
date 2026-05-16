@@ -5,7 +5,7 @@ param(
   [string]$Action = 'status',
 
   [ValidateSet('combined', 'split')]
-  [string]$Mode = 'combined',
+  [string]$Mode = 'split',
 
   [ValidateSet('all', 'backend', 'core')]
   [string]$Role = 'all',
@@ -58,11 +58,16 @@ $AppDataPath = $DefaultAppDataPath
 $LogPath = Join-Path $LocalAppDataPath 'codexwinmux\logs'
 $ServiceArguments = "`"$BackendServerScriptPath`""
 $ServiceProcessEnvName = 'ELECTRON_RUN_AS_NODE'
-$CoreEngineTransport = 'in-process'
+$CoreEngineTransport = 'tcp'
 
-$SplitActions = @('write-config', 'install', 'start', 'status', 'health', 'stop', 'uninstall')
+$SplitActions = @('write-config', 'install', 'start', 'restart', 'status', 'health', 'stop', 'uninstall')
 if ($Mode -eq 'split' -and $SplitActions -notcontains $Action) {
   throw "Split mode supports only: $($SplitActions -join ', ')."
+}
+
+$UnsupportedCombinedActions = @('write-config', 'install', 'start', 'restart')
+if ($Mode -eq 'combined' -and $UnsupportedCombinedActions -contains $Action) {
+  throw "Combined Windows service start/install was removed after split Core/Backend default-on. Use -Mode split, or use -Mode combined only for status/health/stop/uninstall migration cleanup."
 }
 
 function Test-IsAdministrator {
@@ -261,6 +266,15 @@ if ($Mode -eq 'split') {
     }
     'start' {
       Assert-Administrator
+      foreach ($spec in Get-SplitServiceSpecs 'start') {
+        Use-ServiceSpec $spec { Invoke-WinSw 'start' }
+      }
+    }
+    'restart' {
+      Assert-Administrator
+      foreach ($spec in Get-SplitServiceSpecs 'stop') {
+        Use-ServiceSpec $spec { Invoke-WinSw 'stop' }
+      }
       foreach ($spec in Get-SplitServiceSpecs 'start') {
         Use-ServiceSpec $spec { Invoke-WinSw 'start' }
       }

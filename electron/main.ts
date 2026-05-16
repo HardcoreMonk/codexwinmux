@@ -11,7 +11,7 @@ import { appendUpdaterSmokeStatus, readUpdaterSmokeConfig } from './updater-smok
 import { applyAutoUpdaterRuntimeDefaults } from './updater-config';
 import { resolveTrayIconPath } from './tray-icon';
 import { bootstrapCoreOnly, shutdownCoreOnly } from './core-process';
-import { buildEngineProcessArgs, resolveElectronProcessRole } from './engine-process';
+import { buildCoreBackendProcessLaunchPlan, resolveElectronProcessRole } from './engine-process';
 import { app, BrowserWindow, shell, Menu, ipcMain, session, screen, Notification, nativeTheme, dialog, Tray, nativeImage } from 'electron';
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { spawn } from 'child_process';
@@ -498,6 +498,7 @@ const stopUpdateCheckTimer = () => {
 // --- Local Server ---
 
 const DEFAULT_PORT = 8121;
+const DEFAULT_CORE_PORT = 8122;
 const ENGINE_URL = buildEngineUrl(DEFAULT_PORT);
 
 const startLocalServer = async ({ allowPortFallback = true }: { allowPortFallback?: boolean } = {}): Promise<number> => {
@@ -564,28 +565,60 @@ const buildReservedPortsEnv = () => {
 };
 
 const launchEngineProcess = () => {
-  const child = spawn(process.execPath, buildEngineProcessArgs({
+  const launchPlan = buildCoreBackendProcessLaunchPlan({
     isPackaged: app.isPackaged,
     appPath: app.getAppPath(),
-  }), {
+    backendHost: '127.0.0.1',
+    backendPort: DEFAULT_PORT,
+    coreHost: '127.0.0.1',
+    corePort: DEFAULT_CORE_PORT,
+    reservedPorts: buildReservedPortsEnv(),
+  });
+  const sharedEnv = {
+    ...process.env,
+    CODEXWINMUX_WINDOWS_HOST_OWNER: process.env.CODEXWINMUX_WINDOWS_HOST_OWNER || 'tray',
+    ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_V2', '1'),
+    ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
+    ...buildCodexwinmuxAliasEnv('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
+  };
+  const core = spawn(process.execPath, launchPlan.core.args, {
     cwd: process.cwd(),
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
     env: {
-      ...process.env,
-      CODEXWINMUX_ELECTRON_ENGINE_PROCESS: '1',
-      CODEXMUX_ELECTRON_ENGINE_PROCESS: '1',
-      CODEXWINMUX_WINDOWS_HOST_OWNER: process.env.CODEXWINMUX_WINDOWS_HOST_OWNER || 'tray',
-      ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_V2', '1'),
-      ...buildCodexwinmuxAliasEnv('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows'),
-      ...buildCodexwinmuxAliasEnv('CODEXMUX_PROCESS_INSPECTOR_ADAPTER', 'windows'),
-      CODEXMUX_RESERVED_PORTS: buildReservedPortsEnv(),
-      HOST: '127.0.0.1',
-      PORT: String(DEFAULT_PORT),
+      ...sharedEnv,
+      ...launchPlan.core.env,
     },
   });
-  return child;
+  const backend = spawn(process.execPath, launchPlan.backend.args, {
+    cwd: process.cwd(),
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: {
+      ...sharedEnv,
+      ...launchPlan.backend.env,
+    },
+  });
+  return {
+    pid: backend.pid,
+    get exitCode() {
+      return backend.exitCode;
+    },
+    get killed() {
+      return backend.killed;
+    },
+    kill: () => {
+      const backendKilled = backend.kill();
+      core.kill();
+      return backendKilled;
+    },
+    unref: () => {
+      core.unref();
+      backend.unref();
+    },
+  };
 };
 
 const getEngineController = () => {

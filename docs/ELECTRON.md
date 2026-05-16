@@ -7,9 +7,11 @@ executable을 engine process로 시작합니다. 창 닫기는 UI를 tray로 숨
 `--codexwinmux-engine` 인자로 Backend/Core Engine 전용 bootstrap을 시작할 수 있습니다.
 Core/Backend physical separation P2부터 같은 executable은 `--codexwinmux-core` 인자로
 BrowserWindow 없이 Core Supervisor/workers만 시작하는 standalone Core host도 제공합니다.
-P3-P6부터 Backend adapter는 default-off `CODEXWINMUX_CORE_ENGINE_TRANSPORT=tcp`에서
-독립 Core process에 loopback TCP로 attach할 수 있습니다. 다만 기본 UI와 combined Windows
-service 실행은 아직 in-process engine mode입니다.
+`0.4.18`부터 Backend adapter 기본 Core transport는 loopback TCP입니다. UI-owned local
+engine은 `--codexwinmux-core`와 `--codexwinmux-engine` paired process를 함께 시작하고,
+Windows service runbook 기본값은 `codexwinmux-core`/`codexwinmux-backend` split mode입니다.
+combined Windows service start/install과 Backend in-process Core client fallback은 제거됐고,
+기존 combined service는 `-Mode combined` stop/uninstall migration cleanup에만 사용합니다.
 
 ## 명령
 
@@ -55,7 +57,7 @@ corepack pnpm pack:electron:mac
 - `smoke:windows:updater-published-channel`: `electron-builder.yml`의 GitHub publish owner/repo에서 published release channel을 read-only로 확인합니다. 최신 published release에 `latest.yml`, installer, matching `.blockmap`, newer semver, download URL이 없으면 blocker로 실패합니다.
 - `smoke:windows:packaged-launch`: `release/win-unpacked/codexwinmux.exe`를 실제 실행해 packaged local server, preload bridge, `/api/health`, runtime startup diagnostics, blocking console 0건을 확인합니다.
 - `smoke:windows:engine-lifecycle`: packaged app을 실행한 뒤 UI 종료 후에도 `127.0.0.1:8121` engine health가 유지되는지 확인합니다. Smoke 종료 cleanup에서는 같은 packaged exe로 뜬 남은 engine process를 정리합니다.
-- `smoke:windows:service-host`: 기본 tray owner plan, Phase 2 Windows Service owner plan, default-off split service plan을 확인합니다. Service owner plan은 `codexwinmux.exe --codexwinmux-engine`, split plan은 `codexwinmux-backend`/`codexwinmux-core`, WinSW wrapper의 `install`/`uninstall`/`start`/`stop` 명령 계획, split transport env, `scripts/windows-service.ps1` runbook helper 존재 여부를 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
+- `smoke:windows:service-host`: 기본 tray owner plan, Windows Service owner plan, default-on split service plan을 확인합니다. Service owner plan은 migration cleanup용 combined metadata와 기본 `codexwinmux-backend`/`codexwinmux-core` split plan, WinSW wrapper의 `install`/`uninstall`/`start`/`stop`/`restart` 명령 계획, split transport env, `scripts/windows-service.ps1` runbook helper 존재 여부를 검증하지만, smoke 중 실제 service 등록이나 시작/중지는 실행하지 않습니다.
 - `smoke:windows:core-engine-ipc`: build된 `dist/workers/core-engine-host.js`를 독립 child process로 실행하고 IPC `core.health` event/reply를 확인합니다.
 - `smoke:windows:core-backend-external-transport`: 독립 Core host를 TCP listener로 실행하고 Backend runtime adapter가 외부 Core process에 attach해 `core.health`를 받는지 확인합니다.
 - `smoke:windows:core-backend-split-lifecycle`: 기본값은 non-mutating dry-run으로 split service lifecycle 순서를 확인합니다. 실제 service mutation evidence는 `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_MUTATE=1`을 별도로 지정할 때만 수집합니다. `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_STABILITY_MS=<ms>`를 함께 지정하면 core/backend restart 뒤 cleanup 전에 backend health를 반복 확인하는 stability hold를 추가합니다.
@@ -310,7 +312,7 @@ macOS DMG target은 `dmg-license`와 Darwin native `iconv-corefoundation`을 사
 ## 패키징 메모
 
 현재 패키징 metadata는 제품명, app id, data dir, executable/artifact name을
-`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.17`이며, 새
+`codexwinmux` 기준으로 독립 운영합니다. 현재 소스 버전은 `0.4.18`이며, 새
 published update evidence를 주장하려면 같은 버전의 `latest.yml`,
 `codexwinmux-Setup-<version>.exe`, matching `.blockmap`을 GitHub Release에 발행한 뒤
 published/updater smoke를 다시 실행해야 합니다.
@@ -341,7 +343,7 @@ public launch evidence JSON 기반 `passed` evidence를 요구합니다.
 Chromium download, SHA match, Internet ZoneId=3까지 통과했지만 Windows
 `Start-Process` launch evidence가 취소/SmartScreen reputation 단계에서 실패했습니다.
 따라서 public SmartScreen `passed` evidence는 아직 확보되지 않았고, 다음 공개
-릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.17+` 새 version으로 발행해야 합니다.
+릴리스도 기존 tag/asset을 덮어쓰지 않고 `0.4.18+` 새 version으로 발행해야 합니다.
 이 public evidence 미확보 상태는 내부 폐쇄망 릴리스나 내부 legacy fallback 제거의
 blocker로 사용하지 않습니다.
 다음 공개/내부 릴리스는 기존 tag나 asset을 덮어쓰지 말고 새 version/tag로

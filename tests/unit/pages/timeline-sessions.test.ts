@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   hasSession: vi.fn(),
   listSessionPage: vi.fn(),
-  supervisor: {
+  coreRuntimeApi: {
     listTimelineSessions: vi.fn(),
   },
 }));
@@ -17,8 +17,8 @@ vi.mock('@/lib/session-list', () => ({
   listSessionPage: mocks.listSessionPage,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: vi.fn(() => mocks.supervisor),
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: vi.fn(() => mocks.coreRuntimeApi),
 }));
 
 import handler from '@/pages/api/timeline/sessions';
@@ -95,7 +95,7 @@ describe('/api/timeline/sessions', () => {
     delete process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE;
     mocks.hasSession.mockReset();
     mocks.listSessionPage.mockReset();
-    mocks.supervisor.listTimelineSessions.mockReset();
+    mocks.coreRuntimeApi.listTimelineSessions.mockReset();
     mocks.hasSession.mockResolvedValue(false);
     mocks.listSessionPage.mockResolvedValue({
       sessions: [
@@ -110,7 +110,7 @@ describe('/api/timeline/sessions', () => {
       total: 1,
       hasMore: false,
     });
-    mocks.supervisor.listTimelineSessions.mockResolvedValue({ sessions: [], total: 0, hasMore: false });
+    mocks.coreRuntimeApi.listTimelineSessions.mockResolvedValue({ sessions: [], total: 0, hasMore: false });
   });
 
   afterEach(() => {
@@ -172,7 +172,7 @@ describe('/api/timeline/sessions', () => {
     expect(response.statusCode).toBe(200);
     expect(mocks.hasSession).not.toHaveBeenCalled();
     expect(mocks.listSessionPage).not.toHaveBeenCalled();
-    expect(mocks.supervisor.listTimelineSessions).toHaveBeenCalledWith({
+    expect(mocks.coreRuntimeApi.listTimelineSessions).toHaveBeenCalledWith({
       tmuxSession: 'dead-tmux-session',
       cwd: '/workspace',
       panelType: 'codex',
