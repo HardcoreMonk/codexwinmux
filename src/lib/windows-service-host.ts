@@ -63,12 +63,15 @@ export interface IWindowsServiceHostPlan {
     serviceAccount: {
       current: 'LocalSystem';
       mode: 'local-system-now';
-      next: 'dedicated-account-before-long-running-ops';
+      target: 'dedicated-local-service-account';
+      serviceAccountName: 'codexwinmux-svc';
+      next: 'profile-acl-credential-migration-before-long-running-ops';
     };
     installer: {
       mode: 'runbook-first';
-      nsisServiceOption: 'deferred';
-      defaultEnabled: true;
+      nsisServiceOption: 'deferred-default-off';
+      defaultEnabled: false;
+      promotionGate: 'account-acl-upgrade-uninstall-reboot-health-smoke';
     };
     runbook: {
       helperScript: 'scripts/windows-service.ps1';
@@ -108,12 +111,15 @@ const operationDecision: IWindowsServiceHostPlan['operationDecision'] = {
   serviceAccount: {
     current: 'LocalSystem',
     mode: 'local-system-now',
-    next: 'dedicated-account-before-long-running-ops',
+    target: 'dedicated-local-service-account',
+    serviceAccountName: 'codexwinmux-svc',
+    next: 'profile-acl-credential-migration-before-long-running-ops',
   },
   installer: {
     mode: 'runbook-first',
-    nsisServiceOption: 'deferred',
-    defaultEnabled: true,
+    nsisServiceOption: 'deferred-default-off',
+    defaultEnabled: false,
+    promotionGate: 'account-acl-upgrade-uninstall-reboot-health-smoke',
   },
   runbook: {
     helperScript: 'scripts/windows-service.ps1',

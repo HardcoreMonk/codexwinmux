@@ -28,12 +28,15 @@ describe('Windows service host baseline', () => {
         serviceAccount: {
           current: 'LocalSystem',
           mode: 'local-system-now',
-          next: 'dedicated-account-before-long-running-ops',
+          target: 'dedicated-local-service-account',
+          serviceAccountName: 'codexwinmux-svc',
+          next: 'profile-acl-credential-migration-before-long-running-ops',
         },
         installer: {
           mode: 'runbook-first',
-          nsisServiceOption: 'deferred',
-          defaultEnabled: true,
+          nsisServiceOption: 'deferred-default-off',
+          defaultEnabled: false,
+          promotionGate: 'account-acl-upgrade-uninstall-reboot-health-smoke',
         },
         runbook: {
           helperScript: 'scripts/windows-service.ps1',
@@ -116,8 +119,11 @@ describe('Windows service host baseline', () => {
     expect(plan.service.commands.start.args).toEqual(['start']);
     expect(plan.service.commands.stop.args).toEqual(['stop']);
     expect(plan.operationDecision.serviceAccount.current).toBe('LocalSystem');
+    expect(plan.operationDecision.serviceAccount.target).toBe('dedicated-local-service-account');
+    expect(plan.operationDecision.serviceAccount.serviceAccountName).toBe('codexwinmux-svc');
     expect(plan.operationDecision.installer.mode).toBe('runbook-first');
-    expect(plan.operationDecision.installer.defaultEnabled).toBe(true);
+    expect(plan.operationDecision.installer.nsisServiceOption).toBe('deferred-default-off');
+    expect(plan.operationDecision.installer.defaultEnabled).toBe(false);
   });
 
   it('plans split backend/core services by default', () => {

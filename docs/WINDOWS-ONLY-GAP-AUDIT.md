@@ -651,8 +651,11 @@ Service에서 Backend/Core Engine 전용 process로 실행될 수 있는 계약�
   `requiresElevation=true`, packaged `codexwinmux.exe` path,
   `--codexwinmux-engine`, WinSW wrapper path, structured
   `install`, `uninstall`, `start`, `stop` wrapper command plan을 반환한다.
-- 승인된 운영 모델은 단기 `LocalSystem + runbook-first`다. 전용 service account는
-  장기 운영 host 승격 전 gate로 남기고, NSIS service install option은 deferred로 둔다.
+- 승인된 운영 모델은 `LocalSystem + runbook-first`다. 장기 목표 service account는
+  `codexwinmux-svc`이지만, profile/data dir, Codex credential/session migration,
+  folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 닫히기 전에는
+  전환하지 않는다. NSIS service install option은 같은 gate 전까지 installer 기본 흐름에
+  넣지 않고 deferred/default-off로 둔다.
   `0.4.18`부터 runbook 기본 service topology는 split mode다.
 - `scripts/windows-service.ps1` helper를 추가했다. `install`, `start`, `stop`,
   `restart`, `status`, `health`, `uninstall`, `write-config` action을 제공한다.

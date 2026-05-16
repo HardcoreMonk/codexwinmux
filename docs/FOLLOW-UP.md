@@ -227,6 +227,7 @@ packaged artifact를 재점검했다.
 | Backend in-process Core fallback | 제거 | `src/lib/core-engine/runtime-api.ts`에서 runtime Supervisor 직접 import와 in-process Core client 생성 경로를 제거했다. Core unavailable 상태는 TCP client request timeout/error로 fail closed한다 |
 | Windows package gate | 통과 | `corepack pnpm pack:electron`으로 `0.4.18` Windows artifact를 재생성했고 `node scripts/smoke-windows-package-gate.mjs`가 zip/update metadata/updater local feed/packaged launch/engine lifecycle/Core IPC/Backend external Core attach/split lifecycle dry-run/packaged runtime v2/installer runtime v2를 통과했다 |
 | 실제 split service lifecycle | 통과 | old combined `codexwinmux` service를 uninstall한 뒤 `codexwinmux-core`/`codexwinmux-backend`를 기본 split mode로 install/start했다. `CODEXWINMUX_WINDOWS_SPLIT_LIFECYCLE_MUTATE=1 node scripts/smoke-windows-core-backend-split-lifecycle.mjs`와 이후 `scripts/windows-service.ps1 start`, `scripts/windows-service.ps1 health`가 통과했고 두 split service는 `Running/Automatic` 상태다 |
+| Service account / NSIS 결정 | 결정 완료 | 현재 내부 운영은 `LocalSystem + runbook-first`로 유지한다. 장기 목표는 `codexwinmux-svc` 전용 local service account지만 profile/data dir, Codex credential/session migration, ACL, rotation, upgrade/uninstall/reboot/health smoke가 닫힌 뒤 전환한다. NSIS service install option은 같은 gate 전까지 installer 기본 흐름에 넣지 않고 deferred/default-off로 둔다 |
 
 ### 2026-05-05 P2 -> P3 runtime v2 storage preflight
 

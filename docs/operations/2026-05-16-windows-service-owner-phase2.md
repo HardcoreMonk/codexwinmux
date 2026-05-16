@@ -3,9 +3,8 @@
 ## 결론
 
 Windows Service owner Phase 2의 첫 slice를 완료했고, 운영자 요청에 따라 같은 host에서
-실제 Windows service 등록과 시작까지 수행했다. service owner는 WinSW wrapper가 소유하고,
-packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core combined engine process로
-실행한다.
+실제 Windows service 등록과 시작까지 수행했다. 이후 `0.4.18` split default-on에서 service
+owner는 `codexwinmux-core`와 `codexwinmux-backend` WinSW wrapper 쌍을 소유한다.
 
 ## 변경 요약
 
@@ -18,24 +17,25 @@ packaged `codexwinmux.exe --codexwinmux-engine`을 Backend/Core combined engine 
 
 ## 실제 서비스 등록/시작 증거
 
-- Service name: `codexwinmux`
-- Wrapper: `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-service.exe`
-- Wrapper config: `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-service.xml`
+- Service names: `codexwinmux-core`, `codexwinmux-backend`
+- Wrapper: `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-core-service.exe`, `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-backend-service.exe`
+- Wrapper config: `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-core-service.xml`, `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-backend-service.xml`
 - Engine executable: `<repo>\release\win-unpacked\codexwinmux.exe`
-- Engine args: `--codexwinmux-engine`
+- Engine args: Core는 `resources\app.asar.unpacked\dist\workers\core-engine-host.js`, Backend는 `resources\app.asar\dist\server.js`
 - Start type: `Automatic`
 - Service account: `LocalSystem`
 - Current status: `Running`
-- Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.17`, `commit=d632d9c5`, `buildTime=2026-05-15T18:25:47.113Z` on 2026-05-16 KST.
-- Process ownership: WinSW wrapper가 parent process이고, engine process가 child로 실행된다.
-- Physical boundary: 이 service는 아직 Backend API host와 Core Supervisor를 같은 combined engine process 안에서 실행한다. 소스 HEAD에는 `--codexwinmux-core` standalone Core host foundation이 추가됐지만, 현재 service runtime은 `--codexwinmux-engine` combined mode다. `codexwinmux-backend`/`codexwinmux-core` split service는 별도 physical separation milestone에서 default-off로 추가한다.
+- Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.18`, `commit=69cf91db`, `buildTime=2026-05-16T08:17:22.270Z` on 2026-05-16 KST.
+- Process ownership: 각 WinSW wrapper가 parent process이고, Core/Backend process가 별도 child로 실행된다.
+- Physical boundary: `codexwinmux-core`와 `codexwinmux-backend`가 별도 service/process lifecycle을 갖는다. Backend는 loopback TCP Core client로 Core에 attach한다.
 
 ## 승인된 운영 결정
 
-- 단기 운영 모델은 `LocalSystem + runbook-first`로 유지한다.
-- 장기 운영 host 또는 반복 배포 host로 승격하기 전에는 전용 Windows service account, service profile/data dir, folder ACL, account rotation 정책을 별도 slice에서 닫는다.
+- 현재 내부 운영 모델은 `LocalSystem + runbook-first`로 유지한다.
+- 장기 운영 host 또는 반복 배포 host의 목표 계정은 전용 local Windows service account `codexwinmux-svc`다.
+- `codexwinmux-svc` 전환은 service profile/data dir, Codex credential/session migration, folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 준비된 뒤 별도 slice로 진행한다.
 - NSIS installer service install option은 지금 추가하지 않는다. 기본 설치 흐름은 service를 자동 등록하지 않으며, `scripts/windows-service.ps1` helper와 운영 runbook을 우선 사용한다.
-- NSIS option은 install/upgrade/uninstall/reboot/health/account-ACL smoke가 준비된 뒤 default off 고급 옵션으로 승격한다.
+- NSIS option은 account/ACL gate와 install/upgrade/uninstall/reboot/health smoke가 준비된 뒤 default-off 고급 옵션으로 승격한다.
 
 ## Runbook Helper
 
@@ -69,11 +69,11 @@ corepack pnpm windows:service:uninstall
 - `Get-Service -Name codexwinmux`: `Running`, `Automatic`, `Win32OwnProcess`.
 - `Invoke-RestMethod http://127.0.0.1:8121/api/health`: 통과.
 - `corepack pnpm windows:service:status`: `codexwinmux Running Automatic Win32OwnProcess`.
-- `corepack pnpm windows:service:health`: 현재 설치 service health는 `app=codexwinmux`, `version=0.4.17`, `commit=d632d9c5`.
+- `corepack pnpm windows:service:health`: 현재 split service health는 `app=codexwinmux`, `version=0.4.18`, `commit=69cf91db`.
 
 ## 남은 후속 작업
 
 - service-owned engine stop/restart를 Electron UI에서 어떻게 표현할지 결정한다. 현재 UI는 자신이 시작한 owned engine만 stop한다.
-- 전용 Windows service account 전환 slice를 진행한다. 포함 범위는 account 생성/권한, service profile/data dir, folder ACL, credential rotation, migration smoke다.
-- NSIS optional service install slice를 진행한다. 포함 범위는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke다.
+- 전용 Windows service account 전환 slice는 `codexwinmux-svc` 생성/권한, service profile/data dir, Codex credential/session migration, folder ACL, credential rotation, migration smoke를 포함한다.
+- NSIS optional service install slice는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke가 준비된 뒤 진행한다.
 - P2 Core host foundation은 source/build에 포함됐다. 다음 physical separation 작업은 Backend API/WebSocket Core client adapter 전환, `codexwinmux-backend`/`codexwinmux-core` split service default-off plan, 독립 restart lifecycle smoke 순서로 진행한다.

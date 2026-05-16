@@ -83,10 +83,24 @@ const main = async (): Promise<void> => {
   if (servicePlan.service.commands.install.args.join(' ') !== 'install') {
     throw new Error(`Windows service install command must use WinSW install: ${JSON.stringify(servicePlan.service.commands.install)}`);
   }
+  if (servicePlan.operationDecision.serviceAccount.target !== 'dedicated-local-service-account') {
+    throw new Error(`Windows service account target decision drifted: ${JSON.stringify(servicePlan.operationDecision.serviceAccount)}`);
+  }
+  if (servicePlan.operationDecision.serviceAccount.serviceAccountName !== 'codexwinmux-svc') {
+    throw new Error(`Windows service account name decision drifted: ${JSON.stringify(servicePlan.operationDecision.serviceAccount)}`);
+  }
+  if (
+    servicePlan.operationDecision.installer.nsisServiceOption !== 'deferred-default-off'
+    || servicePlan.operationDecision.installer.defaultEnabled !== false
+  ) {
+    throw new Error(`NSIS service install option must remain deferred/default-off: ${JSON.stringify(servicePlan.operationDecision.installer)}`);
+  }
   checks.push('windows-service-owner-plan');
   checks.push('windows-service-backend-server-host');
   checks.push('windows-service-winsw-wrapper');
   checks.push('windows-service-non-mutating-commands');
+  checks.push('windows-service-dedicated-account-deferred');
+  checks.push('windows-service-nsis-option-default-off');
 
   const splitPlan = resolveWindowsServiceHostPlan({
     platform: process.platform,

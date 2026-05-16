@@ -385,8 +385,9 @@ corepack pnpm smoke:windows:update-metadata
   POSIX launch path로 오염시키지 않고 packaged server `NODE_PATH`에 `;` 구분자를 쓰는지
   dry-run으로 확인한다.
 - `smoke:windows:electron-packaging`: default Electron package scripts와
-  `electron-builder.yml`이 Windows NSIS/zip target, NSIS install wizard option, `.ico`
-  asset, updater artifact name 계약을 만족하는지 dry-run으로 확인한다.
+  `electron-builder.yml`이 Windows NSIS/zip target, installer UI include, `.ico`
+  asset, updater artifact name 계약을 만족하는지 dry-run으로 확인한다. Windows service
+  install option은 장기 account/ACL smoke 전까지 NSIS 기본 흐름에 넣지 않는다.
 
 Windows packaging smoke:
 

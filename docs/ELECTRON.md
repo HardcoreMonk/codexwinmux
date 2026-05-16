@@ -199,8 +199,11 @@ corepack pnpm smoke:windows:package-gate
    bootstrap command, runbook helper를 검증하지만 SCM을 변경하지 않는다. 실제 service
    등록은 관리자 권한에서 `corepack pnpm windows:service:install`과
    `corepack pnpm windows:service:start`로 수행한다. 현재 승인된 운영 모델은
-   단기 `LocalSystem + runbook-first`이며, 장기 운영 host는 전용 service account와
-   NSIS optional service install smoke가 닫힌 뒤 승격한다.
+   `LocalSystem + runbook-first`다. 장기 목표 service account는
+   `codexwinmux-svc`이지만, profile/data dir, Codex credential/session migration,
+   folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 닫힌 뒤에만
+   전환한다. NSIS service install option도 같은 gate 전까지 installer 기본 흐름에 넣지
+   않고 deferred/default-off로 유지한다.
 8. 비-Windows packaged foreground smoke는 legacy/manual reference로만 남긴다.
    현재 Windows 제품 release gate나 내부 배포 판단에는 포함하지 않는다.
 
