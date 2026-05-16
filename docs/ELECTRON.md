@@ -350,6 +350,10 @@ DigiCert RFC3161 timestamp server로 재생성했습니다. `smoke:windows:signi
 installer와 `win-unpacked` exe 모두 Authenticode `Valid`, timestamp present,
 internal SmartScreen scope accepted로 통과했고, signed artifact 기준
 `smoke:windows:package-gate`와 `smoke:windows:release-gate`도 통과했습니다.
+GitHub Release `v0.4.19`는 `latest.yml`, NSIS installer, matching `.blockmap`,
+zip asset을 포함하며 `CODEXMUX_WINDOWS_UPDATER_CURRENT_VERSION=0.4.18` 기준
+`smoke:windows:updater-published-channel`이 `0.4.18 -> 0.4.19` channel evidence로
+통과했습니다.
 내부 전용 배포에서는 `CODEXWINMUX_SMARTSCREEN_STATUS=internal-not-required`를
 trusted root distribution 범위의 SmartScreen evidence로 기록합니다. 외부 공개 배포를
 시작할 때만 public SmartScreen reputation을 별도 release blocker로 둡니다.
