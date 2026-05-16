@@ -57,7 +57,7 @@ Electron Shell Host
 
 - service owner plan이 packaged executable과 `--codexwinmux-engine` args를 포함한다.
 - service owner plan이 WinSW wrapper의 install/uninstall/start/stop command를 구조화해 반환한다.
-- service owner plan이 `LocalSystem + runbook-first`, NSIS option deferred 결정을 노출한다.
+- service owner plan이 service account runbook-first, NSIS runbook default-off 결정을 노출한다.
 - `smoke:windows:service-host`가 runbook helper 존재와 action set을 검증한다.
 - smoke가 tray plan과 service plan을 모두 검증하되 `mutatesSystem=false`를 유지한다.
 - Electron main이 CLI flag 또는 canonical env로 engine-only mode를 인식한다.

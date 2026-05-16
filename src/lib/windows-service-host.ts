@@ -69,7 +69,7 @@ export interface IWindowsServiceHostPlan {
     };
     installer: {
       mode: 'runbook-first';
-      nsisServiceOption: 'deferred-default-off';
+      nsisServiceOption: 'runbook-default-off';
       defaultEnabled: false;
       promotionGate: 'account-acl-upgrade-uninstall-reboot-health-smoke';
     };
@@ -117,7 +117,7 @@ const operationDecision: IWindowsServiceHostPlan['operationDecision'] = {
   },
   installer: {
     mode: 'runbook-first',
-    nsisServiceOption: 'deferred-default-off',
+    nsisServiceOption: 'runbook-default-off',
     defaultEnabled: false,
     promotionGate: 'account-acl-upgrade-uninstall-reboot-health-smoke',
   },

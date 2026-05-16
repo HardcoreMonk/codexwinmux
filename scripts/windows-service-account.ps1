@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Position = 0)]
-  [ValidateSet('plan', 'prepare-profile', 'migrate-data', 'apply-acl', 'configure-service-logon', 'rotate-password', 'verify', 'verify-reboot-readiness')]
+  [ValidateSet('plan', 'prepare-profile', 'migrate-data', 'apply-acl', 'configure-service-logon', 'rotate-password', 'restart-services', 'health', 'verify', 'verify-reboot-readiness')]
   [string]$Action = 'plan',
 
   [string]$AccountName = 'codexwinmux-svc',
@@ -62,6 +62,95 @@ function New-SecureSecret([string]$Secret) {
   ConvertTo-SecureString $Secret -AsPlainText -Force
 }
 
+function Get-AccountSid {
+  try {
+    $account = [Security.Principal.NTAccount]::new($env:COMPUTERNAME, $AccountName)
+    return $account.Translate([Security.Principal.SecurityIdentifier]).Value
+  } catch {
+    return $null
+  }
+}
+
+function Read-ServiceLogonRights {
+  $tempRoot = Join-Path ([IO.Path]::GetTempPath()) "codexwinmux-service-rights-$([Guid]::NewGuid().ToString('N'))"
+  $exportPath = Join-Path $tempRoot 'rights.inf'
+  try {
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    & secedit /export /cfg $exportPath /areas USER_RIGHTS | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $exportPath)) {
+      return @()
+    }
+    $content = Get-Content -LiteralPath $exportPath -Raw
+    $match = [regex]::Match($content, '(?m)^SeServiceLogonRight\s*=\s*(.*)$')
+    if (-not $match.Success) {
+      return @()
+    }
+    return @($match.Groups[1].Value.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+  } finally {
+    Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
+function Test-ServiceLogonRight {
+  $sid = Get-AccountSid
+  if (-not $sid) {
+    return $false
+  }
+  $rights = Read-ServiceLogonRights
+  return $rights -contains "*$sid" `
+    -or $rights -contains $AccountName `
+    -or $rights -contains ".\$AccountName" `
+    -or $rights -contains "$env:COMPUTERNAME\$AccountName"
+}
+
+function Grant-ServiceLogonRight {
+  Assert-Administrator
+  $sid = Get-AccountSid
+  if (-not $sid) {
+    throw "Cannot resolve SID for '$AccountName'."
+  }
+  if ((Read-ServiceLogonRights) -contains "*$sid") {
+    return
+  }
+
+  $tempRoot = Join-Path ([IO.Path]::GetTempPath()) "codexwinmux-service-rights-$([Guid]::NewGuid().ToString('N'))"
+  $exportPath = Join-Path $tempRoot 'export.inf'
+  $importPath = Join-Path $tempRoot 'import.inf'
+  $dbPath = Join-Path $tempRoot 'rights.sdb'
+  try {
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    & secedit /export /cfg $exportPath /areas USER_RIGHTS | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $exportPath)) {
+      throw "Failed to export local user rights with secedit."
+    }
+
+    $content = Get-Content -LiteralPath $exportPath -Raw
+    $entry = "*$sid"
+    if ($content -match '(?m)^SeServiceLogonRight\s*=') {
+      $content = [regex]::Replace($content, '(?m)^SeServiceLogonRight\s*=\s*(.*)$', {
+          param($match)
+          $values = @($match.Groups[1].Value.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+          if ($values -notcontains $entry) {
+            $values += $entry
+          }
+          return "SeServiceLogonRight = $($values -join ',')"
+        })
+    } elseif ($content -match '(?m)^\[Privilege Rights\]\s*$') {
+      $content = [regex]::Replace($content, '(?m)^\[Privilege Rights\]\s*$', "[Privilege Rights]`r`nSeServiceLogonRight = $entry")
+    } else {
+      $content = "$content`r`n[Privilege Rights]`r`nSeServiceLogonRight = $entry`r`n"
+    }
+
+    Set-Content -LiteralPath $importPath -Value $content -Encoding Unicode
+    & secedit /configure /db $dbPath /cfg $importPath /areas USER_RIGHTS | Out-Null
+    if ($LASTEXITCODE -ne 0 -and -not (Test-ServiceLogonRight)) {
+      throw "Failed to grant SeServiceLogonRight with secedit. ExitCode=$LASTEXITCODE."
+    }
+  } finally {
+    Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
 function Get-Plan {
   [pscustomobject]@{
     account = [pscustomobject]@{
@@ -69,6 +158,7 @@ function Get-Plan {
       qualifiedName = ".\$AccountName"
       passwordEnv = $PasswordEnv
       rotationPasswordEnv = $RotationPasswordEnv
+      serviceLogonRight = 'SeServiceLogonRight'
       passwordPresent = -not [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($PasswordEnv))
       rotationPasswordPresent = -not [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($RotationPasswordEnv))
     }
@@ -148,15 +238,20 @@ function Grant-AccountAcl {
 }
 
 function Write-ServiceProfileConfig {
+  Invoke-ServiceProfileCommand 'write-config'
+}
+
+function Invoke-ServiceProfileCommand([string]$ServiceAction, [string]$ServiceRole = 'all') {
   $helper = Join-Path $RepoRoot 'scripts\windows-service.ps1'
-  & powershell -NoProfile -ExecutionPolicy Bypass -File $helper write-config `
+  & powershell -NoProfile -ExecutionPolicy Bypass -File $helper $ServiceAction `
     -Mode split `
+    -Role $ServiceRole `
     -RepoRoot $RepoRoot `
     -ServiceUserProfilePath $ServiceProfileRoot `
     -ServiceLocalAppDataPath $ServiceLocalAppData `
     -ServiceAppDataPath $ServiceAppData
   if ($LASTEXITCODE -ne 0) {
-    throw "windows-service.ps1 write-config failed with exit code $LASTEXITCODE."
+    throw "windows-service.ps1 $ServiceAction failed with exit code $LASTEXITCODE."
   }
 }
 
@@ -182,6 +277,7 @@ function Get-ServiceAccountStatus {
     Select-Object Name, State, StartMode, StartName
   [pscustomobject]@{
     accountName = $AccountName
+    serviceLogonRightGranted = Test-ServiceLogonRight
     profileRootExists = Test-Path -LiteralPath $ServiceProfileRoot
     codexDirExists = Test-Path -LiteralPath $TargetCodexDir
     dataDirExists = Test-Path -LiteralPath $TargetDataDir
@@ -196,6 +292,7 @@ switch ($Action) {
   'prepare-profile' {
     $secret = Get-EnvSecret $PasswordEnv
     Ensure-LocalServiceAccount $secret
+    Grant-ServiceLogonRight
     Ensure-ProfileDirectories
     Grant-AccountAcl
     Write-ServiceProfileConfig
@@ -224,14 +321,24 @@ switch ($Action) {
   'configure-service-logon' {
     $secret = Get-EnvSecret $PasswordEnv
     Write-ServiceProfileConfig
+    Grant-ServiceLogonRight
     Set-ServiceLogon $secret
     Get-ServiceAccountStatus | ConvertTo-Json -Depth 8
   }
   'rotate-password' {
     $secret = Get-EnvSecret $RotationPasswordEnv
     Ensure-LocalServiceAccount $secret
+    Grant-ServiceLogonRight
     Set-ServiceLogon $secret
     Get-ServiceAccountStatus | ConvertTo-Json -Depth 8
+  }
+  'restart-services' {
+    Assert-Administrator
+    Invoke-ServiceProfileCommand 'restart'
+    Get-ServiceAccountStatus | ConvertTo-Json -Depth 8
+  }
+  'health' {
+    Invoke-ServiceProfileCommand 'health' 'backend'
   }
   'verify' {
     Get-ServiceAccountStatus | ConvertTo-Json -Depth 8
@@ -243,6 +350,7 @@ switch ($Action) {
       if ($service.StartMode -ne 'Auto') { $failures += "not-auto:$($service.Name)" }
       if ($service.StartName -ne ".\$AccountName") { $failures += "wrong-account:$($service.Name)" }
     }
+    if (-not $status.serviceLogonRightGranted) { $failures += 'missing-SeServiceLogonRight' }
     [pscustomobject]@{
       ok = $failures.Count -eq 0
       failures = $failures

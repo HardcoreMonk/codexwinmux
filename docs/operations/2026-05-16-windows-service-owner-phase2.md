@@ -23,7 +23,7 @@ owner는 `codexwinmux-core`와 `codexwinmux-backend` WinSW wrapper 쌍을 소유
 - Engine executable: `<repo>\release\win-unpacked\codexwinmux.exe`
 - Engine args: Core는 `resources\app.asar.unpacked\dist\workers\core-engine-host.js`, Backend는 `resources\app.asar\dist\server.js`
 - Start type: `Automatic`
-- Service account: `LocalSystem`
+- Service account: initial install은 `LocalSystem`, service account migration 후 현재는 `.\codexwinmux-svc`
 - Current status: `Running`
 - Health: `http://127.0.0.1:8121/api/health` returned `app=codexwinmux`, `version=0.4.18`, `commit=69cf91db`, `buildTime=2026-05-16T08:17:22.270Z` on 2026-05-16 KST.
 - Process ownership: 각 WinSW wrapper가 parent process이고, Core/Backend process가 별도 child로 실행된다.
@@ -31,11 +31,9 @@ owner는 `codexwinmux-core`와 `codexwinmux-backend` WinSW wrapper 쌍을 소유
 
 ## 승인된 운영 결정
 
-- 현재 내부 운영 모델은 `LocalSystem + runbook-first`로 유지한다.
-- 장기 운영 host 또는 반복 배포 host의 목표 계정은 전용 local Windows service account `codexwinmux-svc`다.
-- `codexwinmux-svc` 전환은 service profile/data dir, Codex credential/session migration, folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 준비된 뒤 별도 slice로 진행한다.
-- NSIS installer service install option은 지금 추가하지 않는다. 기본 설치 흐름은 service를 자동 등록하지 않으며, `scripts/windows-service.ps1` helper와 운영 runbook을 우선 사용한다.
-- NSIS option은 account/ACL gate와 install/upgrade/uninstall/reboot/health smoke가 준비된 뒤 default-off 고급 옵션으로 승격한다.
+- 현재 내부 운영 모델은 전용 local Windows service account `codexwinmux-svc` + runbook-first다.
+- `codexwinmux-svc` 전환은 service profile/data dir, Codex credential/session migration, folder ACL, `SeServiceLogonRight`, account rotation, profile-aware restart/health, reboot-readiness smoke로 검증한다.
+- NSIS installer는 service를 자동 등록하지 않는다. 대신 `Windows service runbook (advanced)` section을 default-off로 제공하고, 실제 service mutation은 `scripts/windows-service-account.ps1` 운영 runbook에서 수행한다.
 
 ## Runbook Helper
 
@@ -72,8 +70,8 @@ corepack pnpm windows:service-account:prepare-profile
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 migrate-data -IncludeCodexCredentials
 corepack pnpm windows:service-account:apply-acl
 corepack pnpm windows:service-account:configure-service-logon
-corepack pnpm windows:service:restart
-corepack pnpm windows:service:health
+corepack pnpm windows:service-account:restart-services
+corepack pnpm windows:service-account:health
 ```
 
 Password rotation은 별도 env를 사용한다.
@@ -81,13 +79,18 @@ Password rotation은 별도 env를 사용한다.
 ```powershell
 $env:CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD='<new-secure-password>'
 corepack pnpm windows:service-account:rotate-password
-corepack pnpm windows:service:restart
-corepack pnpm windows:service:health
+corepack pnpm windows:service-account:restart-services
+corepack pnpm windows:service-account:health
 ```
 
 승격 완료 evidence는 `verify`, `verify-reboot-readiness`,
 `smoke:windows:updater-local-feed`, `smoke:windows:installer-install`, 실제 reboot 후
-`windows:service:health` 순서로 수집한다.
+`windows:service-account:health` 순서로 수집한다.
+
+2026-05-16 실제 host에서는 난수 비밀번호를 env로만 전달해 `prepare-profile`,
+`migrate-data -IncludeCodexCredentials`, `apply-acl`, `configure-service-logon`,
+`rotate-password`, `restart-services`, `health`, `verify-reboot-readiness`를 실행했다.
+두 split service와 Core worker child process owner는 `AMD_5800X\codexwinmux-svc`로 확인됐다.
 
 ## 검증 증거
 

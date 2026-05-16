@@ -90,17 +90,17 @@ const main = async (): Promise<void> => {
     throw new Error(`Windows service account name decision drifted: ${JSON.stringify(servicePlan.operationDecision.serviceAccount)}`);
   }
   if (
-    servicePlan.operationDecision.installer.nsisServiceOption !== 'deferred-default-off'
+    servicePlan.operationDecision.installer.nsisServiceOption !== 'runbook-default-off'
     || servicePlan.operationDecision.installer.defaultEnabled !== false
   ) {
-    throw new Error(`NSIS service install option must remain deferred/default-off: ${JSON.stringify(servicePlan.operationDecision.installer)}`);
+    throw new Error(`NSIS service install option must remain runbook/default-off: ${JSON.stringify(servicePlan.operationDecision.installer)}`);
   }
   checks.push('windows-service-owner-plan');
   checks.push('windows-service-backend-server-host');
   checks.push('windows-service-winsw-wrapper');
   checks.push('windows-service-non-mutating-commands');
-  checks.push('windows-service-dedicated-account-deferred');
-  checks.push('windows-service-nsis-option-default-off');
+  checks.push('windows-service-dedicated-account-runbook');
+  checks.push('windows-service-nsis-runbook-option-default-off');
 
   const splitPlan = resolveWindowsServiceHostPlan({
     platform: process.platform,

@@ -651,14 +651,14 @@ Service에서 Backend/Core Engine 전용 process로 실행될 수 있는 계약�
   `requiresElevation=true`, packaged `codexwinmux.exe` path,
   `--codexwinmux-engine`, WinSW wrapper path, structured
   `install`, `uninstall`, `start`, `stop` wrapper command plan을 반환한다.
-- 승인된 운영 모델은 `LocalSystem + runbook-first`다. 장기 목표 service account는
-  `codexwinmux-svc`이지만, profile/data dir, Codex credential/session migration,
-  folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 닫히기 전에는
-  전환하지 않는다. NSIS service install option은 같은 gate 전까지 installer 기본 흐름에
-  넣지 않고 deferred/default-off로 둔다.
+- 승인된 운영 모델은 `codexwinmux-svc + runbook-first`다. Service account 전환은
+  profile/data dir, Codex credential/session migration, folder ACL,
+  `SeServiceLogonRight`, account rotation, profile-aware restart/health,
+  reboot-readiness smoke로 검증한다. NSIS service 자동 설치는 기본 흐름에 넣지 않고
+  `Windows service runbook (advanced)` default-off section만 제공한다.
 - `scripts/windows-service-account.ps1`은 `plan`, `prepare-profile`, `migrate-data`,
-  `apply-acl`, `configure-service-logon`, `rotate-password`, `verify`,
-  `verify-reboot-readiness` action을 제공한다. 기본 plan/smoke는 read-only이고,
+  `apply-acl`, `configure-service-logon`, `rotate-password`, `restart-services`,
+  `health`, `verify`, `verify-reboot-readiness` action을 제공한다. 기본 plan/smoke는 read-only이고,
   mutating action은 elevated PowerShell과
   `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD` 또는
   `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD`가 필요하다.

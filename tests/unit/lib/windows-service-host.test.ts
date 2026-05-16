@@ -34,7 +34,7 @@ describe('Windows service host baseline', () => {
         },
         installer: {
           mode: 'runbook-first',
-          nsisServiceOption: 'deferred-default-off',
+          nsisServiceOption: 'runbook-default-off',
           defaultEnabled: false,
           promotionGate: 'account-acl-upgrade-uninstall-reboot-health-smoke',
         },
@@ -122,7 +122,7 @@ describe('Windows service host baseline', () => {
     expect(plan.operationDecision.serviceAccount.target).toBe('dedicated-local-service-account');
     expect(plan.operationDecision.serviceAccount.serviceAccountName).toBe('codexwinmux-svc');
     expect(plan.operationDecision.installer.mode).toBe('runbook-first');
-    expect(plan.operationDecision.installer.nsisServiceOption).toBe('deferred-default-off');
+    expect(plan.operationDecision.installer.nsisServiceOption).toBe('runbook-default-off');
     expect(plan.operationDecision.installer.defaultEnabled).toBe(false);
   });
 

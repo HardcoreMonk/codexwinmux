@@ -14,6 +14,7 @@ export interface IWindowsServiceAccountMigrationPlan {
     qualifiedName: string;
     passwordEnv: string;
     rotationPasswordEnv: string;
+    serviceLogonRight: 'SeServiceLogonRight';
   };
   secretValuesPresent: boolean;
   profile: {
@@ -92,6 +93,7 @@ export const resolveWindowsServiceAccountMigrationPlan = ({
       qualifiedName: `.\\${accountName}`,
       passwordEnv,
       rotationPasswordEnv,
+      serviceLogonRight: 'SeServiceLogonRight',
     },
     secretValuesPresent: Boolean(readEnv(env, passwordEnv) || readEnv(env, rotationPasswordEnv)),
     profile: {
@@ -175,6 +177,7 @@ export const validateWindowsServiceAccountMigrationPlan = (
   const failures: string[] = [];
   if (!plan.account.name) failures.push('missing-account-name');
   if (!plan.account.qualifiedName.startsWith('.\\')) failures.push('account-must-be-local');
+  if (plan.account.serviceLogonRight !== 'SeServiceLogonRight') failures.push('missing-service-logon-right');
   if (plan.profile.root !== plan.environment.HOME) failures.push('profile-home-mismatch');
   if (!plan.migrations.some((migration) => migration.id === 'codex-credential-session-migration')) {
     failures.push('missing-codex-credential-session-migration');

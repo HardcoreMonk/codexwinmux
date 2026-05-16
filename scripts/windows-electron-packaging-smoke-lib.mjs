@@ -155,6 +155,9 @@ export const validateWindowsElectronPackaging = ({
     : null;
   const installDetailsVisible = /\bShowInstDetails\s+show\b/i.test(nsisIncludeText);
   const uninstallDetailsVisible = /\bShowUninstDetails\s+show\b/i.test(nsisIncludeText);
+  const serviceRunbookOptionDefaultOff = /\bSection\s+\/o\s+"Windows service runbook \(advanced\)"/i.test(nsisIncludeText)
+    && /\bSEC_CODEXWINMUX_SERVICE_RUNBOOK\b/.test(nsisIncludeText)
+    && /default-off and runbook-first/i.test(nsisIncludeText);
   if (nsisInclude != null && resources.has(nsisInclude) && installDetailsVisible && uninstallDetailsVisible) {
     checks.push('windows-nsis-install-details-visible');
   } else if (nsis != null) {
@@ -162,6 +165,15 @@ export const validateWindowsElectronPackaging = ({
       blockers,
       'windows-nsis-install-details-hidden',
       'electron-builder nsis include must keep install and uninstall detail panes visible.',
+    );
+  }
+  if (nsisInclude != null && resources.has(nsisInclude) && serviceRunbookOptionDefaultOff) {
+    checks.push('windows-nsis-service-runbook-option-default-off');
+  } else if (nsis != null) {
+    addBlocker(
+      blockers,
+      'windows-nsis-service-runbook-option-missing',
+      'electron-builder nsis include must expose the Windows service runbook section as a default-off advanced option.',
     );
   }
 

@@ -5,6 +5,17 @@ import { pathToFileURL } from 'url';
 const loadLib = async () =>
   import(pathToFileURL(path.join(process.cwd(), 'scripts/windows-electron-packaging-smoke-lib.mjs')).href);
 
+const nsisIncludeText = `
+!macro customHeader
+  ShowInstDetails show
+  ShowUninstDetails show
+!macroend
+
+Section /o "Windows service runbook (advanced)" SEC_CODEXWINMUX_SERVICE_RUNBOOK
+  DetailPrint "Windows service setup is default-off and runbook-first."
+SectionEnd
+`;
+
 describe('Windows Electron packaging smoke helpers', () => {
   it('reports blockers for the current mac-only packaging shape', async () => {
     const { validateWindowsElectronPackaging } = await loadLib();
@@ -70,12 +81,7 @@ describe('Windows Electron packaging smoke helpers', () => {
           { from: 'build-resources/icon.ico', to: 'icon.ico' },
         ],
       },
-      nsisIncludeText: `
-!macro customHeader
-  ShowInstDetails show
-  ShowUninstDetails show
-!macroend
-`,
+      nsisIncludeText,
       resources: new Set(['build-resources/icon.ico', 'build-resources/installer.nsh']),
     });
 
@@ -92,6 +98,7 @@ describe('Windows Electron packaging smoke helpers', () => {
         'windows-nsis-artifact-name-stable',
         'windows-nsis-web-installer-disabled',
         'windows-nsis-install-details-visible',
+        'windows-nsis-service-runbook-option-default-off',
         'windows-icon-present',
         'windows-tray-icon-resource-present',
       ],
@@ -131,12 +138,7 @@ describe('Windows Electron packaging smoke helpers', () => {
           { from: 'build-resources/icon.ico', to: 'icon.ico' },
         ],
       },
-      nsisIncludeText: `
-!macro customHeader
-  ShowInstDetails show
-  ShowUninstDetails show
-!macroend
-`,
+      nsisIncludeText,
       resources: new Set(['build-resources/icon.ico', 'build-resources/installer.nsh']),
     });
 
@@ -147,6 +149,7 @@ describe('Windows Electron packaging smoke helpers', () => {
     expect(result.checks).toContain('windows-nsis-artifact-name-stable');
     expect(result.checks).toContain('windows-nsis-web-installer-disabled');
     expect(result.checks).toContain('windows-nsis-install-details-visible');
+    expect(result.checks).toContain('windows-nsis-service-runbook-option-default-off');
     expect(result.checks).toContain('windows-tray-icon-resource-present');
   });
 
@@ -223,12 +226,7 @@ describe('Windows Electron packaging smoke helpers', () => {
           { from: 'build-resources/icon.ico', to: 'icon.ico' },
         ],
       },
-      nsisIncludeText: `
-!macro customHeader
-  ShowInstDetails show
-  ShowUninstDetails show
-!macroend
-`,
+      nsisIncludeText,
       resources: new Set(['build-resources/icon.ico', 'build-resources/installer.nsh']),
     });
 

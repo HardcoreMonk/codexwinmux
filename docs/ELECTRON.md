@@ -199,14 +199,15 @@ corepack pnpm smoke:windows:package-gate
    bootstrap command, runbook helper를 검증하지만 SCM을 변경하지 않는다. 실제 service
    등록은 관리자 권한에서 `corepack pnpm windows:service:install`과
    `corepack pnpm windows:service:start`로 수행한다. 현재 승인된 운영 모델은
-   `LocalSystem + runbook-first`다. 장기 목표 service account는
-   `codexwinmux-svc`이지만, profile/data dir, Codex credential/session migration,
-   folder ACL, account rotation, upgrade/uninstall/reboot/health smoke가 닫힌 뒤에만
-   전환한다. NSIS service install option도 같은 gate 전까지 installer 기본 흐름에 넣지
-   않고 deferred/default-off로 유지한다.
+   runbook-first service account 전환이다. 장기 목표 service account는
+   `codexwinmux-svc`이며, profile/data dir, Codex credential/session migration,
+   folder ACL, `SeServiceLogonRight`, account rotation, health/reboot-readiness smoke를
+   elevated runbook에서 닫은 뒤 적용한다. NSIS는 service 자동 설치를 기본 흐름에 넣지
+   않고 `Windows service runbook (advanced)` default-off section만 제공한다.
    전용 계정 승격 준비 상태는 `corepack pnpm windows:service-account:plan`과
    `corepack pnpm smoke:windows:service-account`로 확인한다. 실제 계정 생성,
-   credential/session copy, ACL 부여, service logon 변경, password rotation은
+   credential/session copy, ACL 부여, service logon 변경, password rotation,
+   profile-aware service restart/health는
    `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD` 또는
    `CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD`를 설정한 elevated
    PowerShell에서만 실행한다.

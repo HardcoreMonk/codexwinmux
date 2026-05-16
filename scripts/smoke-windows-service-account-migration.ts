@@ -54,6 +54,8 @@ const main = (): void => {
     'apply-acl',
     'configure-service-logon',
     'rotate-password',
+    'restart-services',
+    'health',
     'verify-reboot-readiness',
   ]) {
     assertIncludes(accountHelper, action, accountHelperPath);
@@ -62,6 +64,8 @@ const main = (): void => {
   assertIncludes(accountHelper, 'CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD', accountHelperPath);
   assertIncludes(accountHelper, 'IncludeCodexCredentials', accountHelperPath);
   assertIncludes(accountHelper, 'Invoke-CimMethod', accountHelperPath);
+  assertIncludes(accountHelper, 'SeServiceLogonRight', accountHelperPath);
+  assertIncludes(accountHelper, 'secedit', accountHelperPath);
   assertIncludes(accountHelper, 'icacls', accountHelperPath);
   checks.push('service-account-runbook-helper');
   checks.push('service-account-rotation-helper');
@@ -88,6 +92,8 @@ const main = (): void => {
     'windows:service-account:apply-acl',
     'windows:service-account:configure-service-logon',
     'windows:service-account:rotate-password',
+    'windows:service-account:restart-services',
+    'windows:service-account:health',
     'windows:service-account:verify',
     'windows:service-account:verify-reboot-readiness',
   ]) {

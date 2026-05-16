@@ -19,6 +19,7 @@ describe('Windows service account migration plan', () => {
       qualifiedName: '.\\codexwinmux-svc',
       passwordEnv: 'CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD',
       rotationPasswordEnv: 'CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD',
+      serviceLogonRight: 'SeServiceLogonRight',
     });
     expect(plan.secretValuesPresent).toBe(false);
     expect(plan.profile).toMatchObject({

@@ -50,9 +50,9 @@
 
 ## Task 5: 승인된 운영 모델 고정
 
-- [x] `LocalSystem + runbook-first`를 service host plan에 명시한다.
-- [x] 전용 service account 전환을 장기 운영 host 승격 전 gate로 남긴다.
-- [x] NSIS service install option을 deferred/default-off로 기록한다.
+- [x] service account runbook-first 운영 모델을 service host plan에 명시한다.
+- [x] 전용 service account 전환을 profile/data, credential/session, ACL, rotation, health gate로 검증한다.
+- [x] NSIS service runbook option을 runbook/default-off로 기록한다.
 - [x] `scripts/windows-service.ps1` helper를 추가한다.
 - [x] `smoke:windows:service-host`가 helper action set을 검증하도록 확장한다.
 

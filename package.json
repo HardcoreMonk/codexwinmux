@@ -93,6 +93,8 @@
     "windows:service-account:apply-acl": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 apply-acl",
     "windows:service-account:configure-service-logon": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 configure-service-logon",
     "windows:service-account:rotate-password": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 rotate-password",
+    "windows:service-account:restart-services": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 restart-services",
+    "windows:service-account:health": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 health",
     "windows:service-account:verify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 verify",
     "windows:service-account:verify-reboot-readiness": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows-service-account.ps1 verify-reboot-readiness",
     "smoke:windows:host-diagnostics": "tsx scripts/smoke-windows-host-diagnostics.ts",

@@ -118,7 +118,7 @@
 
 ### P4: Windows service split-mode runbook
 
-**목표:** 현재 `LocalSystem + runbook-first` 운영 모델을 유지하면서 split-mode를 default off로 추가한다.
+**목표:** `codexwinmux-svc + runbook-first` 운영 모델을 유지하면서 split-mode lifecycle을 검증한다.
 
 **Files:**
 - Modify: `scripts/windows-service.ps1`
