@@ -2,6 +2,7 @@
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import net from 'net';
 import { spawn } from 'child_process';
 import { chromium } from '@playwright/test';
 import {
@@ -67,7 +68,7 @@ const jsonRequest = async (baseUrl, pathname, cookie, init = {}) => {
   return data;
 };
 
-const startServer = async ({ homeDir, dbPath, port, timeoutMs }) => {
+const buildRuntimeEnv = ({ homeDir, dbPath, corePort, serverPort }) => {
   const env = {
     ...stripLegacyRuntimeEnv(process.env),
     PATH: process.env.PATH || process.env.Path,
@@ -85,17 +86,73 @@ const startServer = async ({ homeDir, dbPath, port, timeoutMs }) => {
     ...buildEnvAlias('CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE', 'default'),
     ...buildEnvAlias('CODEXWINMUX_RUNTIME_STATUS_V2_MODE', 'default'),
     ...(process.platform === 'win32' ? buildEnvAlias('CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER', 'windows') : {}),
+    ...(process.platform === 'win32' ? buildEnvAlias('CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER', 'windows') : {}),
     ...buildEnvAlias('CODEXWINMUX_RUNTIME_DB', dbPath),
-    PORT: String(port),
+    ...buildEnvAlias('CODEXWINMUX_CORE_ENGINE_TRANSPORT', 'tcp'),
+    ...buildEnvAlias('CODEXWINMUX_CORE_ENGINE_HOST', '127.0.0.1'),
+    ...buildEnvAlias('CODEXWINMUX_CORE_ENGINE_PORT', String(corePort)),
+    ...buildEnvAlias('CODEXWINMUX_CORE_ENGINE_REQUEST_TIMEOUT_MS', '10000'),
+    ...(serverPort ? { PORT: String(serverPort) } : {}),
   };
   delete env.__CMUX_PRISTINE_ENV;
   env.__CMUX_PRISTINE_ENV = JSON.stringify(env);
+  return env;
+};
+
+const waitForTcpPort = async ({ port, timeoutMs }) =>
+  waitFor(`isolated Core host port ${port}`, async () => {
+    const opened = await new Promise((resolve) => {
+      const socket = net.createConnection({ host: '127.0.0.1', port });
+      socket.once('connect', () => {
+        socket.destroy();
+        resolve(true);
+      });
+      socket.once('error', () => {
+        socket.destroy();
+        resolve(false);
+      });
+    });
+    return opened || null;
+  }, timeoutMs);
+
+const startCoreServer = async ({ homeDir, dbPath, port, timeoutMs }) => {
+  const env = buildRuntimeEnv({ homeDir, dbPath, corePort: port });
+  const invocation = buildTsxServerInvocation({
+    rootDir,
+    entrypoint: 'src/workers/core-engine-host.ts',
+  });
+
+  const child = spawn(invocation.command, invocation.args, {
+    cwd: rootDir,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+
+  let output = '';
+  child.stdout.on('data', (chunk) => { output += chunk.toString(); });
+  child.stderr.on('data', (chunk) => { output += chunk.toString(); });
+
+  await waitForTcpPort({ port, timeoutMs });
+
+  return {
+    getOutput: () => output,
+    stop: async () => {
+      if (child.exitCode !== null) return;
+      await stopChildProcessTree(child, { timeoutMs: 10_000 });
+    },
+  };
+};
+
+const startServer = async ({ homeDir, dbPath, port, corePort, timeoutMs }) => {
+  const env = buildRuntimeEnv({ homeDir, dbPath, corePort, serverPort: port });
 
   const invocation = buildTsxServerInvocation({ rootDir });
   const child = spawn(invocation.command, invocation.args, {
     cwd: rootDir,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
   });
 
   let output = '';
@@ -268,6 +325,7 @@ const main = async () => {
   const dbPath = path.join(homeDir, 'runtime-v2', 'state.db');
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
   const port = await getFreePort();
+  const corePort = await getFreePort();
   const jsonlPath = await prepareFixturePath(homeDir);
   const unique = `${Date.now()}-${process.pid}`;
   const workspaceName = `Stale UI Evidence ${unique}`;
@@ -276,16 +334,24 @@ const main = async () => {
   const appendedUserMessage = `stale-ui-foreground-user-${unique}`;
   const checks = [];
   let server = null;
+  let coreServer = null;
   let browser = null;
+  let browserSession = null;
+  let page = null;
+  let cookie = null;
+  let runtimeWorkspace = null;
   let workspaceId = null;
 
   try {
     await writeFixture({ homeDir, jsonlPath, initialUserMessage, initialAssistantMessage });
     checks.push('jsonl-fixture');
 
-    server = await startServer({ homeDir, dbPath, port, timeoutMs });
+    coreServer = await startCoreServer({ homeDir, dbPath, port: corePort, timeoutMs });
+    checks.push('isolated-core-host');
+
+    server = await startServer({ homeDir, dbPath, port, corePort, timeoutMs });
     const { baseUrl } = server;
-    const cookie = await ensureLoggedIn(baseUrl);
+    cookie = await ensureLoggedIn(baseUrl);
     const tokenPath = path.join(homeDir, '.codexwinmux', 'cli-token');
     const token = (await fs.readFile(tokenPath, 'utf8')).trim();
     checks.push('server-login');
@@ -296,7 +362,7 @@ const main = async () => {
     }
     checks.push('runtime-health-default');
 
-    const runtimeWorkspace = await createRuntimeAgentWorkspace({
+    runtimeWorkspace = await createRuntimeAgentWorkspace({
       baseUrl,
       cookie,
       workspaceName,
@@ -305,9 +371,9 @@ const main = async () => {
     workspaceId = runtimeWorkspace.workspaceId;
     checks.push('runtime-agent-workspace');
 
-    const browserSession = await openBrowser({ baseUrl, cookie, timeoutMs });
+    browserSession = await openBrowser({ baseUrl, cookie, timeoutMs });
     browser = browserSession.browser;
-    const page = browserSession.page;
+    page = browserSession.page;
     await waitForBodyText(page, 'workspace visible', (text) => text.includes(workspaceName), timeoutMs);
     checks.push('browser-workspace-visible');
 
@@ -367,10 +433,42 @@ const main = async () => {
     await writeArtifact('passed', payload);
     console.log(JSON.stringify(payload, null, 2));
   } catch (err) {
+    const diagnostics = {};
+    if (server && cookie && runtimeWorkspace) {
+      const baseUrl = server.baseUrl;
+      diagnostics.timelineSessions = await jsonRequest(
+        baseUrl,
+        `/api/timeline/sessions?${new URLSearchParams({
+          tmuxSession: runtimeWorkspace.sessionName,
+          limit: '50',
+          offset: '0',
+          panelType: 'codex',
+          cwd: homeDir,
+        }).toString()}`,
+        cookie,
+      ).catch((sessionErr) => ({
+        error: sessionErr instanceof Error ? sessionErr.message : String(sessionErr),
+      }));
+    }
+    if (page) {
+      diagnostics.page = {
+        url: page.url(),
+        bodyText: (await page.locator('body').textContent({ timeout: 1000 }).catch(() => '') ?? '').slice(0, 2000),
+        buttons: await page.locator('button').evaluateAll((buttons) =>
+          buttons.slice(0, 20).map((button) => ({
+            text: button.textContent?.trim() ?? '',
+            ariaLabel: button.getAttribute('aria-label'),
+            disabled: button.hasAttribute('disabled'),
+          })),
+        ).catch((buttonErr) => [{ error: buttonErr instanceof Error ? buttonErr.message : String(buttonErr) }]),
+      };
+    }
     await fail('runtime-v2-status-timeline-stale-ui-smoke-failed', err instanceof Error ? err.message : String(err), {
       checks,
       serverOutput: server?.getOutput?.().slice(-3000),
+      coreOutput: coreServer?.getOutput?.().slice(-3000),
       workspaceId,
+      diagnostics,
     });
   } finally {
     await browser?.close?.().catch(() => undefined);
@@ -383,6 +481,7 @@ const main = async () => {
       }
     }
     await server?.stop?.();
+    await coreServer?.stop?.();
     await fs.rm(homeDir, { recursive: true, force: true }).catch(() => undefined);
   }
 };

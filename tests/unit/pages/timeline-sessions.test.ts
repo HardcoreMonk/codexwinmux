@@ -133,6 +133,14 @@ describe('/api/timeline/sessions', () => {
     expect(response.body).toMatchObject({ total: 1, hasMore: false });
   });
 
+  it('marks session list responses as no-store because timeline sessions are dynamic UI state', async () => {
+    const response = createResponse();
+
+    await handler(createRequest({ tmuxSession: 'dead-tmux-session', panelType: 'codex' }), response.res);
+
+    expect(response.headers['Cache-Control']).toBe('no-store');
+  });
+
   it('ignores stale source filter query parameters', async () => {
     const response = createResponse();
 

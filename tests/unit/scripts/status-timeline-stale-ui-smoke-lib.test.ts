@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
@@ -33,5 +34,16 @@ describe('status/timeline stale UI smoke helpers', () => {
     expect(buildDispatchNativeAppStateScript(false)).toContain('active: false');
     expect(buildDispatchNativeAppStateScript(true)).toContain('codexmux:native-app-state');
     expect(buildReadStatusTimelineStaleUiProbeScript()).toContain(`${STATUS_TIMELINE_STALE_UI_PROBE_GLOBAL}.events`);
+  });
+
+  it('keeps the stale UI smoke on an isolated Core host instead of an installed split service', async () => {
+    const source = await fs.readFile(
+      path.join(process.cwd(), 'scripts/smoke-runtime-v2-status-timeline-stale-ui.mjs'),
+      'utf-8',
+    );
+
+    expect(source).toContain('startCoreServer');
+    expect(source).toContain("entrypoint: 'src/workers/core-engine-host.ts'");
+    expect(source).toContain('CODEXWINMUX_CORE_ENGINE_PORT');
   });
 });

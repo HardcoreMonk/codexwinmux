@@ -35,6 +35,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  res.setHeader('Cache-Control', 'no-store');
+
   const tmuxSession = firstQueryValue(req.query.tmuxSession);
   if (!tmuxSession) {
     return res.status(400).json({ error: 'missing-param', message: 'tmuxSession parameter required' });

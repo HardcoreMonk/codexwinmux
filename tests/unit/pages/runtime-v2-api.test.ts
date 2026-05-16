@@ -223,6 +223,7 @@ describe('runtime v2 api routes', () => {
       query: { tmuxSession: 'pt-ws-pane-tab', panelType: 'codex', limit: '10', offset: '5', source: 'remote', sourceId: 'win11' },
     }), sessions.res);
     expect(sessions.statusCode).toBe(200);
+    expect(sessions.headers['Cache-Control']).toBe('no-store');
     expect(sessions.body).toMatchObject({ total: 0, hasMore: false });
     expect(mocks.runtime.listTimelineSessions).toHaveBeenCalledWith({
       tmuxSession: 'pt-ws-pane-tab',
