@@ -41,6 +41,17 @@ const commandPayloadSchemas = {
   'core.terminal-tab.delete': z.object({
     tabId: z.string().min(1),
   }).strict(),
+  'core.terminal-tab.restart': z.object({
+    workspaceId: z.string().min(1),
+    paneId: z.string().min(1),
+    tabId: z.string().min(1),
+    sessionName: z.string().min(1),
+    cwd: z.string().min(1),
+    ensureWorkspacePane: z.object({
+      workspaceName: z.string().min(1),
+      defaultCwd: z.string().min(1),
+    }).strict().optional(),
+  }).strict(),
   'core.terminal.attach': z.object({
     connectionId: z.string().min(1),
     sessionName: z.string().min(1),
@@ -123,6 +134,7 @@ const replyPayloadSchemas = {
   }).strict(),
   'core.terminal-tab.create': z.unknown(),
   'core.terminal-tab.delete': z.unknown(),
+  'core.terminal-tab.restart': z.unknown(),
   'core.terminal.attach': z.object({
     subscriberId: z.string().min(1),
   }).strict(),

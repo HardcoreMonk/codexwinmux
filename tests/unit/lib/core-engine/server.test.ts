@@ -194,6 +194,15 @@ describe('core engine server', () => {
         runtimeVersion: 2,
         lifecycleState: 'ready',
       })),
+      restartTerminalTab: vi.fn(async () => ({
+        id: 'tab-a',
+        sessionName: 'rtv2-ws-a-pane-a-tab-a',
+        name: '',
+        order: 0,
+        panelType: 'terminal',
+        runtimeVersion: 2,
+        lifecycleState: 'ready',
+      })),
       deleteTerminalTab: vi.fn(async () => ({ deleted: true, workspaceId: 'ws-a', killedSession: null, failedKill: null })),
       deleteWorkspace: vi.fn(async () => ({ deleted: true, killedSessions: [], failedKills: [] })),
       readTimelineEntriesBefore: vi.fn(async () => ({ entries: [], startByteOffset: 0, hasMore: false })),
@@ -214,6 +223,16 @@ describe('core engine server', () => {
       type: 'core.terminal-tab.delete',
       payload: { tabId: 'tab-a' },
     }))).resolves.toMatchObject({ ok: true, payload: { deleted: true } });
+    await expect(server.handleCommand(createCoreCommand({
+      type: 'core.terminal-tab.restart',
+      payload: {
+        workspaceId: 'ws-a',
+        paneId: 'pane-a',
+        tabId: 'tab-a',
+        sessionName: 'rtv2-ws-a-pane-a-tab-a',
+        cwd: 'D:\\repo',
+      },
+    }))).resolves.toMatchObject({ ok: true, payload: { id: 'tab-a', runtimeVersion: 2 } });
     await expect(server.handleCommand(createCoreCommand({
       type: 'core.workspace.delete',
       payload: { workspaceId: 'ws-a' },
@@ -250,6 +269,13 @@ describe('core engine server', () => {
     expect(supervisor.createTerminalTab).toHaveBeenCalledWith({
       workspaceId: 'ws-a',
       paneId: 'pane-a',
+      cwd: 'D:\\repo',
+    });
+    expect(supervisor.restartTerminalTab).toHaveBeenCalledWith({
+      workspaceId: 'ws-a',
+      paneId: 'pane-a',
+      tabId: 'tab-a',
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
       cwd: 'D:\\repo',
     });
     expect(supervisor.deleteTerminalTab).toHaveBeenCalledWith('tab-a');

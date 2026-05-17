@@ -10,6 +10,7 @@ import type {
   IRuntimeDeleteTerminalTabResult,
   IRuntimeDeleteWorkspaceResult,
   IRuntimeHealth,
+  IRuntimeRestartTerminalTabInput,
   IRuntimeStatusLiveAcceptedResult,
   IRuntimeStatusLiveDeviceVisibilityInput,
   IRuntimeStatusLiveHookEventInput,
@@ -43,6 +44,7 @@ type TCoreRuntimeApi = {
       defaultCwd: string;
     };
   }) => Promise<IRuntimeTerminalTab>;
+  restartTerminalTab: (input: IRuntimeRestartTerminalTabInput) => Promise<IRuntimeTerminalTab>;
   getLayout: (workspaceId: string) => Promise<TRuntimeLayout>;
   listTimelineSessions: (input: IRuntimeTimelineSessionListInput) => Promise<IRuntimeTimelineSessionPage>;
   readTimelineEntriesBefore: (input: IRuntimeTimelineEntriesBeforeInput) => Promise<TRuntimeTimelineEntriesBeforeResult>;
@@ -140,6 +142,8 @@ export const getCoreRuntimeApi = (): TCoreRuntimeApi => {
     },
     createTerminalTab: async (input) =>
       client().request('core.terminal-tab.create', input) as Promise<IRuntimeTerminalTab>,
+    restartTerminalTab: async (input) =>
+      client().request('core.terminal-tab.restart', input) as Promise<IRuntimeTerminalTab>,
     deleteTerminalTab: async (tabId) =>
       client().request('core.terminal-tab.delete', { tabId }) as Promise<IRuntimeDeleteTerminalTabResult>,
     listTimelineSessions: async (input) =>

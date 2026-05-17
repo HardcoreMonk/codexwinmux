@@ -1,17 +1,56 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { removeTabFromPane, restartTabSession, patchTab } from '@/lib/layout-store';
-import { getActiveWorkspaceId } from '@/lib/workspace-store';
+import { getActiveWorkspaceId, getWorkspaceById } from '@/lib/workspace-store';
 import { getStatusManager } from '@/lib/status-manager';
 import { createLogger } from '@/lib/logger';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
 import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import type { ITab } from '@/types/terminal';
+import { collectPanes } from '@/lib/layout-tree';
+import { shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
+import { resolveExistingDir } from '@/lib/tmux';
+import { broadcastSync } from '@/lib/sync-server';
 
 const log = createLogger('layout');
 
 const shouldUseRuntimeStatusLive = (): boolean =>
   isRuntimeV2Enabled() && getRuntimeStatusV2Mode() === 'default';
+
+const restartRuntimeStorageDefaultTab = async (
+  wsId: string,
+  paneId: string,
+  tabId: string,
+): Promise<boolean | null> => {
+  if (!shouldReadRuntimeStorageV2()) return null;
+
+  const runtime = getCoreRuntimeApi();
+  await runtime.ensureStarted();
+  const layout = await runtime.getLayout(wsId);
+  if (!layout) return false;
+
+  const pane = collectPanes(layout.root).find((item) => item.id === paneId);
+  if (!pane) return false;
+
+  const tab = pane.tabs.find((item) => item.id === tabId);
+  if (!tab || tab.runtimeVersion !== 2) return false;
+
+  const workspace = await getWorkspaceById(wsId);
+  const effectiveCwd = await resolveExistingDir(tab.cwd ?? workspace?.directories[0]);
+  await runtime.restartTerminalTab({
+    workspaceId: wsId,
+    paneId,
+    tabId,
+    sessionName: tab.sessionName,
+    cwd: effectiveCwd,
+    ensureWorkspacePane: {
+      workspaceName: workspace?.name ?? wsId,
+      defaultCwd: workspace?.directories[0] ?? effectiveCwd,
+    },
+  });
+  broadcastSync({ type: 'layout', workspaceId: wsId });
+  return true;
+};
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const wsId = (req.query.workspace as string) || await getActiveWorkspaceId();
@@ -40,6 +79,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
     try {
       const { command } = req.body ?? {};
+      const runtimeRestarted = await restartRuntimeStorageDefaultTab(wsId, paneId, tabId);
+      if (runtimeRestarted !== null) {
+        if (!runtimeRestarted) {
+          return res.status(404).json({ error: 'Tab not found' });
+        }
+        return res.status(200).json({ ok: true });
+      }
       const ok = await restartTabSession(wsId, paneId, tabId, command);
       if (!ok) {
         return res.status(404).json({ error: 'Tab not found' });

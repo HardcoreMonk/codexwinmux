@@ -181,6 +181,18 @@ export interface IRuntimeTerminalTab {
   lifecycleState: 'pending_terminal' | 'ready' | 'failed';
 }
 
+export interface IRuntimeRestartTerminalTabInput {
+  workspaceId: string;
+  paneId: string;
+  tabId: string;
+  sessionName: string;
+  cwd: string;
+  ensureWorkspacePane?: {
+    workspaceName: string;
+    defaultCwd: string;
+  };
+}
+
 export interface IRuntimePendingTerminalTab {
   id: string;
   sessionName: string;

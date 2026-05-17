@@ -22,6 +22,17 @@ export interface ICoreEngineSupervisorAdapter {
       defaultCwd: string;
     };
   }): Promise<unknown>;
+  restartTerminalTab?(input: {
+    workspaceId: string;
+    paneId: string;
+    tabId: string;
+    sessionName: string;
+    cwd: string;
+    ensureWorkspacePane?: {
+      workspaceName: string;
+      defaultCwd: string;
+    };
+  }): Promise<unknown>;
   deleteTerminalTab?(tabId: string): Promise<unknown>;
   attachTerminal?(input: {
     sessionName: string;
@@ -150,6 +161,17 @@ export const createCoreEngineServer = ({
       case 'core.terminal-tab.delete': {
         const payload = command.payload as { tabId: string };
         return callSupervisorMethod(supervisor, supervisor.deleteTerminalTab, 'deleteTerminalTab', payload.tabId);
+      }
+      case 'core.terminal-tab.restart': {
+        const payload = command.payload as {
+          workspaceId: string;
+          paneId: string;
+          tabId: string;
+          sessionName: string;
+          cwd: string;
+          ensureWorkspacePane?: { workspaceName: string; defaultCwd: string };
+        };
+        return callSupervisorMethod(supervisor, supervisor.restartTerminalTab, 'restartTerminalTab', payload);
       }
       case 'core.terminal.attach': {
         const payload = command.payload as {

@@ -38,6 +38,7 @@ describe('core engine contracts', () => {
       'core.layout.get',
       'core.terminal-tab.create',
       'core.terminal-tab.delete',
+      'core.terminal-tab.restart',
       'core.terminal.attach',
       'core.terminal.write',
       'core.terminal.resize',
@@ -82,6 +83,23 @@ describe('core engine contracts', () => {
       ok: true,
       checks: ['runtime-health-ok'],
       failures: [],
+    });
+
+    expect(parseCoreCommandPayload('core.terminal-tab.restart', {
+      workspaceId: 'ws-a',
+      paneId: 'pane-a',
+      tabId: 'tab-a',
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
+      cwd: 'D:\\repo',
+      ensureWorkspacePane: {
+        workspaceName: 'Workspace A',
+        defaultCwd: 'D:\\repo',
+      },
+    })).toMatchObject({
+      workspaceId: 'ws-a',
+      tabId: 'tab-a',
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
+      cwd: 'D:\\repo',
     });
   });
 
