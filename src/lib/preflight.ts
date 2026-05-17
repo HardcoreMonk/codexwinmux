@@ -19,9 +19,60 @@ let shellPathPromise: Promise<string> | null = null;
 
 const defaultShell = () => os.userInfo().shell || resolveDefaultShell();
 
+const appendUniquePath = (paths: string[], value: string | undefined | null): void => {
+  if (!value) return;
+  for (const entry of value.split(path.win32.delimiter)) {
+    const trimmed = entry.trim();
+    if (trimmed && !paths.some((existing) => existing.toLowerCase() === trimmed.toLowerCase())) {
+      paths.push(trimmed);
+    }
+  }
+};
+
+const appendUniqueDir = (paths: string[], value: string | undefined | null): void => {
+  if (!value) return;
+  const trimmed = value.trim();
+  if (trimmed && !paths.some((existing) => existing.toLowerCase() === trimmed.toLowerCase())) {
+    paths.push(trimmed);
+  }
+};
+
+export const buildWindowsToolSearchPath = ({
+  env = process.env,
+  basePath,
+}: {
+  env?: Record<string, string | undefined>;
+  basePath?: string;
+} = {}): string => {
+  const paths: string[] = [];
+  appendUniquePath(paths, basePath);
+  appendUniquePath(paths, env.PATH);
+  appendUniquePath(paths, env.Path);
+  appendUniquePath(paths, PRISTINE_ENV.PATH);
+  appendUniquePath(paths, PRISTINE_ENV.Path);
+
+  appendUniqueDir(paths, env.CODEXWINMUX_CODEX_CLI_DIR);
+  if (env.CODEXWINMUX_CODEX_CLI_PATH) {
+    appendUniqueDir(paths, path.win32.dirname(env.CODEXWINMUX_CODEX_CLI_PATH));
+  }
+  if (env.APPDATA) {
+    appendUniqueDir(paths, path.win32.join(env.APPDATA, 'npm'));
+  }
+  if (env.LOCALAPPDATA) {
+    appendUniqueDir(paths, path.win32.join(env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Links'));
+  }
+  if (env.USERPROFILE) {
+    appendUniqueDir(paths, path.win32.join(env.USERPROFILE, '.local', 'bin'));
+  }
+
+  return paths.join(path.win32.delimiter);
+};
+
 const resolveShellPathAsync = async (): Promise<string> => {
   if (process.platform === 'win32') {
-    return process.env.PATH || process.env.Path || PRISTINE_ENV.PATH || '';
+    return buildWindowsToolSearchPath({
+      basePath: process.env.PATH || process.env.Path || PRISTINE_ENV.PATH || '',
+    });
   }
 
   const shell = defaultShell();

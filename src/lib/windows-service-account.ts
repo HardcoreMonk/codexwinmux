@@ -74,6 +74,13 @@ const inferLocalAppData = (
   readEnv(env, 'LOCALAPPDATA')
   || path.win32.join(sourceUserProfile, 'AppData', 'Local');
 
+const inferAppData = (
+  env: Record<string, string | undefined>,
+  sourceUserProfile: string,
+): string =>
+  readEnv(env, 'APPDATA')
+  || path.win32.join(sourceUserProfile, 'AppData', 'Roaming');
+
 export const resolveWindowsServiceAccountMigrationPlan = ({
   env = process.env,
   repoRoot = process.cwd(),
@@ -84,6 +91,7 @@ export const resolveWindowsServiceAccountMigrationPlan = ({
   const serviceLocalAppData = path.win32.join(serviceProfileRoot, 'AppData', 'Local');
   const serviceAppData = path.win32.join(serviceProfileRoot, 'AppData', 'Roaming');
   const sourceLocalAppData = inferLocalAppData(env, sourceUserProfile);
+  const sourceAppData = inferAppData(env, sourceUserProfile);
   const releaseDir = path.win32.join(repoRoot, 'release', 'win-unpacked');
   const serviceDir = path.win32.join(sourceLocalAppData, 'codexwinmux', 'service');
 
@@ -121,6 +129,13 @@ export const resolveWindowsServiceAccountMigrationPlan = ({
         source: path.win32.join(sourceUserProfile, '.codexwinmux'),
         target: path.win32.join(serviceProfileRoot, '.codexwinmux'),
         sensitive: true,
+        requiresExplicitCredentialCopy: false,
+      },
+      {
+        id: 'codex-cli-npm-migration',
+        source: path.win32.join(sourceAppData, 'npm'),
+        target: path.win32.join(serviceAppData, 'npm'),
+        sensitive: false,
         requiresExplicitCredentialCopy: false,
       },
     ],
@@ -184,6 +199,9 @@ export const validateWindowsServiceAccountMigrationPlan = (
   }
   if (!plan.migrations.some((migration) => migration.id === 'codexwinmux-runtime-data-migration')) {
     failures.push('missing-codexwinmux-runtime-data-migration');
+  }
+  if (!plan.migrations.some((migration) => migration.id === 'codex-cli-npm-migration')) {
+    failures.push('missing-codex-cli-npm-migration');
   }
   if (!plan.aclTargets.some((target) => target.rights === 'Modify')) failures.push('missing-modify-acl');
   if (!plan.aclTargets.some((target) => target.rights === 'ReadAndExecute')) failures.push('missing-read-execute-acl');

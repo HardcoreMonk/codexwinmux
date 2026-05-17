@@ -37,12 +37,19 @@ describe('Windows service account migration plan', () => {
     expect(plan.migrations.map((migration) => migration.id)).toEqual([
       'codex-credential-session-migration',
       'codexwinmux-runtime-data-migration',
+      'codex-cli-npm-migration',
     ]);
     expect(plan.migrations[0]).toMatchObject({
       source: 'C:\\Users\\yohan\\.codex',
       target: 'C:\\ProgramData\\codexwinmux\\service-profile\\.codex',
       sensitive: true,
       requiresExplicitCredentialCopy: true,
+    });
+    expect(plan.migrations[2]).toMatchObject({
+      source: 'C:\\Users\\yohan\\AppData\\Roaming\\npm',
+      target: 'C:\\ProgramData\\codexwinmux\\service-profile\\AppData\\Roaming\\npm',
+      sensitive: false,
+      requiresExplicitCredentialCopy: false,
     });
     expect(plan.aclTargets).toEqual([
       {

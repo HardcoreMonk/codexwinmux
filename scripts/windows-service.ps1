@@ -102,6 +102,25 @@ $AppDataPath = if ($ServiceAppDataPath) {
   $DefaultAppDataPath
 }
 $LogPath = if ($ServiceLogPath) { $ServiceLogPath } else { Join-Path $LocalAppDataPath 'codexwinmux\logs' }
+$ServiceToolPathParts = [System.Collections.Generic.List[string]]::new()
+foreach ($candidate in @(
+    (Join-Path $AppDataPath 'npm'),
+    (Join-Path $LocalAppDataPath 'Microsoft\WinGet\Links'),
+    (Join-Path $UserProfilePath '.local\bin'),
+    $env:Path,
+    $env:PATH
+  )) {
+  if ([string]::IsNullOrWhiteSpace($candidate)) {
+    continue
+  }
+  foreach ($entry in ($candidate -split ';')) {
+    $trimmed = $entry.Trim()
+    if ($trimmed -and -not $ServiceToolPathParts.Contains($trimmed)) {
+      [void]$ServiceToolPathParts.Add($trimmed)
+    }
+  }
+}
+$ServiceToolPath = $ServiceToolPathParts -join ';'
 $ServiceArguments = "`"$BackendServerScriptPath`""
 $ServiceProcessEnvName = 'ELECTRON_RUN_AS_NODE'
 $CoreEngineTransport = 'tcp'
@@ -191,6 +210,7 @@ function Write-WinSwConfig {
 $coreTransportEnvXml
   <env name="NODE_ENV" value="production" />
   <env name="NODE_PATH" value="$(Escape-XmlValue $PackagedNodePath)" />
+  <env name="PATH" value="$(Escape-XmlValue $ServiceToolPath)" />
   <env name="__CMUX_APP_DIR" value="$(Escape-XmlValue $AppAsarPath)" />
   <env name="__CMUX_APP_DIR_UNPACKED" value="$(Escape-XmlValue $AppAsarUnpackedPath)" />
   <env name="CODEXWINMUX_WINDOWS_HOST_OWNER" value="service" />

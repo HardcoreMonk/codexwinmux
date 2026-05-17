@@ -31,10 +31,13 @@ if (-not $ServiceProfileRoot) {
 
 $ServiceLocalAppData = Join-Path $ServiceProfileRoot 'AppData\Local'
 $ServiceAppData = Join-Path $ServiceProfileRoot 'AppData\Roaming'
+$SourceAppData = Join-Path $SourceUserProfile 'AppData\Roaming'
 $SourceCodexDir = Join-Path $SourceUserProfile '.codex'
 $SourceDataDir = Join-Path $SourceUserProfile '.codexwinmux'
+$SourceNpmDir = Join-Path $SourceAppData 'npm'
 $TargetCodexDir = Join-Path $ServiceProfileRoot '.codex'
 $TargetDataDir = Join-Path $ServiceProfileRoot '.codexwinmux'
+$TargetNpmDir = Join-Path $ServiceAppData 'npm'
 $ReleaseDir = Join-Path $RepoRoot 'release\win-unpacked'
 $ServiceDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'codexwinmux\service'
 
@@ -182,6 +185,13 @@ function Get-Plan {
         target = $TargetDataDir
         sensitive = $true
         requiresExplicitCredentialCopy = $false
+      },
+      [pscustomobject]@{
+        id = 'codex-cli-npm-migration'
+        source = $SourceNpmDir
+        target = $TargetNpmDir
+        sensitive = $false
+        requiresExplicitCredentialCopy = $false
       }
     )
     aclTargets = @(
@@ -221,6 +231,45 @@ function Copy-DirectoryIfPresent([string]$Source, [string]$Target) {
   New-Item -ItemType Directory -Force -Path $Target | Out-Null
   Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $Target -Recurse -Force -ErrorAction SilentlyContinue
   return [pscustomobject]@{ source = $Source; target = $Target; copied = $true; reason = $null }
+}
+
+function Copy-CodexCliNpmIfPresent {
+  if (-not (Test-Path -LiteralPath $SourceNpmDir)) {
+    return [pscustomobject]@{
+      id = 'codex-cli-npm-migration'
+      source = $SourceNpmDir
+      target = $TargetNpmDir
+      copied = $false
+      reason = 'source-missing'
+    }
+  }
+
+  $copied = $false
+  New-Item -ItemType Directory -Force -Path $TargetNpmDir | Out-Null
+  foreach ($shimName in @('codex', 'codex.cmd', 'codex.ps1')) {
+    $sourceShim = Join-Path $SourceNpmDir $shimName
+    if (Test-Path -LiteralPath $sourceShim) {
+      Copy-Item -LiteralPath $sourceShim -Destination (Join-Path $TargetNpmDir $shimName) -Force
+      $copied = $true
+    }
+  }
+
+  $sourcePackageDir = Join-Path $SourceNpmDir 'node_modules\@openai\codex'
+  if (Test-Path -LiteralPath $sourcePackageDir) {
+    $targetPackageDir = Join-Path $TargetNpmDir 'node_modules\@openai\codex'
+    New-Item -ItemType Directory -Force -Path $targetPackageDir | Out-Null
+    Get-ChildItem -LiteralPath $sourcePackageDir -Force |
+      Copy-Item -Destination $targetPackageDir -Recurse -Force
+    $copied = $true
+  }
+
+  return [pscustomobject]@{
+    id = 'codex-cli-npm-migration'
+    source = $SourceNpmDir
+    target = $TargetNpmDir
+    copied = $copied
+    reason = if ($copied) { $null } else { 'codex-cli-source-missing' }
+  }
 }
 
 function Grant-AccountAcl {
@@ -312,6 +361,7 @@ switch ($Action) {
       }
     }
     $results += Copy-DirectoryIfPresent $SourceDataDir $TargetDataDir
+    $results += Copy-CodexCliNpmIfPresent
     $results | ConvertTo-Json -Depth 8
   }
   'apply-acl' {

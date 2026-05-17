@@ -27,7 +27,11 @@ const main = (): void => {
   ];
 
   const migrationIds = plan.migrations.map((migration) => migration.id);
-  for (const id of ['codex-credential-session-migration', 'codexwinmux-runtime-data-migration']) {
+  for (const id of [
+    'codex-credential-session-migration',
+    'codexwinmux-runtime-data-migration',
+    'codex-cli-npm-migration',
+  ]) {
     if (!migrationIds.includes(id)) {
       throw new Error(`missing migration ${id}`);
     }
@@ -64,6 +68,8 @@ const main = (): void => {
   assertIncludes(accountHelper, 'CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_PASSWORD', accountHelperPath);
   assertIncludes(accountHelper, 'CODEXWINMUX_WINDOWS_SERVICE_ACCOUNT_ROTATION_PASSWORD', accountHelperPath);
   assertIncludes(accountHelper, 'IncludeCodexCredentials', accountHelperPath);
+  assertIncludes(accountHelper, 'Copy-CodexCliNpmIfPresent', accountHelperPath);
+  assertIncludes(accountHelper, 'codex-cli-npm-migration', accountHelperPath);
   assertIncludes(accountHelper, 'Invoke-CimMethod', accountHelperPath);
   assertIncludes(accountHelper, 'SeServiceLogonRight', accountHelperPath);
   assertIncludes(accountHelper, 'secedit', accountHelperPath);
@@ -84,6 +90,8 @@ const main = (): void => {
   }
   assertIncludes(serviceHelper, 'Test-DedicatedServiceAccountConfigured', serviceHelperPath);
   assertIncludes(serviceHelper, 'codexwinmux\\service-profile', serviceHelperPath);
+  assertIncludes(serviceHelper, '<env name="PATH"', serviceHelperPath);
+  assertIncludes(serviceHelper, "Join-Path $AppDataPath 'npm'", serviceHelperPath);
   checks.push('service-account-profile-env-service-config');
 
   const packageJson = JSON.parse(readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')) as {

@@ -157,6 +157,8 @@ const main = async (): Promise<void> => {
   if (
     !helper.includes('__CMUX_APP_DIR_UNPACKED')
     || !helper.includes('NODE_PATH')
+    || !helper.includes('<env name="PATH"')
+    || !helper.includes("Join-Path $AppDataPath 'npm'")
     || !helper.includes('NODE_ENV')
     || !helper.includes('production')
   ) {
@@ -165,6 +167,7 @@ const main = async (): Promise<void> => {
   checks.push('windows-service-runbook-helper');
   checks.push('windows-service-split-external-transport-env');
   checks.push('windows-service-packaged-worker-env');
+  checks.push('windows-service-tool-path-env');
 
   if (!plan.paths.dataDir.endsWith('.codexwinmux') || !plan.paths.codexDir.endsWith('.codex')) {
     throw new Error(`unexpected Windows data paths: ${JSON.stringify(plan.paths)}`);

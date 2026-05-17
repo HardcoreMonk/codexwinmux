@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildWindowsToolSearchPath,
   createTerminalRuntimePreflightStatus,
   parseToolSemanticVersion,
 } from '@/lib/preflight';
@@ -103,5 +104,23 @@ describe('preflight agent status', () => {
     expect(parseToolSemanticVersion('git version 2.54.0.windows.1')).toBe('2.54.0');
     expect(parseToolSemanticVersion('codex-cli 0.128.0')).toBe('0.128.0');
     expect(parseToolSemanticVersion('tmux 3.4')).toBe('3.4');
+  });
+
+  it('adds service-profile tool locations to the Windows search path', () => {
+    const searchPath = buildWindowsToolSearchPath({
+      basePath: 'C:\\Windows\\System32',
+      env: {
+        APPDATA: 'C:\\ProgramData\\codexwinmux\\service-profile\\AppData\\Roaming',
+        LOCALAPPDATA: 'C:\\ProgramData\\codexwinmux\\service-profile\\AppData\\Local',
+        USERPROFILE: 'C:\\ProgramData\\codexwinmux\\service-profile',
+      },
+    });
+
+    expect(searchPath.split(';')).toEqual(expect.arrayContaining([
+      'C:\\Windows\\System32',
+      'C:\\ProgramData\\codexwinmux\\service-profile\\AppData\\Roaming\\npm',
+      'C:\\ProgramData\\codexwinmux\\service-profile\\AppData\\Local\\Microsoft\\WinGet\\Links',
+      'C:\\ProgramData\\codexwinmux\\service-profile\\.local\\bin',
+    ]));
   });
 });
