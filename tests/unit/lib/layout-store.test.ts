@@ -12,7 +12,7 @@ const tmuxMocks = vi.hoisted(() => ({
 }));
 
 const runtimeMocks = vi.hoisted(() => ({
-  supervisor: {
+  coreApi: {
     ensureStarted: vi.fn(),
     restartTerminalTab: vi.fn(),
     deleteTerminalTab: vi.fn(),
@@ -26,7 +26,7 @@ const runtimeMocks = vi.hoisted(() => ({
     patchTabStatusMetadata: vi.fn(),
     getTabStatusMetadata: vi.fn(),
   },
-  getRuntimeSupervisor: vi.fn(),
+  getCoreRuntimeApi: vi.fn(),
 }));
 
 vi.mock('@/lib/tmux', () => ({
@@ -38,8 +38,8 @@ vi.mock('@/lib/tmux', () => ({
   workspaceSessionName: (wsId: string, paneId: string, tabId: string) => `pt-${wsId}-${paneId}-${tabId}`,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: runtimeMocks.getRuntimeSupervisor,
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: runtimeMocks.getCoreRuntimeApi,
 }));
 
 vi.mock('@/lib/sync-server', () => ({
@@ -82,11 +82,11 @@ describe('layout store normalization', () => {
     tmuxMocks.killSession.mockClear();
     tmuxMocks.resolveExistingDir.mockClear();
     tmuxMocks.sendKeys.mockClear();
-    runtimeMocks.getRuntimeSupervisor.mockReset();
-    runtimeMocks.getRuntimeSupervisor.mockReturnValue(runtimeMocks.supervisor);
-    runtimeMocks.supervisor.ensureStarted.mockClear();
-    runtimeMocks.supervisor.restartTerminalTab.mockReset();
-    runtimeMocks.supervisor.restartTerminalTab.mockResolvedValue({
+    runtimeMocks.getCoreRuntimeApi.mockReset();
+    runtimeMocks.getCoreRuntimeApi.mockReturnValue(runtimeMocks.coreApi);
+    runtimeMocks.coreApi.ensureStarted.mockClear();
+    runtimeMocks.coreApi.restartTerminalTab.mockReset();
+    runtimeMocks.coreApi.restartTerminalTab.mockResolvedValue({
       id: 'tab-runtime',
       sessionName: 'rtv2-ws-layout-store-pane-runtime-tab-runtime',
       name: '',
@@ -96,35 +96,35 @@ describe('layout store normalization', () => {
       runtimeVersion: 2,
       lifecycleState: 'ready',
     });
-    runtimeMocks.supervisor.deleteTerminalTab.mockClear();
-    runtimeMocks.supervisor.splitPane.mockReset();
-    runtimeMocks.supervisor.closePane.mockReset();
-    runtimeMocks.supervisor.patchLayout.mockReset();
-    runtimeMocks.supervisor.patchPane.mockReset();
-    runtimeMocks.supervisor.reorderTabs.mockReset();
-    runtimeMocks.supervisor.moveTab.mockReset();
-    runtimeMocks.supervisor.patchTab.mockReset();
-    runtimeMocks.supervisor.patchTabStatusMetadata.mockReset();
-    runtimeMocks.supervisor.getTabStatusMetadata.mockReset();
+    runtimeMocks.coreApi.deleteTerminalTab.mockClear();
+    runtimeMocks.coreApi.splitPane.mockReset();
+    runtimeMocks.coreApi.closePane.mockReset();
+    runtimeMocks.coreApi.patchLayout.mockReset();
+    runtimeMocks.coreApi.patchPane.mockReset();
+    runtimeMocks.coreApi.reorderTabs.mockReset();
+    runtimeMocks.coreApi.moveTab.mockReset();
+    runtimeMocks.coreApi.patchTab.mockReset();
+    runtimeMocks.coreApi.patchTabStatusMetadata.mockReset();
+    runtimeMocks.coreApi.getTabStatusMetadata.mockReset();
     broadcastSyncMock.mockClear();
     const runtimeLayout = {
       root: { type: 'pane' as const, id: 'pane-runtime', tabs: [], activeTabId: null },
       activePaneId: 'pane-runtime',
       updatedAt: new Date(0).toISOString(),
     };
-    runtimeMocks.supervisor.splitPane.mockResolvedValue(runtimeLayout);
-    runtimeMocks.supervisor.closePane.mockResolvedValue({ layout: runtimeLayout, killedSessions: [], failedKills: [] });
-    runtimeMocks.supervisor.patchLayout.mockResolvedValue(runtimeLayout);
-    runtimeMocks.supervisor.patchPane.mockResolvedValue(runtimeLayout);
-    runtimeMocks.supervisor.reorderTabs.mockResolvedValue(runtimeLayout);
-    runtimeMocks.supervisor.moveTab.mockResolvedValue(runtimeLayout);
-    runtimeMocks.supervisor.patchTab.mockResolvedValue(runtimeLayout);
-    runtimeMocks.supervisor.patchTabStatusMetadata.mockResolvedValue({
+    runtimeMocks.coreApi.splitPane.mockResolvedValue(runtimeLayout);
+    runtimeMocks.coreApi.closePane.mockResolvedValue({ layout: runtimeLayout, killedSessions: [], failedKills: [] });
+    runtimeMocks.coreApi.patchLayout.mockResolvedValue(runtimeLayout);
+    runtimeMocks.coreApi.patchPane.mockResolvedValue(runtimeLayout);
+    runtimeMocks.coreApi.reorderTabs.mockResolvedValue(runtimeLayout);
+    runtimeMocks.coreApi.moveTab.mockResolvedValue(runtimeLayout);
+    runtimeMocks.coreApi.patchTab.mockResolvedValue(runtimeLayout);
+    runtimeMocks.coreApi.patchTabStatusMetadata.mockResolvedValue({
       updated: true,
       workspaceId: 'ws-runtime',
       tabId: 'tab-a',
     });
-    runtimeMocks.supervisor.getTabStatusMetadata.mockResolvedValue({
+    runtimeMocks.coreApi.getTabStatusMetadata.mockResolvedValue({
       workspaceId: 'ws-runtime',
       tabId: 'tab-a',
       agentSessionId: 'agent-a',
@@ -239,7 +239,7 @@ describe('layout store normalization', () => {
     await fs.rm(resolveLayoutDir(wsId), { recursive: true, force: true });
   });
 
-  it('restarts runtime v2 tabs through the runtime supervisor', async () => {
+  it('restarts runtime v2 tabs through the core runtime API', async () => {
     const wsId = `ws-layout-store-restart-${process.pid}`;
     const paneId = 'pane-runtime';
     await fs.rm(resolveLayoutDir(wsId), { recursive: true, force: true });
@@ -265,8 +265,8 @@ describe('layout store normalization', () => {
     const ok = await restartTabSession(wsId, paneId, 'tab-runtime');
 
     expect(ok).toBe(true);
-    expect(runtimeMocks.supervisor.ensureStarted).toHaveBeenCalled();
-    expect(runtimeMocks.supervisor.restartTerminalTab).toHaveBeenCalledWith({
+    expect(runtimeMocks.coreApi.ensureStarted).toHaveBeenCalled();
+    expect(runtimeMocks.coreApi.restartTerminalTab).toHaveBeenCalledWith({
       workspaceId: wsId,
       paneId,
       tabId: 'tab-runtime',
@@ -307,7 +307,7 @@ describe('layout store normalization', () => {
     }
   });
 
-  it('routes layout mutations through runtime supervisor in storage default mode', async () => {
+  it('routes layout mutations through the core runtime API in storage default mode', async () => {
     const previousRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
     const previousStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
@@ -324,19 +324,19 @@ describe('layout store normalization', () => {
       await expect(moveTabBetweenPanes('ws-runtime', 'tab-a', 'pane-a', 'pane-b', 0)).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
       await expect(patchTab('ws-runtime', 'pane-a', 'tab-a', { name: 'patched', terminalCollapsed: true })).resolves.toEqual(expect.objectContaining({ activePaneId: 'pane-runtime' }));
 
-      expect(runtimeMocks.supervisor.splitPane).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.splitPane).toHaveBeenCalledWith({
         workspaceId: 'ws-runtime',
         sourcePaneId: 'pane-a',
         orientation: 'horizontal',
         cwd: '/repo',
         panelType: 'terminal',
       });
-      expect(runtimeMocks.supervisor.closePane).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-b' });
-      expect(runtimeMocks.supervisor.patchLayout).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', activePaneId: 'pane-a' });
-      expect(runtimeMocks.supervisor.patchPane).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-a', activeTabId: 'tab-a' });
-      expect(runtimeMocks.supervisor.reorderTabs).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-a', tabIds: ['tab-b', 'tab-a'] });
-      expect(runtimeMocks.supervisor.moveTab).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', tabId: 'tab-a', fromPaneId: 'pane-a', toPaneId: 'pane-b', toIndex: 0 });
-      expect(runtimeMocks.supervisor.patchTab).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.closePane).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-b' });
+      expect(runtimeMocks.coreApi.patchLayout).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', activePaneId: 'pane-a' });
+      expect(runtimeMocks.coreApi.patchPane).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-a', activeTabId: 'tab-a' });
+      expect(runtimeMocks.coreApi.reorderTabs).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', paneId: 'pane-a', tabIds: ['tab-b', 'tab-a'] });
+      expect(runtimeMocks.coreApi.moveTab).toHaveBeenCalledWith({ workspaceId: 'ws-runtime', tabId: 'tab-a', fromPaneId: 'pane-a', toPaneId: 'pane-b', toIndex: 0 });
+      expect(runtimeMocks.coreApi.patchTab).toHaveBeenCalledWith({
         workspaceId: 'ws-runtime',
         paneId: 'pane-a',
         tabId: 'tab-a',
@@ -352,7 +352,7 @@ describe('layout store normalization', () => {
     }
   });
 
-  it('routes status and timeline metadata through runtime supervisor in storage default mode', async () => {
+  it('routes status and timeline metadata through the core runtime API in storage default mode', async () => {
     const previousRuntimeV2 = process.env.CODEXWINMUX_RUNTIME_V2;
     const previousStorageMode = process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE;
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
@@ -374,28 +374,28 @@ describe('layout store normalization', () => {
       await updateTabCliStatus('rtv2-ws-runtime-pane-a-tab-a', 'needs-input', 123);
       await expect(readTabAgentJsonlPath('rtv2-ws-runtime-pane-a-tab-a', provider)).resolves.toBe('/tmp/agent-a.jsonl');
 
-      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.patchTabStatusMetadata).toHaveBeenCalledWith({
         sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
         agentSessionId: 'agent-a',
       });
-      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.patchTabStatusMetadata).toHaveBeenCalledWith({
         sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
         agentJsonlPath: '/tmp/agent-a.jsonl',
       });
-      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.patchTabStatusMetadata).toHaveBeenCalledWith({
         sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
         agentSummary: 'summary',
       });
-      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.patchTabStatusMetadata).toHaveBeenCalledWith({
         sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
         lastUserMessage: '작업 시작',
       });
-      expect(runtimeMocks.supervisor.patchTabStatusMetadata).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.patchTabStatusMetadata).toHaveBeenCalledWith({
         sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
         cliState: 'needs-input',
         dismissedAt: 123,
       });
-      expect(runtimeMocks.supervisor.getTabStatusMetadata).toHaveBeenCalledWith({
+      expect(runtimeMocks.coreApi.getTabStatusMetadata).toHaveBeenCalledWith({
         sessionName: 'rtv2-ws-runtime-pane-a-tab-a',
       });
       expect(provider.writeSessionId).not.toHaveBeenCalled();

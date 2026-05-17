@@ -21,7 +21,7 @@ import { normalizeAgentFields } from '@/lib/agent-tab-fields';
 import { resolveTabRuntimeVersion } from '@/lib/runtime/terminal-mode';
 import { mirrorLegacyStorageToRuntimeV2BestEffort } from '@/lib/runtime/storage-mirror';
 import { readRuntimeStorageLayout, shouldReadRuntimeStorageV2 } from '@/lib/runtime/storage-read-owner';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import type { ITab, TLayoutNode, IPaneNode, ILayoutData, TPanelType } from '@/types/terminal';
 import type { TCliState } from '@/types/timeline';
 import type { IAgentProvider } from '@/lib/providers/types';
@@ -476,9 +476,9 @@ export const restartTabSession = async (wsId: string, paneId: string, tabId: str
     const cwdLost = Boolean(tab.cwd && tab.cwd !== effectiveCwd);
 
     if (resolveTabRuntimeVersion(tab) === 2) {
-      const supervisor = getRuntimeSupervisor();
-      await supervisor.ensureStarted();
-      await supervisor.restartTerminalTab({
+      const runtime = getCoreRuntimeApi();
+      await runtime.ensureStarted();
+      await runtime.restartTerminalTab({
         workspaceId: wsId,
         paneId,
         tabId,
@@ -587,7 +587,7 @@ export const updateTabAgentSessionId = (
   sessionId: string | null,
 ): Promise<void> =>
   shouldReadRuntimeStorageV2()
-    ? getRuntimeSupervisor().patchTabStatusMetadata({ sessionName, agentSessionId: sessionId }).then(() => undefined)
+    ? getCoreRuntimeApi().patchTabStatusMetadata({ sessionName, agentSessionId: sessionId }).then(() => undefined)
     : mutateTab(sessionName, (tab) => {
     if (provider.readSessionId(tab) === sessionId) return false;
     provider.writeSessionId(tab, sessionId);
@@ -600,7 +600,7 @@ export const updateTabAgentSummary = (
   summary: string | null,
 ): Promise<void> =>
   shouldReadRuntimeStorageV2()
-    ? getRuntimeSupervisor().patchTabStatusMetadata({ sessionName, agentSummary: summary }).then(() => undefined)
+    ? getCoreRuntimeApi().patchTabStatusMetadata({ sessionName, agentSummary: summary }).then(() => undefined)
     : mutateTab(sessionName, (tab) => {
     if (provider.readSummary(tab) === summary) return false;
     provider.writeSummary(tab, summary);
@@ -613,7 +613,7 @@ export const updateTabAgentJsonlPath = (
   jsonlPath: string | null,
 ): Promise<void> =>
   shouldReadRuntimeStorageV2()
-    ? getRuntimeSupervisor().patchTabStatusMetadata({ sessionName, agentJsonlPath: jsonlPath }).then(() => undefined)
+    ? getCoreRuntimeApi().patchTabStatusMetadata({ sessionName, agentJsonlPath: jsonlPath }).then(() => undefined)
     : mutateTab(sessionName, (tab) => {
     if (provider.readJsonlPath(tab) === jsonlPath) return false;
     provider.writeJsonlPath(tab, jsonlPath);
@@ -625,7 +625,7 @@ export const readTabAgentJsonlPath = async (
   provider: IAgentProvider,
 ): Promise<string | null> => {
   if (shouldReadRuntimeStorageV2()) {
-    const metadata = await getRuntimeSupervisor().getTabStatusMetadata({ sessionName });
+    const metadata = await getCoreRuntimeApi().getTabStatusMetadata({ sessionName });
     return metadata?.agentJsonlPath ?? null;
   }
 
@@ -644,7 +644,7 @@ export const updateTabLastUserMessage = (
   lastUserMessage: string | null,
 ): Promise<void> =>
   shouldReadRuntimeStorageV2()
-    ? getRuntimeSupervisor().patchTabStatusMetadata({ sessionName, lastUserMessage }).then(() => undefined)
+    ? getCoreRuntimeApi().patchTabStatusMetadata({ sessionName, lastUserMessage }).then(() => undefined)
     : mutateTab(sessionName, (tab) => {
     if (tab.lastUserMessage === lastUserMessage) return false;
     tab.lastUserMessage = lastUserMessage;
@@ -657,7 +657,7 @@ export const updateTabCliStatus = (
   dismissedAt?: number | null,
 ): Promise<void> =>
   shouldReadRuntimeStorageV2()
-    ? getRuntimeSupervisor().patchTabStatusMetadata({
+    ? getCoreRuntimeApi().patchTabStatusMetadata({
       sessionName,
       cliState,
       ...(dismissedAt !== undefined ? { dismissedAt } : {}),
@@ -693,7 +693,7 @@ export const patchLayout = async (
 ): Promise<ILayoutData | null> =>
   shouldReadRuntimeStorageV2()
     ? withLock(async () => {
-      const result = await getRuntimeSupervisor().patchLayout({ workspaceId: wsId, ...patch });
+      const result = await getCoreRuntimeApi().patchLayout({ workspaceId: wsId, ...patch });
       if (result) broadcastSync({ type: 'layout', workspaceId: wsId });
       return result;
     })
@@ -719,7 +719,7 @@ export const patchPane = async (
 ): Promise<ILayoutData | null> =>
   shouldReadRuntimeStorageV2()
     ? withLock(async () => {
-      const result = await getRuntimeSupervisor().patchPane({ workspaceId: wsId, paneId, ...patch });
+      const result = await getCoreRuntimeApi().patchPane({ workspaceId: wsId, paneId, ...patch });
       if (result) broadcastSync({ type: 'layout', workspaceId: wsId });
       return result;
     })
@@ -741,7 +741,7 @@ export const splitPaneInLayout = async (
   panelType?: string,
 ): Promise<ILayoutData | null> => {
   if (shouldReadRuntimeStorageV2()) {
-    const result = await getRuntimeSupervisor().splitPane({
+    const result = await getCoreRuntimeApi().splitPane({
       workspaceId: wsId,
       sourcePaneId,
       orientation,
@@ -798,7 +798,7 @@ export const splitPaneInLayout = async (
 
 export const closePaneInLayout = async (wsId: string, paneId: string): Promise<ILayoutData | null> => {
   if (shouldReadRuntimeStorageV2()) {
-    const result = await getRuntimeSupervisor().closePane({ workspaceId: wsId, paneId });
+    const result = await getCoreRuntimeApi().closePane({ workspaceId: wsId, paneId });
     if (result?.layout) broadcastSync({ type: 'layout', workspaceId: wsId });
     return result?.layout ?? null;
   }
@@ -838,7 +838,7 @@ export const reorderTabsInPane = async (
 ): Promise<ILayoutData | null> =>
   shouldReadRuntimeStorageV2()
     ? withLock(async () => {
-      const result = await getRuntimeSupervisor().reorderTabs({ workspaceId: wsId, paneId, tabIds });
+      const result = await getCoreRuntimeApi().reorderTabs({ workspaceId: wsId, paneId, tabIds });
       if (result) broadcastSync({ type: 'layout', workspaceId: wsId });
       return result;
     })
@@ -865,7 +865,7 @@ export const moveTabBetweenPanes = async (
   toIndex: number,
 ): Promise<ILayoutData | null> => {
   if (shouldReadRuntimeStorageV2()) {
-    const result = await getRuntimeSupervisor().moveTab({
+    const result = await getCoreRuntimeApi().moveTab({
       workspaceId: wsId,
       tabId,
       fromPaneId,
@@ -910,7 +910,7 @@ export const patchTab = async (
   patch: Partial<Pick<ITab, 'name' | 'panelType' | 'title' | 'cwd' | 'lastCommand' | 'webUrl' | 'terminalRatio' | 'terminalCollapsed'>>,
 ): Promise<ILayoutData | null> => {
   if (shouldReadRuntimeStorageV2()) {
-    const result = await getRuntimeSupervisor().patchTab({ workspaceId: wsId, paneId, tabId, patch });
+    const result = await getCoreRuntimeApi().patchTab({ workspaceId: wsId, paneId, tabId, patch });
     if (result) broadcastSync({ type: 'layout', workspaceId: wsId });
     return result;
   }

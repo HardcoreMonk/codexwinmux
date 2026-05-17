@@ -12,9 +12,9 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 관리합니다. Runtime v2 기준 논리 분리는 완료됐고, `0.4.18`부터 운영 기본값은
 `codexwinmux-core`/`codexwinmux-backend` split service topology입니다.
 `codexwinmux.exe --codexwinmux-core` standalone Core host가 runtime Supervisor와
-workers를 소유하고, Backend API/WebSocket은 Core runtime adapter를 통해 loopback TCP
-Core process에 attach합니다. 기존 combined service는 설치 잔여물 cleanup 용도로만
-남깁니다.
+workers를 소유하고, Backend API/WebSocket, workspace/layout store mutation, status/timeline
+runtime adapter는 Core runtime adapter를 통해 loopback TCP Core process에 attach합니다.
+기존 combined service는 설치 잔여물 cleanup 용도로만 남깁니다.
 
 ## 현재 상태
 

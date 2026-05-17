@@ -34,8 +34,23 @@ describe('core engine contracts', () => {
       'core.runtime.phase6',
       'core.workspace.list',
       'core.workspace.create',
+      'core.workspace.rename',
       'core.workspace.delete',
+      'core.workspace.reorder',
+      'core.workspace.set-group',
+      'core.workspace-group.create',
+      'core.workspace-group.rename',
+      'core.workspace-group.set-collapsed',
+      'core.workspace-group.delete',
+      'core.workspace-group.reorder',
       'core.layout.get',
+      'core.layout.patch',
+      'core.layout.pane.patch',
+      'core.layout.pane.split',
+      'core.layout.pane.close',
+      'core.layout.tabs.reorder',
+      'core.layout.tab.move',
+      'core.layout.tab.patch',
       'core.terminal-tab.create',
       'core.terminal-tab.delete',
       'core.terminal-tab.restart',
@@ -43,15 +58,28 @@ describe('core engine contracts', () => {
       'core.terminal.write',
       'core.terminal.resize',
       'core.terminal.detach',
+      'core.terminal-session.info',
       'core.timeline.list-sessions',
       'core.timeline.read-entries-before',
       'core.timeline.message-counts',
       'core.status.live-start',
       'core.status.live-hook-event',
+      'core.status.live-client-event',
+      'core.status.live-notify-last-user-message',
+      'core.status.live-request-sync',
+      'core.status.live-subscribe',
+      'core.status.live-unsubscribe',
       'core.status.live-poll',
       'core.status.live-register-tab',
       'core.status.live-remove-tab',
       'core.status.live-device-visibility',
+      'core.status.evaluate-side-effects',
+      'core.status.evaluate-client-event',
+      'core.status.session-history.add',
+      'core.status.session-history.update-dismissed-at',
+      'core.status.web-push.send',
+      'core.tab-status.patch',
+      'core.tab-status.get',
     ]));
   });
 
@@ -68,6 +96,20 @@ describe('core engine contracts', () => {
       name: '',
       defaultCwd: 'D:\\work',
     })).toThrow(/Invalid core command payload/);
+
+    expect(parseCoreCommandPayload('core.workspace.rename', {
+      workspaceId: 'ws-a',
+      name: 'Renamed',
+    })).toEqual({
+      workspaceId: 'ws-a',
+      name: 'Renamed',
+    });
+
+    expect(parseCoreCommandPayload('core.workspace.reorder', {
+      items: [{ id: 'ws-b' }, { id: 'ws-a', groupId: 'grp-a' }],
+    })).toEqual({
+      items: [{ id: 'ws-b' }, { id: 'ws-a', groupId: 'grp-a' }],
+    });
 
     expect(parseCoreReplyPayload('core.runtime.phase6', {
       ok: true,
@@ -100,6 +142,43 @@ describe('core engine contracts', () => {
       tabId: 'tab-a',
       sessionName: 'rtv2-ws-a-pane-a-tab-a',
       cwd: 'D:\\repo',
+    });
+
+    expect(parseCoreCommandPayload('core.layout.tab.patch', {
+      workspaceId: 'ws-a',
+      paneId: 'pane-a',
+      tabId: 'tab-a',
+      patch: { name: 'patched', terminalCollapsed: true },
+    })).toMatchObject({
+      workspaceId: 'ws-a',
+      tabId: 'tab-a',
+      patch: { name: 'patched', terminalCollapsed: true },
+    });
+
+    expect(parseCoreCommandPayload('core.tab-status.patch', {
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
+      agentJsonlPath: 'D:\\sessions\\agent.jsonl',
+      dismissedAt: null,
+    })).toMatchObject({
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
+      agentJsonlPath: 'D:\\sessions\\agent.jsonl',
+      dismissedAt: null,
+    });
+
+    expect(parseCoreCommandPayload('core.status.live-client-event', {
+      eventType: 'ack-notification',
+      tabId: 'tab-a',
+      seq: 3,
+    })).toEqual({
+      eventType: 'ack-notification',
+      tabId: 'tab-a',
+      seq: 3,
+    });
+
+    expect(parseCoreCommandPayload('core.terminal-session.info', {
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
+    })).toEqual({
+      sessionName: 'rtv2-ws-a-pane-a-tab-a',
     });
   });
 

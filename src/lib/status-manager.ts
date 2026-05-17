@@ -35,7 +35,7 @@ import { forwardBridgeTraceStatusUpdate } from '@/lib/bridge-trace-forwarder';
 import { getPerfNow, recordPerfCounter, recordPerfDuration } from '@/lib/perf-metrics';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { compareRuntimeStatusShadowDecision } from '@/lib/runtime/status-shadow-compare';
 import {
   evaluateStatusClientEvent,
@@ -1080,7 +1080,7 @@ export class StatusManager {
   ): void {
     if (!isRuntimeV2Enabled() || getRuntimeStatusV2Mode() !== 'shadow') return;
 
-    getRuntimeSupervisor().evaluateStatusSideEffects(input).then((actual) => {
+    getCoreRuntimeApi().evaluateStatusSideEffects(input).then((actual) => {
       const comparison = compareRuntimeStatusShadowDecision('side-effect', expected, actual);
       if (comparison.ok) {
         recordPerfCounter('runtime_v2.status_shadow.side_effect.match');
@@ -1204,7 +1204,7 @@ export class StatusManager {
   ): void {
     if (!isRuntimeV2Enabled() || getRuntimeStatusV2Mode() !== 'shadow') return;
 
-    getRuntimeSupervisor().evaluateStatusClientEvent(input).then((actual) => {
+    getCoreRuntimeApi().evaluateStatusClientEvent(input).then((actual) => {
       const comparison = compareRuntimeStatusShadowDecision('client-event', expected, actual);
       if (comparison.ok) {
         recordPerfCounter('runtime_v2.status_shadow.client_event.match');

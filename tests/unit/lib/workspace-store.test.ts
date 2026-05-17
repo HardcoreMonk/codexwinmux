@@ -90,7 +90,7 @@ describe('workspace store', () => {
     expect(data.workspaces[0].name).toBe('Stable name');
   });
 
-  it('creates the first workspace through runtime v2 storage default without tmux', async () => {
+  it('creates the first workspace through the core runtime API in storage default mode without tmux', async () => {
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
     process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     const listWorkspaces = vi.fn()
@@ -117,8 +117,8 @@ describe('workspace store', () => {
       lifecycleState: 'ready',
     });
 
-    vi.doMock('@/lib/runtime/supervisor', () => ({
-      getRuntimeSupervisor: () => ({
+    vi.doMock('@/lib/core-engine/runtime-api', () => ({
+      getCoreRuntimeApi: () => ({
         listWorkspaces,
         createWorkspace: createRuntimeWorkspace,
         createTerminalTab,
@@ -153,7 +153,7 @@ describe('workspace store', () => {
     });
   });
 
-  it('deletes workspaces through runtime v2 storage default', async () => {
+  it('deletes workspaces through the core runtime API in storage default mode', async () => {
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
     process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     const deleteRuntimeWorkspace = vi.fn().mockResolvedValue({
@@ -162,8 +162,8 @@ describe('workspace store', () => {
       failedKills: [],
     });
 
-    vi.doMock('@/lib/runtime/supervisor', () => ({
-      getRuntimeSupervisor: () => ({
+    vi.doMock('@/lib/core-engine/runtime-api', () => ({
+      getCoreRuntimeApi: () => ({
         deleteWorkspace: deleteRuntimeWorkspace,
       }),
     }));
@@ -175,7 +175,7 @@ describe('workspace store', () => {
     expect(deleteRuntimeWorkspace).toHaveBeenCalledWith('ws-runtime');
   });
 
-  it('renames workspaces through runtime v2 storage default', async () => {
+  it('renames workspaces through the core runtime API in storage default mode', async () => {
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
     process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     const renameRuntimeWorkspace = vi.fn().mockResolvedValue({
@@ -189,8 +189,8 @@ describe('workspace store', () => {
       updatedAt: new Date(1).toISOString(),
     });
 
-    vi.doMock('@/lib/runtime/supervisor', () => ({
-      getRuntimeSupervisor: () => ({
+    vi.doMock('@/lib/core-engine/runtime-api', () => ({
+      getCoreRuntimeApi: () => ({
         renameWorkspace: renameRuntimeWorkspace,
       }),
     }));
@@ -210,7 +210,7 @@ describe('workspace store', () => {
     });
   });
 
-  it('uses runtime v2 storage default for workspace group and order mutations', async () => {
+  it('uses the core runtime API for workspace group and order mutations in storage default mode', async () => {
     process.env.CODEXWINMUX_RUNTIME_V2 = '1';
     process.env.CODEXWINMUX_RUNTIME_STORAGE_V2_MODE = 'default';
     const createWorkspaceGroup = vi.fn().mockResolvedValue({ id: 'grp-runtime', name: 'Runtime group', collapsed: false });
@@ -221,8 +221,8 @@ describe('workspace store', () => {
     const reorderWorkspaceGroups = vi.fn().mockResolvedValue({ ok: true });
     const deleteWorkspaceGroup = vi.fn().mockResolvedValue({ deleted: true });
 
-    vi.doMock('@/lib/runtime/supervisor', () => ({
-      getRuntimeSupervisor: () => ({
+    vi.doMock('@/lib/core-engine/runtime-api', () => ({
+      getCoreRuntimeApi: () => ({
         createWorkspaceGroup,
         renameWorkspaceGroup,
         setWorkspaceGroupCollapsed,

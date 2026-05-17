@@ -25,6 +25,7 @@ import {
   shouldReadRuntimeStorageV2,
   writeRuntimeWorkspaceUiState,
 } from '@/lib/runtime/storage-read-owner';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import type { IRuntimeWorkspace } from '@/lib/runtime/contracts';
 import type { IWorkspace, IWorkspaceGroup, IWorkspacesData, ILayoutData } from '@/types/terminal';
 
@@ -85,22 +86,21 @@ const emptyState = (): IWorkspacesData => ({
 });
 
 const createRuntimeWorkspace = async (directory: string, name?: string): Promise<IWorkspace> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  const supervisor = getRuntimeSupervisor();
-  const existing = (await supervisor.listWorkspaces()).map(mapRuntimeWorkspace);
+  const runtime = getCoreRuntimeApi();
+  const existing = (await runtime.listWorkspaces()).map(mapRuntimeWorkspace);
   const wsName = name?.trim() || nextWorkspaceName(existing);
-  const created = await supervisor.createWorkspace({ name: wsName, defaultCwd: directory });
+  const created = await runtime.createWorkspace({ name: wsName, defaultCwd: directory });
   try {
-    await supervisor.createTerminalTab({
+    await runtime.createTerminalTab({
       workspaceId: created.id,
       paneId: created.rootPaneId,
       cwd: directory,
     });
   } catch (err) {
-    await supervisor.deleteWorkspace(created.id).catch(() => undefined);
+    await runtime.deleteWorkspace(created.id).catch(() => undefined);
     throw err;
   }
-  const workspaces = await supervisor.listWorkspaces();
+  const workspaces = await runtime.listWorkspaces();
   const workspace = workspaces.find((candidate) => candidate.id === created.id);
 
   return workspace
@@ -109,52 +109,41 @@ const createRuntimeWorkspace = async (directory: string, name?: string): Promise
 };
 
 const deleteRuntimeWorkspace = async (workspaceId: string): Promise<boolean> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  const supervisor = getRuntimeSupervisor();
-  const result = await supervisor.deleteWorkspace(workspaceId);
+  const result = await getCoreRuntimeApi().deleteWorkspace(workspaceId);
   return result.deleted;
 };
 
 const renameRuntimeWorkspace = async (workspaceId: string, name: string): Promise<IWorkspace | null> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  const supervisor = getRuntimeSupervisor();
-  const workspace = await supervisor.renameWorkspace({ workspaceId, name });
+  const workspace = await getCoreRuntimeApi().renameWorkspace({ workspaceId, name });
   return workspace ? mapRuntimeWorkspace(workspace) : null;
 };
 
 const createRuntimeWorkspaceGroup = async (name: string): Promise<IWorkspaceGroup> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return getRuntimeSupervisor().createWorkspaceGroup({ name });
+  return getCoreRuntimeApi().createWorkspaceGroup({ name });
 };
 
 const renameRuntimeWorkspaceGroup = async (groupId: string, name: string): Promise<IWorkspaceGroup | null> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return getRuntimeSupervisor().renameWorkspaceGroup({ groupId, name });
+  return getCoreRuntimeApi().renameWorkspaceGroup({ groupId, name });
 };
 
 const setRuntimeWorkspaceGroupCollapsed = async (groupId: string, collapsed: boolean): Promise<boolean> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return (await getRuntimeSupervisor().setWorkspaceGroupCollapsed({ groupId, collapsed })).ok;
+  return (await getCoreRuntimeApi().setWorkspaceGroupCollapsed({ groupId, collapsed })).ok;
 };
 
 const deleteRuntimeWorkspaceGroup = async (groupId: string): Promise<boolean> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return (await getRuntimeSupervisor().deleteWorkspaceGroup({ groupId })).deleted;
+  return (await getCoreRuntimeApi().deleteWorkspaceGroup({ groupId })).deleted;
 };
 
 const reorderRuntimeWorkspaceGroups = async (groupIds: string[]): Promise<boolean> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return (await getRuntimeSupervisor().reorderWorkspaceGroups({ groupIds })).ok;
+  return (await getCoreRuntimeApi().reorderWorkspaceGroups({ groupIds })).ok;
 };
 
 const setRuntimeWorkspaceGroup = async (workspaceId: string, groupId: string | null): Promise<boolean> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return (await getRuntimeSupervisor().setWorkspaceGroup({ workspaceId, groupId })).ok;
+  return (await getCoreRuntimeApi().setWorkspaceGroup({ workspaceId, groupId })).ok;
 };
 
 const reorderRuntimeWorkspaces = async (items: IReorderItem[]): Promise<boolean> => {
-  const { getRuntimeSupervisor } = await import('@/lib/runtime/supervisor');
-  return (await getRuntimeSupervisor().reorderWorkspaces({ items })).ok;
+  return (await getCoreRuntimeApi().reorderWorkspaces({ items })).ok;
 };
 
 const ensureGroups = (data: IWorkspacesData): IWorkspaceGroup[] => {

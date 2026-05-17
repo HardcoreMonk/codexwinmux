@@ -98,7 +98,7 @@
 
 ### P3: Backend를 Core client adapter로 축소
 
-**목표:** API route와 WebSocket handler가 runtime Supervisor를 직접 소유하지 않고 Core client만 호출하도록 전환한다.
+**목표:** API route, WebSocket handler, Backend 공유 store/status/timeline/cleanup adapter가 runtime Supervisor를 직접 소유하지 않고 Core client만 호출하도록 전환한다.
 
 **Files:**
 - Modify: `server.ts`
@@ -107,13 +107,24 @@
 - Modify: `src/pages/api/status/**`
 - Modify: `src/pages/api/layout/**`
 - Modify: `src/pages/api/cli/**`
+- Modify: `src/lib/layout-store.ts`
+- Modify: `src/lib/workspace-store.ts`
+- Modify: `src/lib/status-manager.ts`
+- Modify: `src/lib/status-server.ts`
+- Modify: `src/lib/status-session-history-adapter.ts`
+- Modify: `src/lib/status-web-push-adapter.ts`
+- Modify: `src/lib/timeline-server.ts`
+- Modify: `src/lib/tab-session-cleanup.ts`
 - Test: existing API route tests under `tests/unit/pages/**`
 
 - [x] Backend startup에서 Core client를 초기화한다.
 - [x] `/api/v2/runtime/health`는 Core health를 aggregate한다.
 - [x] `/api/v2/terminal` WebSocket attach/write/resize/detach는 Core client를 통과한다.
 - [x] legacy URL은 유지하되 runtime default path에서는 Core client를 통과한다.
+- [x] `layout-store`와 `workspace-store`의 runtime default mutation 경로는 Core runtime API를 통과한다.
+- [x] status live, session history, Web Push, status policy shadow, timeline terminal info, tab cleanup 경로는 Core runtime API를 통과한다.
 - [x] import policy test를 추가해 `src/pages/api/**`가 `src/lib/runtime/*worker*` service를 직접 import하지 못하게 한다.
+- [x] import policy test를 확장해 Backend shared store/status/timeline/cleanup module이 runtime Supervisor를 직접 import하지 못하게 한다.
 - [x] 검증: `corepack pnpm test tests/unit/pages/runtime-v2-api.test.ts tests/unit/pages/runtime-direct-import-policy.test.ts tests/unit/pages`.
 
 ### P4: Windows service split-mode runbook

@@ -6,6 +6,14 @@ const repoRoot = process.cwd();
 const apiRoot = path.join(repoRoot, 'src', 'pages', 'api');
 const backendEntrypointFiles = [
   path.join(repoRoot, 'server.ts'),
+  path.join(repoRoot, 'src', 'lib', 'layout-store.ts'),
+  path.join(repoRoot, 'src', 'lib', 'workspace-store.ts'),
+  path.join(repoRoot, 'src', 'lib', 'status-manager.ts'),
+  path.join(repoRoot, 'src', 'lib', 'status-server.ts'),
+  path.join(repoRoot, 'src', 'lib', 'status-session-history-adapter.ts'),
+  path.join(repoRoot, 'src', 'lib', 'status-web-push-adapter.ts'),
+  path.join(repoRoot, 'src', 'lib', 'tab-session-cleanup.ts'),
+  path.join(repoRoot, 'src', 'lib', 'timeline-server.ts'),
   path.join(repoRoot, 'src', 'lib', 'core-engine', 'runtime-api.ts'),
 ];
 const apiFiles = (dir: string): string[] =>
@@ -16,7 +24,7 @@ const apiFiles = (dir: string): string[] =>
   });
 
 describe('runtime direct import policy', () => {
-  it('keeps backend entrypoints and Core client adapter from importing the runtime supervisor directly', () => {
+  it('keeps backend entrypoints, store modules, and Core client adapter from importing the runtime supervisor directly', () => {
     const offenders = [...backendEntrypointFiles, ...apiFiles(apiRoot)].flatMap((filePath) => {
       const source = fs.readFileSync(filePath, 'utf8');
       return /(?:@\/lib\/runtime\/supervisor|\.\.\/.*runtime\/supervisor|getRuntimeSupervisor)/.test(source)

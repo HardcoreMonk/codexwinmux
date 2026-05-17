@@ -14,6 +14,24 @@ const coreErrorSchema = z.object({
   message: z.string().min(1),
   retryable: z.boolean(),
 }).strict();
+const workspaceGroupSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  collapsed: z.boolean(),
+}).strict();
+const ratioUpdateSchema = z.object({
+  path: z.array(z.number().int().nonnegative()),
+  ratio: z.number(),
+}).strict();
+const tabStatusMetadataPatchSchema = z.object({
+  sessionName: z.string().min(1),
+  agentSessionId: z.string().nullable().optional(),
+  agentJsonlPath: z.string().nullable().optional(),
+  agentSummary: z.string().nullable().optional(),
+  lastUserMessage: z.string().nullable().optional(),
+  cliState: z.string().optional(),
+  dismissedAt: z.number().int().nonnegative().nullable().optional(),
+}).strict();
 
 const commandPayloadSchemas = {
   'core.health': emptyPayloadSchema,
@@ -23,11 +41,82 @@ const commandPayloadSchemas = {
     name: z.string().min(1),
     defaultCwd: z.string().min(1),
   }).strict(),
+  'core.workspace.rename': z.object({
+    workspaceId: z.string().min(1),
+    name: z.string().min(1),
+  }).strict(),
   'core.workspace.delete': z.object({
     workspaceId: z.string().min(1),
   }).strict(),
+  'core.workspace.reorder': z.object({
+    items: z.array(z.object({
+      id: z.string().min(1),
+      groupId: z.string().nullable().optional(),
+    }).strict()),
+  }).strict(),
+  'core.workspace.set-group': z.object({
+    workspaceId: z.string().min(1),
+    groupId: z.string().nullable(),
+  }).strict(),
+  'core.workspace-group.create': z.object({
+    name: z.string().min(1),
+  }).strict(),
+  'core.workspace-group.rename': z.object({
+    groupId: z.string().min(1),
+    name: z.string().min(1),
+  }).strict(),
+  'core.workspace-group.set-collapsed': z.object({
+    groupId: z.string().min(1),
+    collapsed: z.boolean(),
+  }).strict(),
+  'core.workspace-group.delete': z.object({
+    groupId: z.string().min(1),
+  }).strict(),
+  'core.workspace-group.reorder': z.object({
+    groupIds: z.array(z.string().min(1)),
+  }).strict(),
   'core.layout.get': z.object({
     workspaceId: z.string().min(1),
+  }).strict(),
+  'core.layout.patch': z.object({
+    workspaceId: z.string().min(1),
+    activePaneId: z.string().min(1).optional(),
+    ratioUpdate: ratioUpdateSchema.optional(),
+    equalize: z.boolean().optional(),
+  }).strict(),
+  'core.layout.pane.patch': z.object({
+    workspaceId: z.string().min(1),
+    paneId: z.string().min(1),
+    activeTabId: z.string().min(1).optional(),
+  }).strict(),
+  'core.layout.pane.split': z.object({
+    workspaceId: z.string().min(1),
+    sourcePaneId: z.string().min(1),
+    orientation: z.enum(['horizontal', 'vertical']),
+    cwd: z.string().min(1).optional(),
+    panelType: z.string().min(1).optional(),
+  }).strict(),
+  'core.layout.pane.close': z.object({
+    workspaceId: z.string().min(1),
+    paneId: z.string().min(1),
+  }).strict(),
+  'core.layout.tabs.reorder': z.object({
+    workspaceId: z.string().min(1),
+    paneId: z.string().min(1),
+    tabIds: z.array(z.string().min(1)),
+  }).strict(),
+  'core.layout.tab.move': z.object({
+    workspaceId: z.string().min(1),
+    tabId: z.string().min(1),
+    fromPaneId: z.string().min(1),
+    toPaneId: z.string().min(1),
+    toIndex: z.number().int().nonnegative(),
+  }).strict(),
+  'core.layout.tab.patch': z.object({
+    workspaceId: z.string().min(1),
+    paneId: z.string().min(1),
+    tabId: z.string().min(1),
+    patch: unknownRecordSchema,
   }).strict(),
   'core.terminal-tab.create': z.object({
     workspaceId: z.string().min(1),
@@ -73,6 +162,9 @@ const commandPayloadSchemas = {
     connectionId: z.string().min(1),
     sessionName: z.string().min(1),
   }).strict(),
+  'core.terminal-session.info': z.object({
+    sessionName: z.string().min(1),
+  }).strict(),
   'core.timeline.list-sessions': z.object({
     tmuxSession: z.string().min(1),
     panelType: z.string().min(1),
@@ -95,6 +187,20 @@ const commandPayloadSchemas = {
     event: z.string().min(1),
     notificationType: z.string().min(1).optional(),
   }).strict(),
+  'core.status.live-client-event': z.object({
+    eventType: z.enum(['dismiss-tab', 'ack-notification']),
+    tabId: z.string().min(1),
+    seq: z.number().int().nonnegative().optional(),
+  }).strict(),
+  'core.status.live-notify-last-user-message': z.object({
+    sessionName: z.string().min(1),
+    message: z.string(),
+  }).strict(),
+  'core.status.live-request-sync': emptyPayloadSchema,
+  'core.status.live-subscribe': emptyPayloadSchema,
+  'core.status.live-unsubscribe': z.object({
+    subscriberId: z.string().min(1),
+  }).strict(),
   'core.status.live-poll': emptyPayloadSchema,
   'core.status.live-register-tab': z.object({
     tabId: z.string().min(1),
@@ -106,6 +212,23 @@ const commandPayloadSchemas = {
   'core.status.live-device-visibility': z.object({
     deviceId: z.string().min(1),
     visible: z.boolean(),
+  }).strict(),
+  'core.status.evaluate-side-effects': z.unknown(),
+  'core.status.evaluate-client-event': z.unknown(),
+  'core.status.session-history.add': z.object({
+    entry: z.unknown(),
+  }).strict(),
+  'core.status.session-history.update-dismissed-at': z.object({
+    tabId: z.string().min(1),
+    dismissedAt: z.number().int().nonnegative(),
+  }).strict(),
+  'core.status.web-push.send': z.object({
+    anyDeviceVisible: z.boolean(),
+    payload: z.unknown(),
+  }).strict(),
+  'core.tab-status.patch': tabStatusMetadataPatchSchema,
+  'core.tab-status.get': z.object({
+    sessionName: z.string().min(1),
   }).strict(),
 } as const;
 
@@ -128,10 +251,25 @@ const replyPayloadSchemas = {
     id: z.string().min(1),
     rootPaneId: z.string().min(1),
   }).strict(),
+  'core.workspace.rename': z.unknown(),
   'core.workspace.delete': z.unknown(),
+  'core.workspace.reorder': z.object({ ok: z.boolean() }).strict(),
+  'core.workspace.set-group': z.object({ ok: z.boolean() }).strict(),
+  'core.workspace-group.create': workspaceGroupSchema,
+  'core.workspace-group.rename': workspaceGroupSchema.nullable(),
+  'core.workspace-group.set-collapsed': z.object({ ok: z.boolean() }).strict(),
+  'core.workspace-group.delete': z.object({ deleted: z.boolean() }).strict(),
+  'core.workspace-group.reorder': z.object({ ok: z.boolean() }).strict(),
   'core.layout.get': z.object({
     layout: z.unknown().nullable(),
   }).strict(),
+  'core.layout.patch': z.unknown(),
+  'core.layout.pane.patch': z.unknown(),
+  'core.layout.pane.split': z.unknown(),
+  'core.layout.pane.close': z.unknown(),
+  'core.layout.tabs.reorder': z.unknown(),
+  'core.layout.tab.move': z.unknown(),
+  'core.layout.tab.patch': z.unknown(),
   'core.terminal-tab.create': z.unknown(),
   'core.terminal-tab.delete': z.unknown(),
   'core.terminal-tab.restart': z.unknown(),
@@ -141,6 +279,7 @@ const replyPayloadSchemas = {
   'core.terminal.write': z.object({ ok: z.literal(true) }).strict(),
   'core.terminal.resize': z.object({ ok: z.literal(true) }).strict(),
   'core.terminal.detach': z.object({ ok: z.literal(true) }).strict(),
+  'core.terminal-session.info': z.unknown(),
   'core.timeline.list-sessions': z.object({
     sessions: z.array(unknownRecordSchema),
     total: z.number().int().nonnegative(),
@@ -152,10 +291,33 @@ const replyPayloadSchemas = {
     started: z.boolean(),
   }).strict(),
   'core.status.live-hook-event': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.live-client-event': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.live-notify-last-user-message': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.live-request-sync': z.object({ tabs: z.record(z.string(), z.unknown()) }).strict(),
+  'core.status.live-subscribe': z.object({
+    subscriberId: z.string().min(1),
+    subscribed: z.boolean(),
+    sync: z.object({ tabs: z.record(z.string(), z.unknown()) }).strict(),
+  }).strict(),
+  'core.status.live-unsubscribe': z.object({
+    subscriberId: z.string().min(1),
+    unsubscribed: z.boolean(),
+  }).strict(),
   'core.status.live-poll': z.object({ polled: z.boolean() }).strict(),
   'core.status.live-register-tab': z.object({ accepted: z.boolean() }).strict(),
   'core.status.live-remove-tab': z.object({ accepted: z.boolean() }).strict(),
   'core.status.live-device-visibility': z.object({ accepted: z.boolean() }).strict(),
+  'core.status.evaluate-side-effects': z.unknown(),
+  'core.status.evaluate-client-event': z.unknown(),
+  'core.status.session-history.add': z.unknown(),
+  'core.status.session-history.update-dismissed-at': z.unknown(),
+  'core.status.web-push.send': z.unknown(),
+  'core.tab-status.patch': z.object({
+    updated: z.boolean(),
+    workspaceId: z.string().nullable(),
+    tabId: z.string().nullable(),
+  }).strict(),
+  'core.tab-status.get': z.unknown(),
 } as const;
 
 const eventPayloadSchemas = {
@@ -172,6 +334,10 @@ const eventPayloadSchemas = {
     sessionName: z.string().min(1),
     code: z.number().int(),
     reason: z.string(),
+  }).strict(),
+  'core.status.live-event': z.object({
+    subscriberId: z.string().min(1),
+    event: z.unknown(),
   }).strict(),
 } as const;
 

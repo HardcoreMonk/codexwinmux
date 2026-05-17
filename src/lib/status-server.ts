@@ -4,7 +4,7 @@ import { getSessionHistory } from '@/lib/session-history';
 import { createLogger } from '@/lib/logger';
 import { isRuntimeV2Enabled } from '@/lib/runtime/env';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import type { IRuntimeStatusLiveEvent } from '@/lib/runtime/contracts';
 import type {
   TStatusClientMessage,
@@ -54,18 +54,18 @@ const sendSessionHistorySync = (ws: WebSocket): void => {
 };
 
 const handleRuntimeStatusConnection = (ws: WebSocket): void => {
-  const supervisor = getRuntimeSupervisor();
+  const runtime = getCoreRuntimeApi();
   let subscriberId: string | null = null;
   let closed = false;
 
-  supervisor.subscribeStatusLive({
+  runtime.subscribeStatusLive({
     onEvent: (event) => {
       const msg = toStatusServerMessage(event);
       if (msg) sendJson(ws, msg);
     },
   }).then((subscription) => {
     if (closed) {
-      supervisor.unsubscribeStatusLive(subscription.subscriberId).catch((err) => {
+      runtime.unsubscribeStatusLive(subscription.subscriberId).catch((err) => {
         log.warn('runtime status unsubscribe failed: %s', err instanceof Error ? err.message : String(err));
       });
       return;
@@ -86,19 +86,19 @@ const handleRuntimeStatusConnection = (ws: WebSocket): void => {
       const msg = JSON.parse(String(raw)) as TStatusClientMessage;
       switch (msg.type) {
         case 'status:tab-dismissed':
-          supervisor.sendStatusLiveClientEvent({ eventType: 'dismiss-tab', tabId: msg.tabId }).catch((err) => {
+          runtime.sendStatusLiveClientEvent({ eventType: 'dismiss-tab', tabId: msg.tabId }).catch((err) => {
             log.warn('runtime status dismiss failed: %s', err instanceof Error ? err.message : String(err));
           });
           break;
 
         case 'status:ack-notification':
-          supervisor.sendStatusLiveClientEvent({ eventType: 'ack-notification', tabId: msg.tabId, seq: msg.seq }).catch((err) => {
+          runtime.sendStatusLiveClientEvent({ eventType: 'ack-notification', tabId: msg.tabId, seq: msg.seq }).catch((err) => {
             log.warn('runtime status ack failed: %s', err instanceof Error ? err.message : String(err));
           });
           break;
 
         case 'status:request-sync':
-          supervisor.requestStatusLiveSync().then((sync) => {
+          runtime.requestStatusLiveSync().then((sync) => {
             sendJson(ws, { type: 'status:sync', tabs: sync.tabs } satisfies IStatusSyncMessage);
           }).catch((err) => {
             log.warn('runtime status sync failed: %s', err instanceof Error ? err.message : String(err));
@@ -116,7 +116,7 @@ const handleRuntimeStatusConnection = (ws: WebSocket): void => {
   const cleanup = () => {
     closed = true;
     if (subscriberId) {
-      supervisor.unsubscribeStatusLive(subscriberId).catch((err) => {
+      runtime.unsubscribeStatusLive(subscriberId).catch((err) => {
         log.warn('runtime status unsubscribe failed: %s', err instanceof Error ? err.message : String(err));
       });
       subscriberId = null;

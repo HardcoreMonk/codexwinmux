@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => {
-  const supervisor = {
+  const coreApi = {
     ensureStarted: vi.fn(),
     deleteTerminalTab: vi.fn(),
   };
   return {
     killSession: vi.fn(),
-    getRuntimeSupervisor: vi.fn(() => supervisor),
-    supervisor,
+    getCoreRuntimeApi: vi.fn(() => coreApi),
+    coreApi,
   };
 });
 
@@ -15,8 +15,8 @@ vi.mock('@/lib/tmux', () => ({
   killSession: mocks.killSession,
 }));
 
-vi.mock('@/lib/runtime/supervisor', () => ({
-  getRuntimeSupervisor: mocks.getRuntimeSupervisor,
+vi.mock('@/lib/core-engine/runtime-api', () => ({
+  getCoreRuntimeApi: mocks.getCoreRuntimeApi,
 }));
 
 import { cleanupTabSession } from '@/lib/tab-session-cleanup';
@@ -24,9 +24,9 @@ import { cleanupTabSession } from '@/lib/tab-session-cleanup';
 describe('tab session cleanup', () => {
   beforeEach(() => {
     mocks.killSession.mockClear();
-    mocks.getRuntimeSupervisor.mockClear();
-    mocks.supervisor.ensureStarted.mockClear();
-    mocks.supervisor.deleteTerminalTab.mockClear();
+    mocks.getCoreRuntimeApi.mockClear();
+    mocks.coreApi.ensureStarted.mockClear();
+    mocks.coreApi.deleteTerminalTab.mockClear();
   });
 
   it('kills legacy terminal sessions through the legacy tmux socket', async () => {
@@ -37,10 +37,10 @@ describe('tab session cleanup', () => {
     });
 
     expect(mocks.killSession).toHaveBeenCalledWith('pt-ws-a-pane-b-tab-legacy');
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 
-  it('deletes runtime v2 terminal tabs through the runtime supervisor', async () => {
+  it('deletes runtime v2 terminal tabs through the core runtime API', async () => {
     await cleanupTabSession({
       id: 'tab-runtime',
       sessionName: 'rtv2-ws-a-pane-b-tab-runtime',
@@ -48,8 +48,8 @@ describe('tab session cleanup', () => {
       runtimeVersion: 2,
     });
 
-    expect(mocks.supervisor.ensureStarted).toHaveBeenCalled();
-    expect(mocks.supervisor.deleteTerminalTab).toHaveBeenCalledWith('tab-runtime');
+    expect(mocks.coreApi.ensureStarted).toHaveBeenCalled();
+    expect(mocks.coreApi.deleteTerminalTab).toHaveBeenCalledWith('tab-runtime');
     expect(mocks.killSession).not.toHaveBeenCalledWith('rtv2-ws-a-pane-b-tab-runtime');
   });
 
@@ -61,6 +61,6 @@ describe('tab session cleanup', () => {
     });
 
     expect(mocks.killSession).not.toHaveBeenCalledWith('pt-ws-a-pane-b-tab-web');
-    expect(mocks.getRuntimeSupervisor).not.toHaveBeenCalled();
+    expect(mocks.getCoreRuntimeApi).not.toHaveBeenCalled();
   });
 });

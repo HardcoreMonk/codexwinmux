@@ -1,6 +1,6 @@
 import { buildApprovalPushBody, getApprovalMetadataDetail } from '@/lib/approval-queue';
 import { createStatusWebPushActions } from '@/lib/runtime/status/web-push-actions';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import type {
   IStatusSendWebPushResult,
   IStatusWebPushPayload,
@@ -66,7 +66,7 @@ export const buildStatusWebPushPayload = ({
 
 export const createStatusWebPushAdapter = ({
   shouldUseRuntimeStatusDefault,
-  sendRuntime = (input) => getRuntimeSupervisor().sendStatusWebPush(input),
+  sendRuntime = (input) => getCoreRuntimeApi().sendStatusWebPush(input),
   sendLocal = createStatusWebPushActions().send,
   recordCounter = () => {},
   logWarning = () => {},

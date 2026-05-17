@@ -45,8 +45,9 @@ realtime event를 client message로 bridge한다.
 Core/Backend 논리 분리는 완료됐다. P2부터 `codexwinmux.exe --codexwinmux-core`와
 `src/workers/core-engine-host.ts`가 Core process host foundation을 제공한다. 이 host는
 BrowserWindow와 UI single-instance lock 없이 runtime Supervisor/workers를 시작하고 Core
-command/event protocol에 응답한다. P3-P6부터 Backend API/WebSocket은
-`core-engine/runtime-api` client adapter를 통과하며, 기본 Core transport는 loopback TCP다.
+command/event protocol에 응답한다. P3-P6부터 Backend API/WebSocket, workspace/layout
+store mutation, status/timeline runtime adapter는 `core-engine/runtime-api` client adapter를
+통과하며, 기본 Core transport는 loopback TCP다.
 UI-owned local engine은 `--codexwinmux-core` Core process와 `--codexwinmux-engine` Backend
 process를 paired launch로 함께 관리한다. Windows service runbook 기본값도
 `codexwinmux-core`/`codexwinmux-backend` split service다. combined service는 기존 설치 cleanup
@@ -60,10 +61,10 @@ install/start/health evidence 기준으로 통과했다.
 | --- | --- | --- |
 | Server entry | `server.ts` | process lifecycle, Next.js, WebSocket upgrade, auth gate, startup/shutdown |
 | Terminal | `src/lib/terminal-server.ts`, `src/lib/tmux.ts` | tmux attach, stdin/stdout/resize, terminal session lifecycle |
-| Timeline | `src/lib/timeline-server.ts`, `src/lib/timeline-server-state.ts`, `src/lib/timeline-file-watcher-service.ts`, `src/lib/timeline-subscription-service.ts`, `src/lib/timeline-resume-service.ts` | Codex JSONL subscribe, file watch, resume, timeline init/append |
+| Timeline | `src/lib/timeline-server.ts`, `src/lib/timeline-server-state.ts`, `src/lib/timeline-file-watcher-service.ts`, `src/lib/timeline-subscription-service.ts`, `src/lib/timeline-resume-service.ts` | Codex JSONL subscribe, file watch, resume, timeline init/append. runtime v2 terminal session info와 status live notification은 Core runtime API를 통과 |
 | Session Index | `src/lib/session-index.ts`, `src/lib/session-list.ts`, `src/pages/api/timeline/sessions.ts`, `src/lib/runtime/timeline/worker-service.ts` | 로컬 Codex session 목록 인덱스, session list snapshot, runtime v2 default read projection |
-| Status | `src/lib/status-manager.ts`, `src/lib/status-server.ts`, `src/lib/status-session-history-adapter.ts`, `src/lib/status-web-push-adapter.ts` | tab status polling, hook event merge, notification/history side effect dispatch |
-| Workspace | `src/lib/workspace-store.ts`, `src/lib/layout-store.ts`, `src/lib/runtime/storage-read-owner.ts` | workspace list, layout tree, pane/tab mutation, persisted metadata, runtime v2 default read projection |
+| Status | `src/lib/status-manager.ts`, `src/lib/status-server.ts`, `src/lib/status-session-history-adapter.ts`, `src/lib/status-web-push-adapter.ts` | tab status polling, hook event merge, notification/history side effect dispatch. runtime v2 default/shadow path는 Core runtime API를 통과 |
+| Workspace | `src/lib/workspace-store.ts`, `src/lib/layout-store.ts`, `src/lib/runtime/storage-read-owner.ts` | workspace list, layout tree, pane/tab mutation, persisted metadata, runtime v2 default read projection. runtime v2 default mutation은 Core runtime API를 통해 Core process에 위임 |
 | Provider | `src/lib/providers/*`, `src/lib/codex-session-detection.ts` | Codex command/session/jsonl adapter |
 | Sync | `src/lib/sync-server.ts` | workspace/layout/config change broadcast |
 | Config/Auth | `src/lib/config-store.ts`, `src/lib/auth*.ts` | config persistence, password/session token, onboarding |

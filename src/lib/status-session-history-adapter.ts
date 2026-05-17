@@ -1,4 +1,4 @@
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { addSessionHistoryEntry, updateSessionHistoryDismissedAt } from '@/lib/session-history';
 import type { ISessionHistoryEntry } from '@/types/session-history';
 
@@ -26,12 +26,12 @@ export interface IStatusSessionHistoryAdapter {
 }
 
 const createRuntimeAdapter = (): IStatusSessionHistoryRuntimeAdapter => {
-  const supervisor = getRuntimeSupervisor();
+  const runtime = getCoreRuntimeApi();
   return {
     addEntry: async (entry) => {
-      await supervisor.addStatusSessionHistoryEntry(entry);
+      await runtime.addStatusSessionHistoryEntry(entry);
     },
-    updateDismissedAt: (input) => supervisor.updateStatusSessionHistoryDismissedAt(input),
+    updateDismissedAt: (input) => runtime.updateStatusSessionHistoryDismissedAt(input),
   };
 };
 

@@ -44,7 +44,7 @@ import {
 import { shouldUseRuntimeTimelineV2Live } from '@/lib/runtime/timeline-mode';
 import { handleRuntimeTimelineConnection } from '@/lib/runtime/timeline-ws';
 import { getRuntimeStatusV2Mode } from '@/lib/runtime/status-mode';
-import { getRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getCoreRuntimeApi } from '@/lib/core-engine/runtime-api';
 import { buildTimelineResumeErrorMessage } from '@/lib/resume-error';
 import {
   computeInitMeta,
@@ -70,7 +70,7 @@ const shouldUseRuntimeStatusLive = (): boolean =>
 const getRuntimeTerminalSessionInfo = async (sessionName: string) => {
   if (!isRuntimeV2Enabled()) return null;
   try {
-    return await getRuntimeSupervisor().getTerminalSessionInfo(sessionName);
+    return await getCoreRuntimeApi().getTerminalSessionInfo(sessionName);
   } catch (err) {
     log.debug('runtime terminal session info lookup failed: %s', err instanceof Error ? err.message : String(err));
     return null;
@@ -97,7 +97,7 @@ const getTimelineSessionCwd = async (sessionName: string): Promise<string | null
 
 const notifyStatusLastUserMessage = (sessionName: string, message: string): void => {
   if (shouldUseRuntimeStatusLive()) {
-    getRuntimeSupervisor().notifyStatusLiveLastUserMessage({ sessionName, message }).catch((err) => {
+    getCoreRuntimeApi().notifyStatusLiveLastUserMessage({ sessionName, message }).catch((err) => {
       log.warn('runtime status last user message notify failed: %s', err instanceof Error ? err.message : String(err));
     });
     return;
