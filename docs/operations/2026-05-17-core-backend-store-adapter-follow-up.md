@@ -40,7 +40,7 @@ build time `2026-05-17T09:30:58.111Z`를 반환한다.
 - `CODEXWINMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8121 corepack pnpm smoke:runtime-v2:phase6-default-gate`: terminal `new-tabs`, storage/timeline/status `default`, worker diagnostics clean, failures `[]`.
 - `corepack pnpm windows:service-account:verify-reboot-readiness`: `ok=true`, 두 split service `Running/Auto`, service account `.\codexwinmux-svc`.
 
-## 남은 후속 작업
+## 후속 작업 현재 상태
 
 - 현재 직접 Supervisor import는 runtime 소유자 `src/workers/core-engine-host.ts`와 boundary adapter `src/lib/runtime/timeline-runtime-adapter.ts`로 한정된다.
-- runtime timeline adapter split 변경을 commit/push할 때 build info commit hash가 새 commit을 가리키도록 Windows artifact를 다시 빌드할지 결정한다.
+- runtime timeline adapter split 변경은 commit/push 이후 재빌드와 split service 재시작까지 완료됐다. 최신 live health는 `version=0.4.19`, `commit=06b4285b`, `buildTime=2026-05-18T06:53:16.750Z`다.

@@ -77,8 +77,10 @@ Phase 6 code fallback 이후 `CODEXWINMUX_RUNTIME_V2=1`이고
 Storage import는 legacy `layout.json`의 `cliState`, `agentSessionId`,
 `agentJsonlPath`, `agentSummary`, `lastUserMessage`, `lastCommand`, `dismissedAt` 같은
 tab status metadata를 SQLite `tabs`/`tab_status`/`agent_sessions` projection으로 복사한다.
-이 import와 side-effect/client-event shadow는 status live ownership 전환과 별개다.
-Status event persistence와 SQLite `tab_status` write-through는 아직 후속 작업이다.
+Status default mode에서는 tab status metadata write-through도 runtime storage contract를
+사용한다. Status Worker live manager는 주입된 persistence adapter를 통해 SQLite metadata를
+갱신하므로 worker 내부에서 새 Supervisor를 띄우지 않는다. `off` rollback에서는 기존
+layout/session-history/Web Push adapter 경로를 유지한다.
 runtime v2는 startup 때 terminal tab lifecycle도 reconciliation한다. stale `pending_terminal` tab과 tmux session을
 잃은 `ready` terminal tab은 `failed`로 전환되지만, agent work status 전환 의미는 기존
 production 경로를 유지한다. legacy layout에 남은 runtime v2 tab이 `session-not-found`

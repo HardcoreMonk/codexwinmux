@@ -18,6 +18,10 @@ Timeline WebSocket/live shadow surface는 별도 `timeline-runtime-adapter`를 �
 Supervisor timeline command에 접근합니다.
 기존 combined service는 설치 잔여물 cleanup 용도로만 남깁니다.
 
+현재 개발 진행 상황은 [docs/PROJECT-STATUS.md](docs/PROJECT-STATUS.md)를 기준으로
+판정합니다. `docs/operations/`와 `docs/superpowers/`의 과거 문서는 작성 시점의
+handoff/계획 기록으로 보존합니다.
+
 ## 현재 상태
 
 | 항목 | 값 |

@@ -1,8 +1,19 @@
-# Runtime v2 Production Cutover Plan
+# Runtime v2 Production Cutover 계획
 
 이 문서는 Supervisor + Worker runtime v2를 production 기본 경로로 전환하기 위한 단계별 기준이다.
 
-## Current State
+## 현재 판정
+
+2026-05-18 기준 내부 폐쇄망 운영 범위에서는 runtime v2 default cutover와
+Core/Backend split service topology가 통과 상태다. 현재 live Windows service health는
+`version=0.4.19`, `commit=06b4285b`를 반환하고, `smoke:runtime-v2:phase6-default-gate`는
+terminal `new-tabs`, storage/timeline/status `default`, worker diagnostics clean으로 통과했다.
+
+Public SmartScreen reputation과 published/public Phase 6 URL evidence는 외부 공개 배포를
+시작할 때만 release blocker로 승격한다. 내부 폐쇄망 기준의 완료 여부는
+`PROJECT-STATUS.md`, 이 문서의 최신 section, `FOLLOW-UP.md` 순서로 판단한다.
+
+## 현재 상태
 
 완료된 foundation:
 
@@ -45,7 +56,7 @@ Production 기본 경로로 전환하지 않은 것:
 - Status polling, JSONL watch, Web Push, session history write, dismiss/ack handling의 live ownership은 Status Worker default에 있고 Windows-local status/timeline foreground stale UI evidence는 통과했다. 내부 폐쇄망 릴리스에서는 public/published evidence를 기다리지 않고, 내부 Phase 6 target, signed/local package, 실제 설치 경로 launch, split stability evidence 기준으로 legacy JSON fallback removal gate를 재개한다.
 - 기존 `pt-` tmux session의 `rtv2-` session migration.
 
-## Cutover Rules
+## 전환 규칙
 
 - Runtime v2 must stay behind explicit flags until the matching rollback path has passed smoke.
 - Do not replace terminal, storage, timeline, and status in one release.
@@ -54,7 +65,7 @@ Production 기본 경로로 전환하지 않은 것:
 - Rollback must not require deleting `~/.codexwinmux/runtime-v2/state.db`.
 - Worker readiness failure must fail closed to legacy where possible, not partially mix a v2 UI with missing workers.
 
-## Feature Flags
+## 기능 플래그
 
 Introduce separate flags instead of overloading `CODEXWINMUX_RUNTIME_V2`.
 
@@ -68,7 +79,7 @@ Introduce separate flags instead of overloading `CODEXWINMUX_RUNTIME_V2`.
 
 `CODEXWINMUX_RUNTIME_V2=1` with every surface mode `off` should only start workers and expose v2 diagnostic endpoints.
 
-## Phase 0: Parity Inventory
+## Phase 0: Parity 목록화
 
 Before any default switch, create a checked parity matrix for every production surface:
 
@@ -78,16 +89,16 @@ Before any default switch, create a checked parity matrix for every production s
 - Status: initial sync, update/remove, hook/statusline events, needs-input ack, dismiss, ready-for-review notification, Web Push, session history.
 - Sync: workspace/layout/config invalidation for browser, Electron, Android, and CLI clients.
 
-Exit gate:
+종료 gate:
 
 - Each row has owner module, v1 behavior, v2 behavior, migration strategy, test command, rollback behavior.
 - `docs/RUNTIME-V2-PARITY.md` is the canonical matrix and must be updated before changing any surface mode.
 
 ## Phase 1: Shadow Runtime
 
-Goal: run all workers in production while legacy remains the only user-facing path.
+목표: legacy 경로만 사용자에게 노출한 상태에서 모든 worker를 production에서 실행한다.
 
-Work:
+작업:
 
 - Start `CODEXWINMUX_RUNTIME_V2=1` in production service.
 - Add `/api/debug/perf` counters for each worker readiness, restart, timeout, and command error.
@@ -96,7 +107,7 @@ Work:
   `CODEXWINMUX_RUNTIME_V2_SMOKE_URL=<live-url> corepack pnpm smoke:runtime-v2` against the
   production host after shadow runtime is enabled.
 
-Exit gate:
+종료 gate:
 
 - No worker restart loop over 24 hours.
 - `/api/debug/perf` `services.runtimeWorkers.{storage,terminal,timeline,status}` shows health, readiness, restart, timeout, and command failure counters without session ids, cwd, JSONL paths, prompts, assistant text, or terminal output.
@@ -104,15 +115,15 @@ Exit gate:
 - `corepack pnpm build` includes storage, terminal, timeline, and status worker bundles.
 - `scripts/smoke-runtime-v2.mjs` passes on the production host with temp HOME/DB.
 
-Rollback:
+복구:
 
 - Set `CODEXWINMUX_RUNTIME_V2=0`; legacy routes are unchanged.
 
-## Phase 2: Terminal v2 For New Tabs
+## Phase 2: 신규 탭용 Terminal v2
 
-Goal: let selected users create new terminal tabs through v2 while legacy tabs stay on `pt-`.
+목표: 기존 legacy 탭은 `pt-`에 남겨 두고, 선택된 사용자의 신규 terminal 탭만 v2로 만든다.
 
-Work:
+작업:
 
 - Add UI/server routing that chooses v2 only for newly created terminal tabs when `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=new-tabs`.
 - Keep existing `pt-` sessions and legacy JSON layout as the UI source of truth.
@@ -128,7 +139,7 @@ Work:
 - Keep `scripts/smoke-runtime-v2.mjs` for low-level runtime terminal parity and `scripts/smoke-runtime-v2-phase2-gate.mjs` for app-surface new-tab routing, browser reload, server restart, and rollback mode checks.
 - Collect Electron reconnect and Android foreground reconnect cookie-auth evidence against the same app surface before widening Phase 2. `corepack pnpm smoke:electron:runtime-v2` covers Electron page-context cookie-auth attach/output and page reload/reconnect repetition, and `CODEXMUX_ELECTRON_APP_PATH=<release/.../codexmux.app> CODEXMUX_ELECTRON_WINDOW_FOREGROUND_CYCLES=1 corepack pnpm smoke:electron:runtime-v2` covers packaged `.app` CLI launch plus CDP foreground probe attach repetition on macOS. The foreground probe records whether it used `Browser.*` window bounds or `Target.activateTarget` fallback. `corepack pnpm smoke:android:runtime-v2` covers Android WebView cookie-auth attach/output and foreground reconnect repetition. Finder double-click and Gatekeeper prompt UX still need interactive Mac evidence.
 
-Exit gate:
+종료 gate:
 
 - `corepack pnpm smoke:runtime-v2:phase2` passes and proves new v2 tabs survive browser reload and server restart while legacy tabs stay on `/api/terminal`.
 - Runtime v2 tab restart after `session-not-found` recreates the same tab/session
@@ -139,16 +150,16 @@ Exit gate:
 - Legacy tabs continue to attach through `/api/terminal`.
 - Rollback mode `off` blocks new v2 tab creation, `/api/v2/runtime/health` reports `terminalV2Mode: "off"`, and existing v2 tabs remain visible with a clear `runtime-v2-disabled` diagnostic state.
 
-Rollback:
+복구:
 
 - Switch `CODEXWINMUX_RUNTIME_TERMINAL_V2_MODE=off`.
 - Keep `state.db` and v2 tmux sessions for explicit recovery; do not auto-delete.
 
-## Phase 3: Storage v2 Shadow Then Default
+## Phase 3: Storage v2 Shadow 후 Default
 
-Goal: move workspace/layout/tab source of truth to SQLite safely.
+목표: workspace/layout/tab source of truth를 SQLite로 안전하게 이동한다.
 
-Work:
+작업:
 
 - Implement idempotent JSON-to-SQLite migration with dry-run output.
 - Add shadow read comparison: legacy JSON projection vs SQLite projection.
@@ -164,11 +175,11 @@ Work:
 - Current status/timeline metadata slice: `storage.patch-tab-status-metadata`와 `storage.get-tab-status-metadata`가 `tab_status`와 `agent_sessions`를 갱신한다. `updateTabAgentSessionId`, `updateTabAgentJsonlPath`, `updateTabAgentSummary`, `updateTabLastUserMessage`, `updateTabCliStatus`, `readTabAgentJsonlPath`는 storage default에서 runtime storage contract를 사용한다. Status Worker는 주입된 metadata persistence adapter를 사용해 worker 내부 Supervisor 재귀를 피한다.
 - Add migration tests with malformed layout, missing cwd, deleted workspace, stale session names, grouped workspaces, and split panes.
 
-Exit gate:
+종료 gate:
 
-- `corepack pnpm runtime-v2:storage-dry-run` returns `cutoverReady: true` on real `~/.codexmux` data or every blocker has an explicit migration path tested before default.
+- `corepack pnpm runtime-v2:storage-dry-run` returns `cutoverReady: true` on real `~/.codexwinmux` data or every blocker has an explicit migration path tested before default.
 - Dry-run output includes only IDs/counts/relative backup entries and does not print cwd, workspace/tab names, session names, JSONL paths, prompts, assistant text, or terminal output.
-- Shadow compare passes on real `~/.codexmux` data.
+- Shadow compare passes on real `~/.codexwinmux` data.
 - Default mode can cold-start workspace/layout/sidebar/message-history state from SQLite in temp HOME/DB and has explicit no-fallback fail-closed evidence.
 - Explicit `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=off` rollback can still render the previous JSON layout.
 - `write` and `default` mode smokes pass and disabling the mode leaves JSON reads/writes unchanged.
@@ -176,16 +187,18 @@ Exit gate:
 - Browser/Electron/Android stale UI smoke must cover workspace rename/group/order, layout split/close/patch/reorder/move/tab patch, status/timeline metadata, direct v2 API mutation sync, and config/keybinding invalidation over the existing sync WebSocket before legacy JSON fallback removal. Windows-local browser evidence now covers workspace create/rename/group/order, layout tab create/patch/reorder/split/move/patch/close, direct runtime v2 API mutation sync without tmux, and config/keybinding invalidation. Android device evidence now covers runtime v2 terminal foreground reconnect on SM-S928N Android 16 via USB `adb reverse`. Windows local Phase 6 target evidence now passes with clean worker diagnostics. Windows-compatible status/timeline stale UI evidence now passes with native background socket close, background status/timeline mutation, and foreground reconnect refresh. Published/public Phase 6 target evidence and public SmartScreen launch evidence remain external-public-only gates and are not required for internal closed-network fallback removal.
 - CLI/config/keybinding paths are classified separately from runtime storage ownership. Config/keybinding remain rollback-compatible JSON stores with `config` sync invalidation; CLI tab creation now routes plain terminal creation through runtime Supervisor in terminal v2 mode and no longer reintroduces JSON layout as the app-facing source of truth in storage default mode.
 
-Rollback:
+복구:
 
 - Switch `CODEXWINMUX_RUNTIME_STORAGE_V2_MODE=off`.
-- Legacy JSON remains source of truth until a later cleanup release.
+- Explicit `off` rollback uses the previous JSON layout/session-history path. Default mode keeps
+  SQLite projection as the app-facing source of truth and fails closed instead of silently falling
+  back to legacy JSON.
 
-## Phase 4: Timeline v2 WebSocket Cutover
+## Phase 4: Timeline v2 WebSocket 전환
 
-Goal: move live timeline subscribe/append/resume into Timeline Worker.
+목표: live timeline subscribe/append/resume을 Timeline Worker로 이동한다.
 
-Work:
+작업:
 
 - Move file watcher/session watcher state into Timeline Worker, not just read commands.
 - Current read-only first slice: `corepack pnpm smoke:runtime-v2:timeline-shadow` compares legacy timeline read endpoints with runtime v2 timeline read endpoints for message counts and entries-before metadata without printing entry text.
@@ -196,7 +209,7 @@ Work:
 - Keep stable id/dedupe/merge behavior unchanged.
 - Add worker crash behavior: close timeline sockets with retryable reason and let client reconnect.
 
-Exit gate:
+종료 gate:
 
 - Implemented live shadow unit evidence: `tests/unit/lib/runtime/ipc.test.ts`, `timeline-worker-service.test.ts`, `timeline-live-shadow.test.ts`, `supervisor.test.ts`, and `corepack pnpm tsc --noEmit`.
 - Long JSONL append smoke passes: `corepack pnpm smoke:runtime-v2:timeline-live-shadow` receives 24 append entries, has no duplicate assistant append ids, and records init/append match counters with mismatch/error counters 0.
@@ -208,15 +221,15 @@ Exit gate:
 - Android foreground reconnect evidence passes: `corepack pnpm smoke:android:timeline-foreground` opens `/api/timeline` from Android WebView page context, backgrounds the app while appending JSONL entries, and verifies foreground reconnect receives a fresh init without stale JSONL.
 - Windows status/timeline stale UI evidence passes: `corepack pnpm smoke:runtime-v2:status-timeline-stale-ui` closes timeline sockets on native background, appends JSONL while backgrounded, and verifies foreground reconnect renders the fresh timeline entry.
 
-Rollback:
+복구:
 
 - Switch `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=off`; shadow subscriptions do not start and clients remain on legacy `/api/timeline`.
 
-## Phase 5: Status v2 Cutover
+## Phase 5: Status v2 전환
 
-Goal: move live status polling/broadcast side effects into Status Worker.
+목표: live status polling/broadcast side effect를 Status Worker로 이동한다.
 
-Work:
+작업:
 
 - Move process polling, JSONL watch, hook event application, dismiss/ack handling, Web Push/session history side effects behind Status Worker.
 - Current policy-only first slice: `corepack pnpm smoke:runtime-v2:status-shadow` compares Status Worker IPC reducer/policy output with legacy pure helpers.
@@ -229,7 +242,7 @@ Work:
 - Keep typed status events for sync/update/remove/hook/session-history/rate-limits.
 - Preserve `globalThis` singleton compatibility until custom server and API routes no longer share status state directly.
 
-Exit gate:
+종료 gate:
 
 - `needs-input`, `ready-for-review`, dismiss, ack, and Web Push smoke pass.
 - `corepack pnpm smoke:runtime-v2:status-default` passes in temp HOME/server and proves the existing permission prompt flow survives `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`.
@@ -237,15 +250,15 @@ Exit gate:
 - Session history dedupe still uses `sessionId:turnId`.
 - Legacy `/api/status` fallback can be re-enabled without losing current layout metadata.
 
-Rollback:
+복구:
 
 - Switch `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=off`; existing `StatusManager` resumes ownership.
 
-## Phase 6: Default Runtime v2
+## Phase 6: Runtime v2 기본값 전환
 
-Goal: make v2 the default for new installs and upgraded installs that pass migration gates.
+목표: migration gate를 통과한 신규 설치와 업그레이드 설치에서 v2를 기본값으로 사용한다.
 
-Work:
+작업:
 
 - Run `corepack pnpm smoke:runtime-v2:phase6-default-gate` against the release candidate or live target before changing any code/env defaults.
 - Treat Phase 6 first as an operations gate: runtime v2 must be enabled, terminal must be `new-tabs`, storage/timeline/status must be `default`, and every runtime worker failure/restart/timeout counter must be 0.
@@ -254,14 +267,14 @@ Work:
 - Add release note section for backup, rollback flags, and diagnostic commands.
 - The gate script remains read-only and does not edit systemd drop-ins, restart services, mutate workspaces, or create tabs.
 
-Exit gate:
+종료 gate:
 
 - `corepack pnpm smoke:runtime-v2:phase6-default-gate` passes with `terminalV2Mode="new-tabs"`, `storageV2Mode="default"`, `timelineV2Mode="default"`, `statusV2Mode="default"`.
 - `/api/debug/perf` exposes runtime worker diagnostics and storage/terminal/timeline/status `healthFailures`, `readyFailures`, `commandFailures`, `invalidReplies`, `timeouts`, `sendFailures`, `exits`, `errors`, and `restarts` are all 0.
 - Release branch passes build, lint, typecheck, unit tests, runtime v2 smoke, Electron build, Android debug build, and systemd deploy smoke.
 - Production canary shows no worker restart loop, no WebSocket error spike, and no status/timeline duplicate event spike.
 
-Rollback:
+복구:
 
 - Run `corepack pnpm lifecycle:rollback-dry-run`, then `corepack pnpm lifecycle:rollback-apply`, or use Lifecycle Action `Apply Rollback Flags` with confirmation `rollback runtime v2`.
 - The automation keeps `CODEXWINMUX_RUNTIME_V2=1`, sets storage to `write`, sets terminal/timeline/status to `off`, backs up the previous drop-in, reloads systemd, and restarts `codexmux.service`.
@@ -291,7 +304,7 @@ Rollback:
 - `corepack pnpm smoke:windows:smartscreen-public-evidence`는 `v0.4.15` public installer와 SHA-256 `68ea233834ce254064545b2194a6844d6c7fb7051f65367dccf917de11042480` 기준 Chromium download, SHA match, Internet ZoneId=3까지 통과했지만 Windows `Start-Process` launch evidence가 취소/SmartScreen reputation 단계에서 실패했다.
 - Public SmartScreen `passed` evidence와 published/public Phase 6 target evidence는 외부 공개 배포 전용으로 열린 상태를 유지한다. 내부 폐쇄망 릴리스에서는 이 public gate를 기다리지 않고 signed/local package, 폐쇄망 Phase 6 target, status/timeline stale UI evidence 기준으로 legacy JSON fallback removal을 재개한다.
 
-## Required Test Commands
+## 필수 테스트 명령
 
 ```bash
 corepack pnpm test tests/unit/lib/runtime tests/unit/lib/status-state-machine.test.ts tests/unit/lib/status-notification-policy.test.ts tests/unit/pages/runtime-v2-api.test.ts tests/unit/scripts/runtime-v2-smoke-lib.test.ts
@@ -323,7 +336,7 @@ corepack pnpm build:electron
 corepack pnpm android:build:debug
 ```
 
-## Release Notes Checklist
+## 릴리스 노트 체크리스트
 
 - Exact flags enabled in this release.
 - Data migration mode and backup location.

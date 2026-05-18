@@ -59,8 +59,8 @@ npx shadcn@latest add <component-name>
 
 - Electron code lives under `electron/` and is documented in `docs/ELECTRON.md`.
 - Android code lives under `android/`, with launcher assets in `android-web/`, and is documented in `docs/ANDROID.md`.
-- Android app ID is `com.hardcoremonk.codexmux`.
-- Android debug install verification uses SDK adb, for example `~/Android/Sdk/platform-tools/adb shell pm path com.hardcoremonk.codexmux`.
+- Android app ID is `com.hardcoremonk.codexwinmux`.
+- Android debug install verification uses SDK adb, for example `adb shell pm path com.hardcoremonk.codexwinmux`.
 
 ## Codex And Terminal Rules
 
@@ -119,6 +119,7 @@ Complex topics live under `docs/`:
 | Document | Purpose |
 | --- | --- |
 | `docs/README.md` | Internal documentation map and update rules |
+| `docs/PROJECT-STATUS.md` | Current development status, Core/Backend completion judgment, and remaining work classification |
 | `docs/ADR.md` | Architecture decisions and decision triggers |
 | `docs/ARCHITECTURE-LOGIC.md` | Architecture flow and service logic |
 | `docs/STATUS.md` | Codex work-state detection and status flow |

@@ -9,6 +9,7 @@
 
 | 문서 | 기준 |
 | --- | --- |
+| `PROJECT-STATUS.md` | 현재 개발 진행 상황, Core/Backend 완료 판정, 남은 작업 분류 |
 | `ADR.md` | 오래가는 아키텍처 결정과 변경 트리거 |
 | `ARCHITECTURE-LOGIC.md` | 서버, WebSocket, workspace, terminal, timeline, status, sync 서비스 흐름 |
 | `STATUS.md` | Codex 작업 상태 감지, 상태 전이, 알림, timeline metadata |
@@ -47,6 +48,16 @@
 | `superpowers/specs/` | 구현 전 확정한 feature/design spec |
 | `superpowers/plans/` | spec, grill-me, design/eng review 결과를 반영한 실행 계획 |
 | `operations/YYYY-MM-DD-*-handoff.md` | release 이후 실제 배포 commit, 검증 명령, 남은 운영 리스크 |
+
+## 현재 상태 판정 순서
+
+1. `PROJECT-STATUS.md`에서 최신 완료/보류 판정을 확인한다.
+2. `README.md`, `ARCHITECTURE-LOGIC.md`, `RUNTIME-V2-CUTOVER.md`, `FOLLOW-UP.md`에서
+   현재 운영 기준과 검증 gate를 확인한다.
+3. `operations/` 문서는 작성 시점의 handoff로 본다. 과거 문서의 "남은 작업"은
+   최신 status 문서에서 해소 여부를 다시 확인한다.
+4. `superpowers/specs/`와 `superpowers/plans/`는 구현 전 설계/계획 기록이다.
+   완료 여부는 최신 handoff와 status 문서를 우선한다.
 
 ## 갱신 규칙
 

@@ -2,6 +2,16 @@
 
 이 문서는 Codex 전환 MVP 이후 남은 검수와 post-MVP 작업을 정리한다.
 
+## 현재 기준 요약
+
+2026-05-18 기준 내부 폐쇄망 운영 범위에서는 Core/Backend 논리 분리, 물리 split
+service, runtime v2 default gate, Backend direct Supervisor 제거, runtime timeline adapter
+분리가 완료됐다. 현재 live service health는 `version=0.4.19`, `commit=06b4285b`이며
+`codexwinmux-core`와 `codexwinmux-backend`가 `Running/Automatic` 상태다.
+
+이 문서 아래의 오래된 release snapshot은 작성 당시 evidence를 보존한다. 현재 완료 여부는
+`docs/PROJECT-STATUS.md`와 이 section을 우선한다.
+
 ## 완료된 범위
 
 - 서비스 정체성: `codexwinmux`, `cwmux`, `~/.codexwinmux`, tmux socket `codexmux`.

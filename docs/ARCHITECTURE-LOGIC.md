@@ -136,8 +136,9 @@ codexwinmux가 쓰는 영속 상태는 `~/.codexwinmux/` 아래에 둔다.
 path와 sync broadcast는 유지하며, write 직후 runtime v2 import mirror가 SQLite projection을
 갱신한다. Message history는 default mode에서 SQLite read/write를 우선 사용하고 rollback용
 JSON 파일을 함께 갱신한다. SQLite read가 실패하거나 projection이 비어 있으면 legacy JSON
-read로 복구하지 않고 typed failure로 fail closed한다. Config, keybindings, sidebar items는
-아직 기존 JSON store가 owner다.
+read로 복구하지 않고 typed failure로 fail closed한다. Sidebar width/collapse 같은 workspace
+UI state는 SQLite projection에 포함된다. Config, keybindings, custom sidebar item 설정은
+runtime storage 전환 범위 밖의 rollback-compatible JSON store로 유지한다.
 
 custom server와 Next.js API route는 같은 Node process 안에서도 module graph가 분리될 수 있다. 공유 singleton은 `globalThis`에 저장하고 재초기화를 guard한다.
 

@@ -6,11 +6,10 @@
 Core runtime v2가 terminal, storage, timeline, status, session projection의 source of truth를
 소유하고, Backend는 HTTP/API/WebSocket adapter와 orchestration 경계로만 동작한다.
 
-단, 이 문서의 "100%"는 runtime ownership과 source-of-truth 기준의 논리 완료를 뜻한다.
-Backend API host와 Core Supervisor를 별도 process/service로 나누는 **물리 process 분리**는
-이 handoff의 완료 범위가 아니며 `Core/Backend 100% Physical Separation` milestone으로
-별도 추적한다. 이후 P2에서 standalone Core host foundation은 추가됐지만, 기본 서비스와
-제품 실행은 아직 combined engine mode다.
+이 handoff의 "100%"는 작성 당시 runtime ownership과 source-of-truth 기준의 논리 완료를
+뜻한다. 2026-05-18 현재는 이후 후속 작업으로 Backend/Core 물리 process/service 분리도
+운영 기본값까지 승격됐다. 최신 완료 판정은 `docs/PROJECT-STATUS.md`와
+`docs/operations/2026-05-17-core-backend-store-adapter-follow-up.md`를 우선한다.
 
 ## 변경 요약
 
@@ -51,11 +50,13 @@ release blocker로 승격한다.
 - 현재 소스 HEAD에는 `codexwinmux.exe --codexwinmux-core`와 `dist/workers/core-engine-host.js` Core host foundation이 있다. 이 host는 BrowserWindow와 UI single-instance lock 없이 runtime Supervisor/workers를 시작하고 Core protocol에 응답한다.
 - 엄격한 물리 분리 완료 기준은 `codexwinmux-backend`와 `codexwinmux-core` 또는 동등한 별도 lifecycle/process boundary가 split smoke와 release gate를 통과하는 것이다.
 
-## 남은 후속 작업
+## 당시 남은 후속 작업과 현재 상태
 
-- P3: Backend API/WebSocket을 Core client adapter로 전환.
-- P4: `codexwinmux-backend`/`codexwinmux-core` split service mode를 default-off로 추가.
-- P5-P6: Backend/Core 독립 restart lifecycle smoke와 packaged/release split-mode evidence 추가.
-- 외부 공개 배포 재개 시: public SmartScreen reputation 확보 후 public evidence smoke 재실행.
-- 외부 공개 배포 재개 시: published public Phase 6 target URL 지정 후 `smoke:runtime-v2:phase6-default-gate` 재실행.
+| 당시 항목 | 현재 상태 |
+| --- | --- |
+| P3: Backend API/WebSocket을 Core client adapter로 전환 | 완료. Backend shared module과 API/WebSocket runtime path는 Core runtime API를 통과한다. |
+| P4: `codexwinmux-backend`/`codexwinmux-core` split service mode 추가 | 완료. `0.4.18`부터 split service topology가 운영 기본값이다. |
+| P5-P6: 독립 restart lifecycle smoke와 packaged/release split-mode evidence | 완료. split lifecycle, package gate, release gate, reboot-readiness evidence가 통과했다. |
+| 외부 공개 배포: public SmartScreen reputation | 외부 공개 배포 전용으로 유지한다. 내부 폐쇄망 blocker가 아니다. |
+| 외부 공개 배포: published public Phase 6 target URL | 외부 공개 배포 전용으로 유지한다. 내부 폐쇄망 blocker가 아니다. |
 - 필요 시: non-terminal panel creation까지 runtime-owned storage command로 확장할지 별도 결정.

@@ -81,8 +81,8 @@ Android 앱 버전은 repo root의 `package.json` semver를 기준으로 합니�
 | `android-web/index.html` | 서버 URL 저장/자동 재접속 런처, 앱 정보/재시작 |
 | `android/` | Capacitor Android native project |
 | `android/app/src/main/AndroidManifest.xml` | Android 권한과 cleartext 개발 설정 |
-| `android/app/src/main/java/com/hardcoremonk/codexmux/CodexmuxAppInfo.java` | 런처와 React 모바일 UI에 앱 버전/기기 정보, 앱 재시작 기능을 노출하는 native bridge |
-| `android/app/src/main/java/com/hardcoremonk/codexmux/CodexmuxWebViewClient.java` | 원격 서버 로딩 실패 시 런처 복귀 |
+| `android/app/src/main/java/com/hardcoremonk/codexwinmux/CodexmuxAppInfo.java` | 런처와 React 모바일 UI에 앱 버전/기기 정보, 앱 재시작 기능을 노출하는 native bridge |
+| `android/app/src/main/java/com/hardcoremonk/codexwinmux/CodexmuxWebViewClient.java` | 원격 서버 로딩 실패 시 런처 복귀 |
 
 ## Mobile UX
 

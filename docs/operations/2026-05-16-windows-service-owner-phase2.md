@@ -17,6 +17,11 @@ owner는 `codexwinmux-core`와 `codexwinmux-backend` WinSW wrapper 쌍을 소유
 
 ## 실제 서비스 등록/시작 증거
 
+이 section의 `0.4.18` health 값은 2026-05-16 당시 service owner Phase 2 evidence다.
+2026-05-18 현재 재빌드/재시작 후 live health는 `version=0.4.19`, `commit=06b4285b`,
+`buildTime=2026-05-18T06:53:16.750Z`이며 `verify-reboot-readiness`와
+`smoke:runtime-v2:phase6-default-gate`도 split service topology에서 통과했다.
+
 - Service names: `codexwinmux-core`, `codexwinmux-backend`
 - Wrapper: `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-core-service.exe`, `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-backend-service.exe`
 - Wrapper config: `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-core-service.xml`, `%LOCALAPPDATA%\codexwinmux\service\codexwinmux-backend-service.xml`
@@ -108,11 +113,13 @@ corepack pnpm windows:service-account:health
 - `Get-Service -Name codexwinmux`: `Running`, `Automatic`, `Win32OwnProcess`.
 - `Invoke-RestMethod http://127.0.0.1:8121/api/health`: 통과.
 - `corepack pnpm windows:service:status`: `codexwinmux Running Automatic Win32OwnProcess`.
-- `corepack pnpm windows:service:health`: 현재 split service health는 `app=codexwinmux`, `version=0.4.18`, `commit=69cf91db`.
+- `corepack pnpm windows:service:health`: 당시 split service health는 `app=codexwinmux`, `version=0.4.18`, `commit=69cf91db`.
 
-## 남은 후속 작업
+## 당시 후속 작업과 현재 상태
 
-- service-owned engine stop/restart를 Electron UI에서 어떻게 표현할지 결정한다. 현재 UI는 자신이 시작한 owned engine만 stop한다.
-- 전용 Windows service account 전환 slice의 non-mutating plan/runbook/smoke는 반영됐다. 실제 `codexwinmux-svc` 생성과 service logon 전환은 password env, credential copy, ACL, upgrade/uninstall/reboot/health evidence를 수집하는 mutating run에서 닫는다.
-- NSIS optional service install slice는 default-off install option, upgrade/uninstall/reboot/health/account-ACL smoke가 준비된 뒤 진행한다.
-- P2 Core host foundation은 source/build에 포함됐다. 다음 physical separation 작업은 Backend API/WebSocket Core client adapter 전환, `codexwinmux-backend`/`codexwinmux-core` split service default-off plan, 독립 restart lifecycle smoke 순서로 진행한다.
+| 당시 항목 | 현재 상태 |
+| --- | --- |
+| service-owned engine stop/restart UI 표현 | 선택 UX 과제로 유지한다. 현재 운영 기본은 split service lifecycle이며 service restart는 runbook/script가 소유한다. |
+| 전용 Windows service account mutating 전환 | 완료. `codexwinmux-svc` profile/data dir, credential/session migration, ACL, password rotation, restart, health, reboot-readiness evidence를 수집했다. |
+| NSIS optional service install | 보류. 내부 폐쇄망 운영은 runbook-first이며 installer의 service install option은 default-off 미래 과제다. |
+| Backend/Core adapter 전환과 split service lifecycle smoke | 완료. Backend API/WebSocket은 Core client adapter를 통과하고 `codexwinmux-core`/`codexwinmux-backend` 독립 lifecycle smoke와 release gate가 통과했다. |

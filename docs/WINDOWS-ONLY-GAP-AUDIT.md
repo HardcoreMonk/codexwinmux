@@ -1,20 +1,20 @@
 # Windows-only Gap Audit
 
 작성일: 2026-05-06
-최종 갱신일: 2026-05-08
-상태: Windows 제품 전환 evidence 수집 중
+최종 갱신일: 2026-05-18
+상태: 내부 폐쇄망 Windows 제품 전환 기준 통과, 외부 공개 배포 gate 별도
 
 ## Verdict
 
-codexwinmux는 Windows 전용 설치형 제품으로 전환 중이다. 루트 README와 Electron
-패키징 기준은 Windows 제품을 1차 기준으로 설명하며, Shell Host와 Backend/Core
-Engine 수명 분리, Windows Runtime v2 terminal smoke, Windows process inspector,
-GitHub Release updater smoke까지 evidence가 쌓였다.
+codexwinmux는 Windows 전용 설치형 제품 전환을 내부 폐쇄망 운영 기준으로 통과했다.
+루트 README와 Electron 패키징 기준은 Windows 제품을 1차 기준으로 설명하며,
+Core/Backend split service, Runtime v2 default gate, Windows service account,
+signed/local package, updater/package gate evidence가 수집됐다.
 
-남은 판단 기준은 내부 전체 배포에 필요한 운영 evidence다. 특히 code signing
-인증서 신뢰, SmartScreen reputation, 장시간 실제 workspace 사용, 그리고
-`codexwinmux` app id/data dir/artifact name 전환 결정은 아직 별도 gate로 남아
-있다.
+외부 공개 배포 기준은 별도다. public SmartScreen reputation과 published/public Phase 6
+target evidence는 외부 공개 배포를 시작할 때만 release blocker로 승격한다.
+`codexwinmux` app id/data dir/artifact/executable identity 전환은 완료됐고,
+legacy `codexmux` 호환 표기는 rollback/과거 기록 문맥에서만 남긴다.
 
 이번 전환은 기존 Windows companion integration을 되살리는 작업이 아니다. ADR-014에서
 제거한 원격 Windows JSONL sync, terminal sidecar, remote source model은 계속 제거된

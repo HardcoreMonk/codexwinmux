@@ -99,7 +99,8 @@ legacy `workspaces.json`, `workspaces/{wsId}/layout.json`,
 `RuntimeStorageUnavailableError` 계열 typed failure로 fail closed한다. Message history
 write는 SQLite를 우선 갱신하고 rollback용 JSON 파일도 함께 쓰지만, 그 JSON mirror는
 default read source가 아니라 explicit `off` rollback artifact다. Config, keybindings,
-sidebar items는 아직 기존 JSON 파일이 owner다.
+custom sidebar item 설정은 runtime storage 전환 범위 밖의 rollback-compatible JSON 파일이
+owner다. Sidebar width/collapse 같은 workspace UI state는 SQLite projection에 포함된다.
 
 `CODEXWINMUX_RUNTIME_V2_RESET=1`을 함께 설정하면 runtime 시작 전에 기존
 `runtime-v2/state.db`, `runtime-v2/state.db-wal`, `runtime-v2/state.db-shm` 파일을 각각
