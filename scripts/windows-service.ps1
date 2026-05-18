@@ -16,7 +16,7 @@ param(
   [string]$WrapperPath,
   [string]$WrapperConfigPath,
   [string]$WinSwSource,
-  [string]$HostName = '127.0.0.1',
+  [string]$HostName,
   [int]$Port = 8121,
   [string]$CoreEngineHost = '127.0.0.1',
   [int]$CoreEnginePort = 8122,
@@ -28,6 +28,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$HostNameWasProvided = $PSBoundParameters.ContainsKey('HostName') -and -not [string]::IsNullOrWhiteSpace($HostName)
 
 $DefaultUserProfilePath = if ($env:USERPROFILE) { $env:USERPROFILE } else { 'C:\Windows\System32\config\systemprofile' }
 $DefaultLocalAppDataPath = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path $DefaultUserProfilePath 'AppData\Local' }
@@ -151,6 +152,83 @@ function Escape-XmlValue([string]$Value) {
   return [Security.SecurityElement]::Escape($Value)
 }
 
+function Read-ServiceHostNameFromConfig([string]$ConfigPath) {
+  if ([string]::IsNullOrWhiteSpace($ConfigPath) -or -not (Test-Path -LiteralPath $ConfigPath)) {
+    return $null
+  }
+
+  try {
+    [xml]$config = Get-Content -LiteralPath $ConfigPath -Raw
+    $node = $config.SelectSingleNode("//env[@name='HOST']")
+    if ($node -and -not [string]::IsNullOrWhiteSpace($node.value)) {
+      return [string]$node.value
+    }
+  } catch {
+    return $null
+  }
+
+  return $null
+}
+
+function Get-ServiceHostConfigCandidates {
+  $paths = [System.Collections.Generic.List[string]]::new()
+  if (-not [string]::IsNullOrWhiteSpace($WrapperConfigPath)) {
+    [void]$paths.Add($WrapperConfigPath)
+  }
+
+  if ($Mode -eq 'split' -and -not [string]::IsNullOrWhiteSpace($WrapperPath)) {
+    $baseDir = Split-Path -Parent $WrapperPath
+    foreach ($name in @('codexwinmux-backend-service.xml', 'codexwinmux-core-service.xml')) {
+      $candidate = Join-Path $baseDir $name
+      if (-not $paths.Contains($candidate)) {
+        [void]$paths.Add($candidate)
+      }
+    }
+  }
+
+  return $paths
+}
+
+function Resolve-ServiceHostName {
+  if ($HostNameWasProvided) {
+    return $HostName
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($env:CODEXWINMUX_WINDOWS_SERVICE_HOST)) {
+    return $env:CODEXWINMUX_WINDOWS_SERVICE_HOST
+  }
+
+  foreach ($configPath in Get-ServiceHostConfigCandidates) {
+    $existingHostName = Read-ServiceHostNameFromConfig $configPath
+    if (-not [string]::IsNullOrWhiteSpace($existingHostName)) {
+      return $existingHostName
+    }
+  }
+
+  return '127.0.0.1'
+}
+
+function Resolve-ServiceProbeHost {
+  $resolvedHostName = Resolve-ServiceHostName
+  $firstHost = (($resolvedHostName -split ',')[0]).Trim()
+  if ([string]::IsNullOrWhiteSpace($firstHost)) {
+    return '127.0.0.1'
+  }
+
+  switch ($firstHost.ToLowerInvariant()) {
+    '0.0.0.0' { return '127.0.0.1' }
+    '*' { return '127.0.0.1' }
+    'all' { return '127.0.0.1' }
+    'localhost' { return '127.0.0.1' }
+    default {
+      if ($firstHost.Contains('/')) {
+        return '127.0.0.1'
+      }
+      return $firstHost
+    }
+  }
+}
+
 function Resolve-WinSwSource {
   if ($WinSwSource -and (Test-Path -LiteralPath $WinSwSource)) {
     return (Resolve-Path -LiteralPath $WinSwSource).Path
@@ -186,6 +264,7 @@ function Ensure-WinSwWrapper {
 
 function Write-WinSwConfig {
   Ensure-ServiceDirectory
+  $effectiveHostName = Resolve-ServiceHostName
 
   $coreTransportEnvXml = ''
   if ($script:CoreEngineTransport -eq 'tcp') {
@@ -217,7 +296,7 @@ $coreTransportEnvXml
   <env name="CODEXWINMUX_RUNTIME_V2" value="1" />
   <env name="CODEXWINMUX_RUNTIME_TERMINAL_ADAPTER" value="windows" />
   <env name="CODEXWINMUX_PROCESS_INSPECTOR_ADAPTER" value="windows" />
-  <env name="HOST" value="$(Escape-XmlValue $HostName)" />
+  <env name="HOST" value="$(Escape-XmlValue $effectiveHostName)" />
   <env name="PORT" value="$(Escape-XmlValue ([string]$Port))" />
   <env name="HOME" value="$(Escape-XmlValue $UserProfilePath)" />
   <env name="USERPROFILE" value="$(Escape-XmlValue $UserProfilePath)" />
@@ -265,7 +344,8 @@ function Show-ServiceStatus {
 }
 
 function Show-Health {
-  $uri = "http://${HostName}:${Port}/api/health"
+  $probeHost = Resolve-ServiceProbeHost
+  $uri = "http://${probeHost}:${Port}/api/health"
   Invoke-RestMethod -Uri $uri | ConvertTo-Json -Depth 5
 }
 
