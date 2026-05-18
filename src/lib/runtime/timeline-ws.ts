@@ -3,7 +3,7 @@ import { recordPerfCounter } from '@/lib/perf-metrics';
 import type { IAgentProvider } from '@/lib/providers';
 import { buildTimelineResumeErrorMessage } from '@/lib/resume-error';
 import type { IRuntimeTimelineSessionChangedEvent } from '@/lib/runtime/contracts';
-import { getRuntimeSupervisor, type IRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getRuntimeTimelineAdapter, type IRuntimeTimelineAdapter } from '@/lib/runtime/timeline-runtime-adapter';
 import type { ISessionInfo, TTimelineClientMessage, TTimelineServerMessage } from '@/types/timeline';
 
 export interface IResolvedTimelineJsonl {
@@ -16,7 +16,7 @@ export interface IRuntimeTimelineConnectionInput {
   panePid: number;
   panelType: string;
   provider: IAgentProvider;
-  supervisor?: IRuntimeSupervisor;
+  timelineAdapter?: IRuntimeTimelineAdapter;
   detectActiveSession?: () => Promise<ISessionInfo>;
   resolveInitialJsonl: (info: ISessionInfo) => Promise<IResolvedTimelineJsonl | null>;
   handleResume: (
@@ -53,7 +53,7 @@ export const handleRuntimeTimelineConnection = async (
   ws: WebSocket,
   input: IRuntimeTimelineConnectionInput,
 ): Promise<void> => {
-  const supervisor = input.supervisor ?? getRuntimeSupervisor();
+  const timelineAdapter = input.timelineAdapter ?? getRuntimeTimelineAdapter();
   const state: IRuntimeTimelineConnectionState = {
     cleaned: false,
     liveSubscriberId: null,
@@ -82,12 +82,12 @@ export const handleRuntimeTimelineConnection = async (
     state.currentJsonlPath = null;
 
     const unsubscribeLive = liveSubscriberId
-      ? supervisor.unsubscribeTimelineLive(liveSubscriberId).catch(() => {
+      ? timelineAdapter.unsubscribeTimelineLive(liveSubscriberId).catch(() => {
         recordPerfCounter('runtime_v2.timeline_ws.default.live_unsubscribe_error');
       })
       : Promise.resolve();
     const unsubscribeSessionWatch = sessionWatchSubscriberId
-      ? supervisor.unsubscribeTimelineSessionWatch(sessionWatchSubscriberId).catch(() => {
+      ? timelineAdapter.unsubscribeTimelineSessionWatch(sessionWatchSubscriberId).catch(() => {
         recordPerfCounter('runtime_v2.timeline_ws.default.session_watch_unsubscribe_error');
       })
       : Promise.resolve();
@@ -102,13 +102,13 @@ export const handleRuntimeTimelineConnection = async (
     const previousSubscriberId = state.liveSubscriberId;
     if (previousSubscriberId) {
       state.liveSubscriberId = null;
-      await supervisor.unsubscribeTimelineLive(previousSubscriberId).catch(() => {
+      await timelineAdapter.unsubscribeTimelineLive(previousSubscriberId).catch(() => {
         recordPerfCounter('runtime_v2.timeline_ws.default.live_unsubscribe_error');
       });
     }
     if (state.cleaned || generation !== state.liveSubscribeGeneration) return;
 
-    const result = await supervisor.subscribeTimelineLive({
+    const result = await timelineAdapter.subscribeTimelineLive({
       jsonlPath: resolved.jsonlPath,
       sessionName: input.sessionName,
       sessionId: resolved.sessionId,
@@ -123,7 +123,7 @@ export const handleRuntimeTimelineConnection = async (
       },
     });
     if (state.cleaned || generation !== state.liveSubscribeGeneration) {
-      await supervisor.unsubscribeTimelineLive(result.subscriberId).catch(() => {
+      await timelineAdapter.unsubscribeTimelineLive(result.subscriberId).catch(() => {
         recordPerfCounter('runtime_v2.timeline_ws.default.live_unsubscribe_error');
       });
       return;
@@ -162,7 +162,7 @@ export const handleRuntimeTimelineConnection = async (
 
   const ensureSessionWatch = async (): Promise<void> => {
     if (state.cleaned || state.sessionWatchSubscriberId) return;
-    const watch = await supervisor.subscribeTimelineSessionWatch({
+    const watch = await timelineAdapter.subscribeTimelineSessionWatch({
       sessionName: input.sessionName,
       panePid: input.panePid,
       panelType: input.panelType,
@@ -172,7 +172,7 @@ export const handleRuntimeTimelineConnection = async (
       },
     });
     if (state.cleaned) {
-      await supervisor.unsubscribeTimelineSessionWatch(watch.subscriberId).catch(() => {
+      await timelineAdapter.unsubscribeTimelineSessionWatch(watch.subscriberId).catch(() => {
         recordPerfCounter('runtime_v2.timeline_ws.default.session_watch_unsubscribe_error');
       });
       return;
@@ -194,7 +194,7 @@ export const handleRuntimeTimelineConnection = async (
           if (liveSubscriberId) {
             state.liveSubscriberId = null;
             state.currentJsonlPath = null;
-            await supervisor.unsubscribeTimelineLive(liveSubscriberId);
+            await timelineAdapter.unsubscribeTimelineLive(liveSubscriberId);
           }
           return;
         }

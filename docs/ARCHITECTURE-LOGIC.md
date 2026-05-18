@@ -38,7 +38,9 @@ rollback artifact로만 유지한다.
 `CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE=default`에서는 기존 `/api/timeline/sessions`,
 `/api/timeline/entries`, `/api/timeline/message-counts` HTTP route와 `/api/timeline`
 WebSocket URL을 유지하되, Timeline Worker read/live/session-watch command가 delivery를
-소유한다. `CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가 별도 process
+소유한다. `/api/timeline` WebSocket bridge와 live shadow compare helper는
+`timeline-runtime-adapter`만 통해 Supervisor timeline command에 접근한다.
+`CODEXWINMUX_RUNTIME_STATUS_V2_MODE=default`에서는 Status Worker가 별도 process
 안에서 `StatusManager` live state machine을 실행하고 기존 `/api/status` WebSocket은 worker
 realtime event를 client message로 bridge한다.
 

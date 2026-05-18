@@ -16,6 +16,10 @@ const backendEntrypointFiles = [
   path.join(repoRoot, 'src', 'lib', 'timeline-server.ts'),
   path.join(repoRoot, 'src', 'lib', 'core-engine', 'runtime-api.ts'),
 ];
+const runtimeTimelineEntrypointFiles = [
+  path.join(repoRoot, 'src', 'lib', 'runtime', 'timeline-ws.ts'),
+  path.join(repoRoot, 'src', 'lib', 'runtime', 'timeline-live-shadow.ts'),
+];
 const apiFiles = (dir: string): string[] =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
@@ -24,8 +28,8 @@ const apiFiles = (dir: string): string[] =>
   });
 
 describe('runtime direct import policy', () => {
-  it('keeps backend entrypoints, store modules, and Core client adapter from importing the runtime supervisor directly', () => {
-    const offenders = [...backendEntrypointFiles, ...apiFiles(apiRoot)].flatMap((filePath) => {
+  it('keeps backend entrypoints, runtime timeline surfaces, and Core client adapter from importing the runtime supervisor directly', () => {
+    const offenders = [...backendEntrypointFiles, ...runtimeTimelineEntrypointFiles, ...apiFiles(apiRoot)].flatMap((filePath) => {
       const source = fs.readFileSync(filePath, 'utf8');
       return /(?:@\/lib\/runtime\/supervisor|\.\.\/.*runtime\/supervisor|getRuntimeSupervisor)/.test(source)
         ? [path.relative(repoRoot, filePath)]

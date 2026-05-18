@@ -10,8 +10,8 @@ Core/Backend 분리 후속 작업으로 Backend 공유 store 계층의 직접 ru
 전환했다.
 
 이번 slice는 source 기준 변경 뒤 Windows app 재빌드와 split service 재시작까지 완료했다.
-현재 live health는 source commit `38ec650c`, build time `2026-05-17T08:35:21.621Z`를
-반환한다. commit 값은 현재 변경이 아직 commit되지 않아 기존 HEAD를 가리킨다.
+commit/push 이후 Windows app을 다시 빌드했고 현재 live health는 source commit `c731df30`,
+build time `2026-05-17T09:30:58.111Z`를 반환한다.
 
 ## 변경 요약
 
@@ -21,6 +21,7 @@ Core/Backend 분리 후속 작업으로 Backend 공유 store 계층의 직접 ru
 - Core protocol에 terminal session info, status policy shadow, session history, Web Push, status live client/sync/subscribe command를 추가했다.
 - `status-manager`, `status-server`, `status-session-history-adapter`, `status-web-push-adapter`, `timeline-server`, `tab-session-cleanup`의 runtime default path를 Core runtime API 경유로 전환했다.
 - direct import policy test가 API route뿐 아니라 Backend shared store/status/timeline/cleanup 모듈과 Core client adapter도 runtime Supervisor를 직접 import하지 못하게 검증한다.
+- 후속 slice에서 `timeline-ws`와 `timeline-live-shadow`의 direct Supervisor fallback도 `timeline-runtime-adapter`로 분리했다.
 
 ## 검증 증거
 
@@ -35,11 +36,11 @@ Core/Backend 분리 후속 작업으로 Backend 공유 store 계층의 직접 ru
 - `corepack pnpm pack:electron:dev`: Next build, post-build, tsup, Electron `win-unpacked` packaging/signing 통과.
 - `corepack pnpm windows:service-account:restart-services`: `codexwinmux-core`, `codexwinmux-backend` 시작 통과.
 - `corepack pnpm windows:service:status`: 두 service 모두 `Running`, `Automatic`.
-- `corepack pnpm windows:service-account:health`: `app=codexwinmux`, `version=0.4.19`, `commit=38ec650c`, `buildTime=2026-05-17T08:35:21.621Z`.
+- `corepack pnpm windows:service-account:health`: `app=codexwinmux`, `version=0.4.19`, `commit=c731df30`, `buildTime=2026-05-17T09:30:58.111Z`.
 - `CODEXWINMUX_RUNTIME_V2_SMOKE_URL=http://127.0.0.1:8121 corepack pnpm smoke:runtime-v2:phase6-default-gate`: terminal `new-tabs`, storage/timeline/status `default`, worker diagnostics clean, failures `[]`.
 - `corepack pnpm windows:service-account:verify-reboot-readiness`: `ok=true`, 두 split service `Running/Auto`, service account `.\codexwinmux-svc`.
 
 ## 남은 후속 작업
 
-- 남은 직접 Supervisor import는 `src/workers/core-engine-host.ts`와 runtime-owned `src/lib/runtime/timeline-ws.ts`, `src/lib/runtime/timeline-live-shadow.ts`로 한정된다. Core host는 runtime Supervisor 소유자라 허용 경로이고, runtime-owned timeline modules는 별도 adapter 분리 여부를 다음 slice에서 결정한다.
-- 현재 변경을 commit/push할 때 build info commit hash가 새 commit을 가리키도록 Windows artifact를 다시 빌드할지 결정한다.
+- 현재 직접 Supervisor import는 runtime 소유자 `src/workers/core-engine-host.ts`와 boundary adapter `src/lib/runtime/timeline-runtime-adapter.ts`로 한정된다.
+- runtime timeline adapter split 변경을 commit/push할 때 build info commit hash가 새 commit을 가리키도록 Windows artifact를 다시 빌드할지 결정한다.

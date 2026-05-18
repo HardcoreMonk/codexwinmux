@@ -5,7 +5,7 @@ import {
   startRuntimeTimelineLiveShadow,
   stopRuntimeTimelineLiveShadow,
 } from '@/lib/runtime/timeline-live-shadow';
-import type { IRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import type { IRuntimeTimelineAdapter } from '@/lib/runtime/timeline-runtime-adapter';
 import type { IRuntimeTimelineLiveAppendEvent, IRuntimeTimelineLiveSubscribeInput } from '@/lib/runtime/contracts';
 import type { ITimelineInitMessage } from '@/types/timeline';
 
@@ -43,7 +43,7 @@ describe('runtime v2 timeline live shadow', () => {
         return { subscriberId: 'tlsub-a', subscribed: true, init: initMessage };
       }),
       unsubscribeTimelineLive: vi.fn(async (subscriberId: string) => ({ subscriberId, unsubscribed: true })),
-    } as unknown as IRuntimeSupervisor;
+    } as unknown as IRuntimeTimelineAdapter;
 
     await startRuntimeTimelineLiveShadow({
       jsonlPath: initMessage.jsonlPath!,
@@ -51,7 +51,7 @@ describe('runtime v2 timeline live shadow', () => {
       sessionId: 'session-a',
       panelType: 'codex',
       expectedInit: initMessage,
-      supervisor,
+      timelineAdapter: supervisor,
     });
 
     expect(supervisor.subscribeTimelineLive).toHaveBeenCalledWith(expect.objectContaining({
@@ -68,7 +68,7 @@ describe('runtime v2 timeline live shadow', () => {
       entries: initMessage.entries,
     });
 
-    await stopRuntimeTimelineLiveShadow({ jsonlPath: initMessage.jsonlPath!, supervisor });
+    await stopRuntimeTimelineLiveShadow({ jsonlPath: initMessage.jsonlPath!, timelineAdapter: supervisor });
     expect(supervisor.unsubscribeTimelineLive).toHaveBeenCalledWith('tlsub-a');
   });
 
@@ -76,14 +76,14 @@ describe('runtime v2 timeline live shadow', () => {
     process.env.CODEXWINMUX_RUNTIME_TIMELINE_V2_MODE = 'default';
     const supervisor = {
       subscribeTimelineLive: vi.fn(),
-    } as unknown as IRuntimeSupervisor;
+    } as unknown as IRuntimeTimelineAdapter;
 
     await startRuntimeTimelineLiveShadow({
       jsonlPath: initMessage.jsonlPath!,
       sessionName: 'pt-ws-a-pane-b-tab-c',
       panelType: 'codex',
       expectedInit: initMessage,
-      supervisor,
+      timelineAdapter: supervisor,
     });
 
     expect(supervisor.subscribeTimelineLive).not.toHaveBeenCalled();

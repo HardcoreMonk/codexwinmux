@@ -7,7 +7,7 @@ import type {
   IRuntimeTimelineSessionChangedEvent,
   IRuntimeTimelineSessionWatchSubscribeInput,
 } from '@/lib/runtime/contracts';
-import type { IRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import type { IRuntimeTimelineAdapter } from '@/lib/runtime/timeline-runtime-adapter';
 
 class FakeSocket extends EventEmitter {
   readyState = 1;
@@ -86,7 +86,7 @@ const createSupervisor = () => {
       return { subscriberId: 'sub-watch', subscribed: true };
     }),
     unsubscribeTimelineSessionWatch: vi.fn(async () => ({ subscriberId: 'sub-watch', unsubscribed: true })),
-  } as unknown as IRuntimeSupervisor;
+  } as unknown as IRuntimeTimelineAdapter;
 
   return {
     supervisor,
@@ -130,7 +130,7 @@ describe('runtime timeline websocket bridge', () => {
     const ws = new FakeSocket();
 
     await handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
     }));
 
     expect(ws.sent).toContainEqual(expect.objectContaining({
@@ -161,7 +161,7 @@ describe('runtime timeline websocket bridge', () => {
     const ws = new FakeSocket();
 
     await handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
     }));
 
     ws.close(1000, 'test close');
@@ -184,7 +184,7 @@ describe('runtime timeline websocket bridge', () => {
     vi.mocked(fake.supervisor.subscribeTimelineLive).mockImplementationOnce(async () => liveSubscribe.promise);
 
     const connection = handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
     }));
 
     await vi.waitFor(() => {
@@ -209,7 +209,7 @@ describe('runtime timeline websocket bridge', () => {
       .mockImplementationOnce(async () => sessionWatchSubscribe.promise);
 
     const connection = handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
     }));
 
     await vi.waitFor(() => {
@@ -246,7 +246,7 @@ describe('runtime timeline websocket bridge', () => {
       .mockImplementationOnce(async () => selectedSubscribe.promise);
 
     const connection = handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
       updateTabAgentSessionId,
       updateTabAgentJsonlPath,
     }));
@@ -297,7 +297,7 @@ describe('runtime timeline websocket bridge', () => {
     });
 
     await handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
       detectActiveSession: async () => ({
         status: 'running' as const,
         sessionId: null,
@@ -325,7 +325,7 @@ describe('runtime timeline websocket bridge', () => {
     }));
 
     await handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
       handleResume,
     }));
 
@@ -353,7 +353,7 @@ describe('runtime timeline websocket bridge', () => {
     const ws = new FakeSocket();
 
     await handleRuntimeTimelineConnection(ws as never, createConnectionInput({
-      supervisor: fake.supervisor,
+      timelineAdapter: fake.supervisor,
       handleResume: vi.fn(async () => {
         throw new Error('C:\\Users\\yohan\\private');
       }),

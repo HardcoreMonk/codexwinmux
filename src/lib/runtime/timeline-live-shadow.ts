@@ -5,7 +5,7 @@ import {
   compareRuntimeTimelineAppend,
   compareRuntimeTimelineInit,
 } from '@/lib/runtime/timeline-shadow-compare';
-import { getRuntimeSupervisor, type IRuntimeSupervisor } from '@/lib/runtime/supervisor';
+import { getRuntimeTimelineAdapter, type IRuntimeTimelineAdapter } from '@/lib/runtime/timeline-runtime-adapter';
 import type { ITimelineEntry, ITimelineInitMessage } from '@/types/timeline';
 
 interface IRuntimeTimelineLiveShadowState {
@@ -22,14 +22,14 @@ export interface IStartRuntimeTimelineLiveShadowInput {
   sessionId?: string;
   panelType: string;
   expectedInit: ITimelineInitMessage;
-  supervisor?: IRuntimeSupervisor;
+  timelineAdapter?: IRuntimeTimelineAdapter;
   runtimeV2Enabled?: boolean;
   timelineMode?: unknown;
 }
 
 export interface IStopRuntimeTimelineLiveShadowInput {
   jsonlPath: string;
-  supervisor?: IRuntimeSupervisor;
+  timelineAdapter?: IRuntimeTimelineAdapter;
 }
 
 const MAX_PENDING_APPENDS = 20;
@@ -101,8 +101,8 @@ export const startRuntimeTimelineLiveShadow = async (input: IStartRuntimeTimelin
   const startedAt = getPerfNow();
   state.starting = (async () => {
     try {
-      const supervisor = input.supervisor ?? getRuntimeSupervisor();
-      const result = await supervisor.subscribeTimelineLive({
+      const timelineAdapter = input.timelineAdapter ?? getRuntimeTimelineAdapter();
+      const result = await timelineAdapter.subscribeTimelineLive({
         jsonlPath: input.jsonlPath,
         sessionName: input.sessionName,
         ...(input.sessionId ? { sessionId: input.sessionId } : {}),
@@ -142,7 +142,7 @@ export const recordRuntimeTimelineLiveShadowAppend = (jsonlPath: string, entries
 
 export const stopRuntimeTimelineLiveShadow = async ({
   jsonlPath,
-  supervisor,
+  timelineAdapter,
 }: IStopRuntimeTimelineLiveShadowInput): Promise<void> => {
   const store = getStore();
   const state = store.get(jsonlPath);
@@ -151,7 +151,7 @@ export const stopRuntimeTimelineLiveShadow = async ({
   await state.starting?.catch(() => undefined);
   if (!state.subscriberId) return;
   try {
-    await (supervisor ?? getRuntimeSupervisor()).unsubscribeTimelineLive(state.subscriberId);
+    await (timelineAdapter ?? getRuntimeTimelineAdapter()).unsubscribeTimelineLive(state.subscriberId);
   } catch (err) {
     recordPerfCounter('runtime_v2.timeline_shadow.stop_error');
     log.warn(`timeline live shadow stop failed: ${errorKind(err)}`);

@@ -14,6 +14,8 @@ Windows 전용 Codex 작업 공간/세션 관리자입니다. 이 저장소는 �
 `codexwinmux.exe --codexwinmux-core` standalone Core host가 runtime Supervisor와
 workers를 소유하고, Backend API/WebSocket, workspace/layout store mutation, status/timeline
 runtime adapter는 Core runtime adapter를 통해 loopback TCP Core process에 attach합니다.
+Timeline WebSocket/live shadow surface는 별도 `timeline-runtime-adapter`를 통해서만
+Supervisor timeline command에 접근합니다.
 기존 combined service는 설치 잔여물 cleanup 용도로만 남깁니다.
 
 ## 현재 상태
